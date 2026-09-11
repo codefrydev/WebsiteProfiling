@@ -122,20 +122,20 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
 
   if (!propertyId) {
     return (
-      <p className="text-sm text-muted-foreground py-6 text-center">
+      <p className="text-sm text-md-sys-on-surface-variant py-6 text-center">
         {vi.taskBoardNoProperty || 'Link a property to track issue workflow.'}
       </p>
     );
   }
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground py-6 text-center">{strings.app.loading}</p>;
+    return <p className="text-sm text-md-sys-on-surface-variant py-6 text-center">{strings.app.loading}</p>;
   }
 
   return (
     <div className="relative group/dev-card space-y-3">
       <DevCopyJsonButton data={boardDevData} />
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-md-sys-on-surface-variant">
         {vi.taskBoardHint || 'Sorted by Search Console clicks to affected URLs when available.'}{' '}
         <LabelWithHint label="Impact score" helpKey="shared.impactScore" />
       </p>
@@ -151,30 +151,30 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
         return (
           <div
             key={`${msg}-${item.issue.url}-${i}`}
-            className="flex flex-col gap-3 p-4 rounded-xl border border-default bg-brand-800 min-w-0 max-w-full overflow-hidden"
+            className="flex flex-col gap-3 p-4 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container min-w-0 max-w-full overflow-hidden"
           >
             <div className="flex flex-col sm:flex-row sm:items-start gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground">{msg}</p>
+              <p className="text-sm font-medium text-md-sys-on-surface">{msg}</p>
               {item.issue.url ? (
                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs text-muted-foreground break-all min-w-0">{item.issue.url}</span>
+                  <span className="font-mono text-xs text-md-sys-on-surface-variant break-all min-w-0">{item.issue.url}</span>
                   <UrlInspectorButton url={item.issue.url} />
                 </div>
               ) : null}
               {(item.clicks ?? 0) > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-md-sys-on-surface-variant mt-1">
                   GSC clicks: {item.clicks!.toLocaleString()}
                 </p>
               )}
               {item.issue.impact_score != null && Number(item.issue.impact_score) > 0 ? (
-                <p className="text-xs text-muted-foreground mt-1 tabular-nums">
+                <p className="text-xs text-md-sys-on-surface-variant mt-1 tabular-nums">
                   <LabelWithHint label="Impact score" helpKey="shared.impactScore" />:{' '}
-                  <span className="font-semibold text-foreground">{Number(item.issue.impact_score).toLocaleString()}</span>
+                  <span className="font-semibold text-md-sys-on-surface">{Number(item.issue.impact_score).toLocaleString()}</span>
                 </p>
               ) : null}
               {(item.issue.llm_recommendation || item.issue.recommendation) ? (
-                <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                <p className="text-xs text-md-sys-on-surface-variant mt-2 leading-relaxed">
                   {item.issue.llm_recommendation || item.issue.recommendation}
                 </p>
               ) : null}
@@ -192,7 +192,7 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
                 })
               }
               disabled={readOnly}
-              className="bg-brand-900 border border-default rounded-lg px-2 py-1.5 text-xs text-foreground shrink-0 disabled:opacity-60"
+              className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg px-2 py-1.5 text-xs text-md-sys-on-surface shrink-0 disabled:opacity-60"
               aria-label={vi.taskBoardStatus || 'Issue status'}
             >
               {STATUS_OPTIONS.map((s) => (
@@ -202,9 +202,9 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
               ))}
             </select>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2 border-t border-default/60 pt-3">
+            <div className="grid gap-2 sm:grid-cols-2 border-t border-md-sys-outline-variant/40 pt-3">
               <label className="block space-y-1">
-                <span className="text-[11px] font-medium text-muted-foreground">{vi.taskBoardAssignee}</span>
+                <span className="text-[11px] font-medium text-md-sys-on-surface-variant">{vi.taskBoardAssignee}</span>
                 <input
                   type="text"
                   defaultValue={assignee}
@@ -217,11 +217,11 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
                     if (next === (assignee || '').trim()) return;
                     void saveIssueRow(item, { status: current, assignee: next || null, note: note || null });
                   }}
-                  className="w-full rounded-lg border border-default bg-brand-900 px-2 py-1.5 text-xs text-foreground disabled:opacity-60"
+                  className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-2 py-1.5 text-xs text-md-sys-on-surface disabled:opacity-60"
                 />
               </label>
               <label className="block space-y-1 sm:col-span-2">
-                <span className="text-[11px] font-medium text-muted-foreground">{vi.taskBoardNote}</span>
+                <span className="text-[11px] font-medium text-md-sys-on-surface-variant">{vi.taskBoardNote}</span>
                 <textarea
                   defaultValue={note}
                   key={`${fp}-note-${note}`}
@@ -234,7 +234,7 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
                     if (next === (note || '').trim()) return;
                     void saveIssueRow(item, { status: current, assignee: assignee || null, note: next || null });
                   }}
-                  className="w-full resize-y rounded-lg border border-default bg-brand-900 px-2 py-1.5 text-xs text-foreground disabled:opacity-60"
+                  className="w-full resize-y rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-2 py-1.5 text-xs text-md-sys-on-surface disabled:opacity-60"
                 />
               </label>
             </div>

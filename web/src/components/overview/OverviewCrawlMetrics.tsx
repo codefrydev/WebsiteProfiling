@@ -38,16 +38,16 @@ const vo = strings.views.overview;
 const sj = strings.common;
 
 function bandBadgeClassName(band: MetricBand | 'neutral'): string {
-  if (band === 'good') return 'bg-green-500/10';
-  if (band === 'fair') return 'bg-yellow-500/10';
-  if (band === 'critical') return 'bg-red-500/10';
-  return 'bg-link/10';
+  if (band === 'good') return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400';
+  if (band === 'fair') return 'bg-amber-500/15 text-amber-700 dark:text-amber-400';
+  if (band === 'critical') return 'bg-md-sys-error-container/30 text-md-sys-error';
+  return 'bg-md-sys-primary-container/40 text-md-sys-primary';
 }
 
 function metricIcon(Icon: typeof AlertTriangle, band: MetricBand | 'neutral') {
-  const iconColorClass = band === 'neutral' ? 'text-link' : bandClassName(band);
+  const iconColorClass = band === 'neutral' ? 'text-md-sys-primary' : bandClassName(band);
   return (
-    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${bandBadgeClassName(band)}`}>
+    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${bandBadgeClassName(band)}`}>
       <Icon className={`h-4 w-4 ${iconColorClass}`} aria-hidden />
     </span>
   );
@@ -78,11 +78,11 @@ function MetricSection({
       {devData != null ? <DevCopyJsonButton data={devData} /> : null}
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h3 className="text-sm font-bold text-bright">{title}</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+          <h3 className="text-sm font-bold text-md-sys-on-surface">{title}</h3>
+          <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">{hint}</p>
         </div>
         {viewAllHref && viewAllLabel ? (
-          <Link to={viewAllHref} className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline">
+          <Link to={viewAllHref} className="inline-flex items-center gap-1 text-xs font-medium text-md-sys-primary hover:underline">
             {viewAllLabel}
             <ChevronRight className="h-3.5 w-3.5" />
           </Link>
@@ -255,17 +255,17 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
   );
 
   return (
-    <Card shadow className="mb-8 overflow-hidden border border-default">
-      <div className="relative group/dev-card border-b border-muted/60 p-4 sm:p-5">
+    <Card shadow className="mb-8 overflow-hidden border border-md-sys-outline-variant/40">
+      <div className="relative group/dev-card border-b border-md-sys-outline-variant/50 p-4 sm:p-5">
         <DevCopyJsonButton data={crawlSnapshotHeaderDevData} />
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-bright">{vo.crawlSnapshotTitle}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{vo.crawlSnapshotSubtitle}</p>
+            <h2 className="text-lg font-bold text-md-sys-on-surface">{vo.crawlSnapshotTitle}</h2>
+            <p className="mt-1 text-sm text-md-sys-on-surface-variant">{vo.crawlSnapshotSubtitle}</p>
           </div>
           <Link
             to={chartsHref}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-default px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-brand-700/50"
+            className="press inline-flex shrink-0 items-center gap-2 rounded-full border border-md-sys-outline-variant/50 bg-md-sys-surface-container-high/40 px-4 py-2 text-sm font-medium text-md-sys-on-surface transition-all hover:bg-md-sys-surface-container-highest active:scale-[0.98]"
           >
             <BarChart3 className="h-4 w-4" />
             {vo.crawlSnapshotViewCharts}
@@ -274,7 +274,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
 
         {concerns.length > 0 ? (
           <div className="mt-4">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant">
               {vo.crawlTopConcerns}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -282,11 +282,11 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
                 <Link
                   key={concern.id}
                   to={concern.href}
-                  className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-red-500/40 hover:bg-red-500/15"
+                  className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-md-sys-on-surface transition-colors hover:border-red-500/40 hover:bg-red-500/15"
                 >
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden />
                   <span className="truncate">{concern.label}</span>
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-md-sys-on-surface-variant" />
                 </Link>
               ))}
             </div>
@@ -322,7 +322,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             value={successRate != null ? `${successRate}%` : '—'}
             band={successRate != null ? metricBandLabel(successBand, vo) : undefined}
             bandClassName={successRate != null ? bandClassName(successBand) : undefined}
-            valueClassName={successRate != null ? bandClassName(successBand) : 'text-muted-foreground'}
+            valueClassName={successRate != null ? bandClassName(successBand) : 'text-md-sys-on-surface-variant'}
             hint={metricHelpHint('shared.successRate')}
             fillHeight
           />
@@ -384,7 +384,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             sub={vo.perPage2xx}
             band={medianWords != null ? metricBandLabel(wordsBand, vo) : undefined}
             bandClassName={medianWords != null ? bandClassName(wordsBand) : undefined}
-            valueClassName={medianWords != null ? bandClassName(wordsBand) : 'text-bright'}
+            valueClassName={medianWords != null ? bandClassName(wordsBand) : 'text-md-sys-on-surface'}
             hint={metricHelpHint('shared.medianWords')}
             fillHeight
           />
@@ -398,7 +398,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             sub={vo.ogPagesWith}
             band={ogPct != null ? metricBandLabel(ogBand, vo) : undefined}
             bandClassName={ogPct != null ? bandClassName(ogBand) : undefined}
-            valueClassName={ogPct != null ? bandClassName(ogBand) : 'text-bright'}
+            valueClassName={ogPct != null ? bandClassName(ogBand) : 'text-md-sys-on-surface'}
             hint={metricHelpHint('views.overview.ogCoverage')}
             fillHeight
           />
@@ -427,7 +427,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             }
             band={p50 != null ? metricBandLabel(responseBand, vo) : undefined}
             bandClassName={p50 != null ? bandClassName(responseBand) : undefined}
-            valueClassName={p50 != null ? bandClassName(responseBand) : 'text-bright'}
+            valueClassName={p50 != null ? bandClassName(responseBand) : 'text-md-sys-on-surface'}
             hint={metricHelpHint('views.overview.responseP50')}
             fillHeight
           />

@@ -107,7 +107,7 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
   if (!inv || inv.disabled) {
     return (
       <PageLayout>
-        <PageHeader title={vs.title} subtitle={vs.subtitle} icon={<Globe2 className="h-7 w-7 text-link shrink-0" />} />
+        <PageHeader title={vs.title} subtitle={vs.subtitle} icon={<Globe2 className="h-7 w-7 text-md-sys-primary shrink-0" />} />
         <EmptyState
           icon={Globe2}
           title={vs.title}
@@ -120,7 +120,7 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
   if (!inv.hosts?.length && !gscGapHosts.length) {
     return (
       <PageLayout>
-        <PageHeader title={vs.title} subtitle={vs.subtitle} icon={<Globe2 className="h-7 w-7 text-link shrink-0" />} />
+        <PageHeader title={vs.title} subtitle={vs.subtitle} icon={<Globe2 className="h-7 w-7 text-md-sys-primary shrink-0" />} />
         <EmptyState
           icon={Globe2}
           title={vs.title}
@@ -132,11 +132,11 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
 
   return (
     <PageLayout>
-      <PageHeader title={vs.title} subtitle={vs.subtitle} icon={<Globe2 className="h-7 w-7 text-link shrink-0" />} />
+      <PageHeader title={vs.title} subtitle={vs.subtitle} icon={<Globe2 className="h-7 w-7 text-md-sys-primary shrink-0" />} />
       {inv.crtsh_error ? (
         <Card className="mb-4 border-amber-500/30 bg-amber-500/5 relative group/dev-card">
           <DevCopyJsonButton data={ctWarningDevData} />
-          <p className="text-sm text-muted-foreground">{vs.ctWarning}</p>
+          <p className="text-sm text-md-sys-on-surface-variant">{vs.ctWarning}</p>
         </Card>
       ) : null}
       <div className="relative group/dev-card mb-6">
@@ -150,8 +150,8 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
       </div>
       {gscGapHosts.length > 0 ? (
         <Card className="mb-6 relative group/dev-card" devData={gscGapDevData}>
-          <h3 className="text-sm font-semibold text-foreground mb-2">{vs.gscGapTitle}</h3>
-          <p className="text-sm text-muted-foreground mb-3">{vs.gscGapHint}</p>
+          <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{vs.gscGapTitle}</h3>
+          <p className="text-sm text-md-sys-on-surface-variant mb-3">{vs.gscGapHint}</p>
           <ul className="flex flex-wrap gap-2">
             {gscGapHosts.slice(0, 20).map((host) => (
               <li key={host}>
@@ -160,17 +160,17 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
             ))}
           </ul>
           {gscGapHosts.length > 20 ? (
-            <p className="text-xs text-muted-foreground mt-2">{format(vs.moreHosts, { count: gscGapHosts.length - 20 })}</p>
+            <p className="text-xs text-md-sys-on-surface-variant mt-2">{format(vs.moreHosts, { count: gscGapHosts.length - 20 })}</p>
           ) : null}
-          <p className="text-xs text-muted-foreground mt-3">
-            <Link to={`/indexation${querySuffix}`} className="text-link hover:underline">
+          <p className="text-xs text-md-sys-on-surface-variant mt-3">
+            <Link to={`/indexation${querySuffix}`} className="text-md-sys-primary hover:underline">
               {vs.viewIndexation}
             </Link>
           </p>
         </Card>
       ) : null}
       <Card devData={hostsTableDevData}>
-        <h3 className="text-sm font-semibold text-foreground mb-4">{vs.hostsTitle}</h3>
+        <h3 className="text-sm font-semibold text-md-sys-on-surface mb-4">{vs.hostsTitle}</h3>
         <div className="overflow-x-auto">
           <Table>
             <TableHead>
@@ -186,7 +186,7 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
             <TableBody>
               {inScopeHosts.length === 0 ? (
                 <TableRow>
-                  <TableCell className="text-muted-foreground text-sm">{vs.noSearchResults}</TableCell>
+                  <TableCell className="text-md-sys-on-surface-variant text-sm">{vs.noSearchResults}</TableCell>
                   <TableCell />
                   <TableCell />
                   <TableCell />
@@ -217,11 +217,11 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
       </Card>
       {outOfScope.length > 0 ? (
         <Card className="mt-6 relative group/dev-card" devData={outOfScopeDevData}>
-          <h3 className="text-sm font-semibold text-foreground mb-2">{vs.outOfScopeTitle}</h3>
-          <p className="text-sm text-muted-foreground mb-3">{vs.outOfScopeHint}</p>
+          <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{vs.outOfScopeTitle}</h3>
+          <p className="text-sm text-md-sys-on-surface-variant mb-3">{vs.outOfScopeHint}</p>
           <ul className="text-sm font-mono text-xs space-y-1 max-h-40 overflow-y-auto">
             {outOfScope.slice(0, 30).map((host) => (
-              <li key={host} className="text-muted-foreground">
+              <li key={host} className="text-md-sys-on-surface-variant">
                 {host}
               </li>
             ))}

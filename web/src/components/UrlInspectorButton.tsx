@@ -24,7 +24,7 @@ export default function UrlInspectorButton({ url, className = '', label }: UrlIn
         e.stopPropagation();
         inspector.openUrl(trimmed);
       }}
-      className={`inline-flex items-center gap-1 text-xs text-link hover:underline whitespace-nowrap ${className}`.trim()}
+      className={`inline-flex items-center gap-1 text-xs text-md-sys-primary hover:underline whitespace-nowrap ${className}`.trim()}
     >
       <Search className="h-3 w-3 shrink-0" aria-hidden />
       {text}

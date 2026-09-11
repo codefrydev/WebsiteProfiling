@@ -26,14 +26,14 @@ export default function LandingCodeBlock({ label, command, prominent = false }: 
 
   return (
     <div
-      className={`group border border-default/60 transition-colors hover:border-blue-500/25 ${
+      className={`group border border-md-sys-outline-variant/40 transition-colors hover:border-blue-500/25 ${
         prominent ? 'rounded-xl p-4 @sm:p-5' : 'rounded-lg p-3'
       }`}
     >
       <div className={`flex items-center justify-between gap-2 ${prominent ? 'mb-2' : 'mb-1.5'}`}>
         {label ? (
           <p
-            className={`font-medium uppercase tracking-wider text-muted-foreground ${
+            className={`font-medium uppercase tracking-wider text-md-sys-on-surface-variant ${
               prominent ? 'text-xs @sm:text-sm' : 'text-[10px] @sm:text-xs'
             }`}
           >
@@ -45,7 +45,7 @@ export default function LandingCodeBlock({ label, command, prominent = false }: 
         <button
           type="button"
           onClick={() => { void handleCopy(); }}
-          className={`inline-flex items-center gap-1 rounded-md border border-default/60 font-medium text-muted-foreground opacity-0 transition-all group-hover:opacity-100 hover:border-blue-500/25 hover:text-foreground focus:opacity-100 ${
+          className={`inline-flex items-center gap-1 rounded-md border border-md-sys-outline-variant/40 font-medium text-md-sys-on-surface-variant opacity-0 transition-all group-hover:opacity-100 hover:border-blue-500/25 hover:text-md-sys-on-surface focus:opacity-100 ${
             prominent ? 'px-2.5 py-1.5 text-xs' : 'px-2 py-1 text-[11px]'
           }`}
         >
@@ -53,9 +53,9 @@ export default function LandingCodeBlock({ label, command, prominent = false }: 
           {copied ? vl.copyCommandDone : vl.copyCommand}
         </button>
       </div>
-      <pre className={`overflow-hidden font-mono text-foreground ${prominent ? 'text-sm @sm:text-base' : 'text-xs @sm:text-sm'}`}>
+      <pre className={`overflow-hidden font-mono text-md-sys-on-surface ${prominent ? 'text-sm @sm:text-base' : 'text-xs @sm:text-sm'}`}>
         <code className={prominent ? 'break-all' : 'line-clamp-3 break-all'}>
-          <span className="select-none text-muted-foreground">$ </span>
+          <span className="select-none text-md-sys-on-surface-variant">$ </span>
           {command}
         </code>
       </pre>

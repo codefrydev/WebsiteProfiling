@@ -84,7 +84,7 @@ export function CompareIssuesPanel({ compare, searchQuery, vc, emptyLabel }: Pan
   if (!hasAny) {
     return (
       <Card shadow>
-        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+        <p className="text-sm text-md-sys-on-surface-variant">{emptyLabel}</p>
       </Card>
     );
   }
@@ -93,13 +93,13 @@ export function CompareIssuesPanel({ compare, searchQuery, vc, emptyLabel }: Pan
     <div className="space-y-6">
       {extras.priorityCounts.some((p) => p.current > 0 || p.baseline > 0) ? (
         <Card shadow>
-          <h3 className="text-sm font-bold text-foreground mb-3">{vc.priorityMix}</h3>
+          <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vc.priorityMix}</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {extras.priorityCounts.map((row) => (
-              <div key={row.priority} className="bg-brand-900/50 border border-default rounded-lg p-3">
-                <div className="text-xs text-muted-foreground uppercase">{row.priority}</div>
-                <div className="text-lg font-bold text-bright tabular-nums">{row.current}</div>
-                <div className="text-[11px] text-muted-foreground">
+              <div key={row.priority} className="bg-md-sys-surface-container-low/50 border border-md-sys-outline-variant/40 rounded-lg p-3">
+                <div className="text-xs text-md-sys-on-surface-variant uppercase">{row.priority}</div>
+                <div className="text-lg font-bold text-md-sys-on-surface tabular-nums">{row.current}</div>
+                <div className="text-[11px] text-md-sys-on-surface-variant">
                   was {row.baseline} · <ScoreDelta delta={row.delta} />
                 </div>
               </div>
@@ -117,7 +117,7 @@ export function CompareIssuesPanel({ compare, searchQuery, vc, emptyLabel }: Pan
 
       {security.length > 0 ? (
         <Card shadow>
-          <h3 className="text-sm font-bold text-foreground mb-3">{vc.securityChanges}</h3>
+          <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vc.securityChanges}</h3>
           <ScrollTable>
             <TableHead sticky>
               <TableRow>
@@ -134,8 +134,8 @@ export function CompareIssuesPanel({ compare, searchQuery, vc, emptyLabel }: Pan
                   </TableCell>
                   <TableCell className="text-sm align-top">
                     <span className="font-medium">{row.findingType}</span>
-                    <span className="text-muted-foreground"> · {row.severity}</span>
-                    <p className="text-xs text-muted-foreground mt-0.5">{row.message}</p>
+                    <span className="text-md-sys-on-surface-variant"> · {row.severity}</span>
+                    <p className="text-xs text-md-sys-on-surface-variant mt-0.5">{row.message}</p>
                     <AiSuggestionButton
                       request={buildCompareSecurityContext({
                         message: row.message,
@@ -157,7 +157,7 @@ export function CompareIssuesPanel({ compare, searchQuery, vc, emptyLabel }: Pan
 
       {redirects.length > 0 ? (
         <Card shadow>
-          <h3 className="text-sm font-bold text-foreground mb-3">{vc.redirectChanges}</h3>
+          <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vc.redirectChanges}</h3>
           <ScrollTable>
             <TableHead sticky>
               <TableRow>
@@ -175,7 +175,7 @@ export function CompareIssuesPanel({ compare, searchQuery, vc, emptyLabel }: Pan
                   </TableCell>
                   <TableCell className="font-mono text-xs break-all">{row.url}</TableCell>
                   <TableCell>{row.status}</TableCell>
-                  <TableCell className="font-mono text-xs break-all text-muted-foreground">{row.finalUrl || '—'}</TableCell>
+                  <TableCell className="font-mono text-xs break-all text-md-sys-on-surface-variant">{row.finalUrl || '—'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -199,7 +199,7 @@ function IssueTable({
 }) {
   return (
     <Card shadow>
-      <h3 className="text-sm font-bold text-foreground mb-3">{title}</h3>
+      <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{title}</h3>
       <ScrollTable>
         <TableHead sticky>
           <TableRow>
@@ -216,7 +216,7 @@ function IssueTable({
                 <Badge variant={row.priority === 'Critical' || row.priority === 'High' ? 'high' : 'medium'} label={row.priority} />
               </TableCell>
               <TableCell className="text-sm">{row.category}</TableCell>
-              <TableCell className="text-sm text-muted-foreground max-w-md align-top">
+              <TableCell className="text-sm text-md-sys-on-surface-variant max-w-md align-top">
                 <div className="space-y-2">
                   <span>{row.message}</span>
                   <AiSuggestionButton request={buildCompareIssueContext(row)} />
@@ -272,14 +272,14 @@ export function ComparePerformancePanel({
   if (lh.length === 0 && !hasPerfChart) {
     return (
       <Card shadow>
-        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+        <p className="text-sm text-md-sys-on-surface-variant">{emptyLabel}</p>
       </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      <Suspense fallback={<div className="h-56 rounded-xl bg-brand-800/40 animate-pulse mb-4" />}>
+      <Suspense fallback={<div className="h-56 rounded-xl bg-md-sys-surface-container/40 animate-pulse mb-4" />}>
         <ComparePerformanceCharts
           siteMetrics={siteMetrics}
           contentMetrics={compare.extras.contentMetrics}
@@ -288,7 +288,7 @@ export function ComparePerformancePanel({
       </Suspense>
       {lh.length > 0 ? (
         <Card shadow>
-          <h3 className="text-sm font-bold text-foreground mb-3">{vc.lighthouseByUrl}</h3>
+          <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vc.lighthouseByUrl}</h3>
           <ScrollTable>
             <TableHead sticky>
               <TableRow>
@@ -309,10 +309,10 @@ export function ComparePerformancePanel({
                   <TableCell>
                     <LhDelta delta={row.seoDelta} />
                   </TableCell>
-                  <TableCell className="text-xs tabular-nums text-muted-foreground">
+                  <TableCell className="text-xs tabular-nums text-md-sys-on-surface-variant">
                     {row.performanceCurrent ?? '—'} / {row.seoCurrent ?? '—'}
                   </TableCell>
-                  <TableCell className="text-xs tabular-nums text-muted-foreground">
+                  <TableCell className="text-xs tabular-nums text-md-sys-on-surface-variant">
                     {row.performanceBaseline ?? '—'} / {row.seoBaseline ?? '—'}
                   </TableCell>
                 </TableRow>
@@ -326,7 +326,7 @@ export function ComparePerformancePanel({
 }
 
 function LhDelta({ delta }: { delta: number | null }) {
-  if (delta == null) return <span className="text-muted-foreground text-xs">—</span>;
+  if (delta == null) return <span className="text-md-sys-on-surface-variant text-xs">—</span>;
   const improved = delta > 0;
   const color = improved ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400';
   return (
@@ -357,14 +357,14 @@ export function CompareContentPanel({ compare, searchQuery, vc, emptyLabel }: Pa
   if (metrics.length === 0 && dups.length === 0 && tech.length === 0) {
     return (
       <Card shadow>
-        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+        <p className="text-sm text-md-sys-on-surface-variant">{emptyLabel}</p>
       </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      <Suspense fallback={<div className="h-56 rounded-xl bg-brand-800/40 animate-pulse" />}>
+      <Suspense fallback={<div className="h-56 rounded-xl bg-md-sys-surface-container/40 animate-pulse" />}>
         <CompareContentCharts contentMetrics={metrics} vc={vc} />
       </Suspense>
       {metrics.length > 0 ? (
@@ -377,7 +377,7 @@ export function CompareContentPanel({ compare, searchQuery, vc, emptyLabel }: Pa
 
       {dups.length > 0 ? (
         <Card shadow>
-          <h3 className="text-sm font-bold text-foreground mb-3">{vc.duplicateClusters}</h3>
+          <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vc.duplicateClusters}</h3>
           <ScrollTable>
             <TableHead sticky>
               <TableRow>
@@ -398,7 +398,7 @@ export function CompareContentPanel({ compare, searchQuery, vc, emptyLabel }: Pa
                   </TableCell>
                   <TableCell className="font-mono text-xs break-all">{row.representativeUrl}</TableCell>
                   <TableCell className="tabular-nums">{row.currentMembers}</TableCell>
-                  <TableCell className="tabular-nums text-muted-foreground">{row.baselineMembers}</TableCell>
+                  <TableCell className="tabular-nums text-md-sys-on-surface-variant">{row.baselineMembers}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -408,7 +408,7 @@ export function CompareContentPanel({ compare, searchQuery, vc, emptyLabel }: Pa
 
       {tech.length > 0 ? (
         <Card shadow>
-          <h3 className="text-sm font-bold text-foreground mb-3">{vc.techStackChanges}</h3>
+          <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vc.techStackChanges}</h3>
           <div className="flex flex-wrap gap-2">
             {tech.map((row) => (
               <span
@@ -441,7 +441,7 @@ export function CompareLinksPanel({ compare, searchQuery, vc, emptyLabel }: Pane
   if (rows.length === 0) {
     return (
       <Card shadow>
-        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+        <p className="text-sm text-md-sys-on-surface-variant">{emptyLabel}</p>
       </Card>
     );
   }
@@ -463,7 +463,7 @@ export function CompareLinksPanel({ compare, searchQuery, vc, emptyLabel }: Pane
             <TableRow key={`${row.url}-${row.metric}`}>
               <TableCell className="font-mono text-xs break-all max-w-[40%]">{row.url}</TableCell>
               <TableCell className="text-sm">{row.label}</TableCell>
-              <TableCell className="tabular-nums text-muted-foreground">{row.baseline}</TableCell>
+              <TableCell className="tabular-nums text-md-sys-on-surface-variant">{row.baseline}</TableCell>
               <TableCell className="tabular-nums">{row.current}</TableCell>
               <TableCell>
                 <ScoreDelta delta={row.delta} higherIsBetter={row.higherIsBetter} />
@@ -481,8 +481,8 @@ export function CompareGooglePanel({ compare, vc, emptyLabel }: PanelProps) {
   if (!extras.googleAvailable) {
     return (
       <Card shadow>
-        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
-        <p className="text-xs text-muted-foreground mt-2">
+        <p className="text-sm text-md-sys-on-surface-variant">{emptyLabel}</p>
+        <p className="text-xs text-md-sys-on-surface-variant mt-2">
           {vc.googleConnectHint}
         </p>
       </Card>
@@ -493,10 +493,10 @@ export function CompareGooglePanel({ compare, vc, emptyLabel }: PanelProps) {
 
   return (
     <div className="space-y-4">
-      <Suspense fallback={<div className="h-56 rounded-xl bg-brand-800/40 animate-pulse mb-4" />}>
+      <Suspense fallback={<div className="h-56 rounded-xl bg-md-sys-surface-container/40 animate-pulse mb-4" />}>
         <CompareGoogleCharts vc={vc} />
       </Suspense>
-      <p className="text-xs text-muted-foreground">{vc.googleDateNote}</p>
+      <p className="text-xs text-md-sys-on-surface-variant">{vc.googleDateNote}</p>
       {changed.length > 0 ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {changed.map((row) => (
@@ -506,7 +506,7 @@ export function CompareGooglePanel({ compare, vc, emptyLabel }: PanelProps) {
       ) : null}
       {stable.length > 0 ? (
         <Card shadow>
-          <h3 className="text-sm font-bold text-foreground mb-3">Unchanged</h3>
+          <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">Unchanged</h3>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {stable.map((row) => (
               <CompareMetricCard key={row.id} row={row} />
@@ -515,7 +515,7 @@ export function CompareGooglePanel({ compare, vc, emptyLabel }: PanelProps) {
         </Card>
       ) : null}
       {changed.length === 0 && stable.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+        <p className="text-sm text-md-sys-on-surface-variant">{emptyLabel}</p>
       ) : null}
     </div>
   );

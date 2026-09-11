@@ -160,7 +160,7 @@ function SiteStructureTreePanel({
 
   if (visibleRows.length === 0) {
     return (
-      <p className="text-muted-foreground text-sm py-12 text-center">
+      <p className="text-md-sys-on-surface-variant text-sm py-12 text-center">
         {filteredLinksLength === 0 && dataLinksLength > 0 ? s.emptyFilter : s.empty}
       </p>
     );
@@ -169,13 +169,13 @@ function SiteStructureTreePanel({
   return (
     <div className="relative group/dev-card">
       <DevCopyJsonButton data={treePanelDevData} />
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 px-4 py-3 border-b border-muted bg-brand-900/40">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 px-4 py-3 border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40">
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-foreground">{s.treeTitle}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <h2 className="text-sm font-bold text-md-sys-on-surface">{s.treeTitle}</h2>
+          <p className="text-xs text-md-sys-on-surface-variant mt-0.5">
             {format(s.treeShowing, { count: visibleRows.length, total: merged.size })}
           </p>
-          <p className="text-xs text-muted-foreground mt-1 hidden sm:block">{s.treeHint}</p>
+          <p className="text-xs text-md-sys-on-surface-variant mt-1 hidden sm:block">{s.treeHint}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Button type="button" variant="secondary" className="text-xs gap-1.5" onClick={expandAll}>
@@ -201,25 +201,25 @@ function SiteStructureTreePanel({
       </div>
 
       {hasCompare && showCompareCharts ? (
-        <div className="px-4 py-2 border-b border-muted bg-amber-500/5 text-xs text-amber-800 dark:text-amber-300/90">
+        <div className="px-4 py-2 border-b border-md-sys-outline-variant/40 bg-amber-500/5 text-xs text-amber-800 dark:text-amber-300/90">
           {s.changeLegend}
         </div>
       ) : null}
 
       {topSections.length > 1 ? (
-        <div className="px-4 py-3 border-b border-muted">
-          <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-2">{s.quickJump}</p>
+        <div className="px-4 py-3 border-b border-md-sys-outline-variant/40">
+          <p className="text-[10px] uppercase tracking-wider font-bold text-md-sys-on-surface-variant mb-2">{s.quickJump}</p>
           <div className="flex flex-wrap gap-2">
             {topSections.slice(0, 12).map((node) => (
               <button
                 key={node.pathKey}
                 type="button"
                 onClick={() => jumpToSection(node.pathKey)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-default bg-brand-900/50 px-2.5 py-1.5 text-xs font-mono text-foreground hover:bg-brand-700 hover:border-muted transition-colors"
+                className="press inline-flex items-center gap-1.5 rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-3.5 py-1.5 text-xs font-mono text-md-sys-on-surface hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all duration-200"
                 title={node.pathKey}
               >
                 <span className="truncate max-w-[8rem]">{node.segment}</span>
-                <span className="shrink-0 rounded bg-brand-800 px-1 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+                <span className="shrink-0 rounded-full bg-md-sys-surface-container px-1.5 py-0.5 text-[10px] tabular-nums text-md-sys-on-surface-variant">
                   {node.current.pages}
                 </span>
               </button>
@@ -228,7 +228,7 @@ function SiteStructureTreePanel({
         </div>
       ) : null}
 
-      <p className="text-xs text-muted-foreground px-4 py-2 border-b border-muted bg-brand-900/30 sm:hidden">
+      <p className="text-xs text-md-sys-on-surface-variant px-4 py-2 border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/30 sm:hidden">
         {strings.common.tableSwipeHint}
       </p>
 
@@ -242,11 +242,11 @@ function SiteStructureTreePanel({
       />
 
       {totalPages > 1 ? (
-        <div className="p-4 border-t border-muted bg-brand-900 flex flex-wrap justify-between items-center gap-3 shrink-0">
-          <div className="text-sm text-muted-foreground">
+        <div className="p-4 border-t border-md-sys-outline-variant/40 bg-md-sys-surface-container-low flex flex-wrap justify-between items-center gap-3 shrink-0">
+          <div className="text-sm text-md-sys-on-surface-variant">
             {paginationLabels.pageOf}{' '}
-            <span className="font-bold text-bright">{page}</span> {paginationLabels.of}{' '}
-            <span className="font-bold text-bright">{totalPages}</span>
+            <span className="font-bold text-md-sys-on-surface">{page}</span> {paginationLabels.of}{' '}
+            <span className="font-bold text-md-sys-on-surface">{totalPages}</span>
           </div>
           <div className="flex gap-2">
             <Button
@@ -254,7 +254,7 @@ function SiteStructureTreePanel({
               variant="secondary"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1 text-foreground text-xs"
+              className="px-3 py-1 text-md-sys-on-surface text-xs"
             >
               {paginationLabels.previous}
             </Button>
@@ -263,7 +263,7 @@ function SiteStructureTreePanel({
               variant="secondary"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-3 py-1 text-foreground text-xs"
+              className="px-3 py-1 text-md-sys-on-surface text-xs"
             >
               {paginationLabels.next}
             </Button>
@@ -445,7 +445,7 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
   return (
     <PageLayout className="space-y-6">
       <PageHeader
-        icon={<FolderTree className="h-7 w-7 text-link shrink-0" />}
+        icon={<FolderTree className="h-7 w-7 text-md-sys-primary shrink-0" />}
         title={s.title}
         subtitle={subtitle}
       />
@@ -515,26 +515,26 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
           ) : null}
           {crawlSegments?.segments?.length ? (
             <Card className="mt-4" padding="tight" devData={crawlSegmentsDevData}>
-              <h3 className="text-sm font-bold text-foreground mb-1">{s.crawlSegmentsTitle}</h3>
-              <p className="text-xs text-muted-foreground mb-3">{s.crawlSegmentsHint}</p>
+              <h3 className="text-sm font-bold text-md-sys-on-surface mb-1">{s.crawlSegmentsTitle}</h3>
+              <p className="text-xs text-md-sys-on-surface-variant mb-3">{s.crawlSegmentsHint}</p>
               {crawlSegments.overall_health != null ? (
-                <p className="text-xs text-muted-foreground mb-3">
+                <p className="text-xs text-md-sys-on-surface-variant mb-3">
                   {s.crawlSegmentsOverall}:{' '}
-                  <span className="font-semibold text-foreground tabular-nums">{crawlSegments.overall_health}</span>
+                  <span className="font-semibold text-md-sys-on-surface tabular-nums">{crawlSegments.overall_health}</span>
                 </p>
               ) : null}
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-muted-foreground uppercase">
+                  <tr className="text-md-sys-on-surface-variant uppercase">
                     <th className="text-left py-2 pr-3">{s.crawlSegmentsPrefix}</th>
                     <th className="text-right py-2 px-3">{s.crawlSegmentsUrls}</th>
                     <th className="text-right py-2 pl-3">{s.crawlSegmentsHealth}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-muted">
+                <tbody className="divide-y divide-md-sys-outline-variant/40">
                   {crawlSegments.segments.map((seg: CrawlSegmentEntry) => (
                     <tr key={seg.prefix}>
-                      <td className="py-2 pr-3 font-mono text-foreground">
+                      <td className="py-2 pr-3 font-mono text-md-sys-on-surface">
                         {seg.prefix}
                         {seg.pattern_type === 'regex' && (
                           <span className="ml-1.5 inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium bg-blue-500/15 text-blue-400">regex</span>
@@ -550,12 +550,12 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
           ) : null}
           {topLinksByInlinks.length > 0 ? (
             <Card className="mt-4" padding="tight" devData={topInlinksDevData}>
-              <h3 className="text-sm font-bold text-foreground mb-3">Top pages by inlinks</h3>
+              <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">Top pages by inlinks</h3>
               <ul className="space-y-2 text-xs">
                 {topLinksByInlinks.map((link) => (
                   <li key={link.url} className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-muted-foreground truncate flex-1 min-w-0">{link.url}</span>
-                    <span className="tabular-nums text-muted-foreground">{Number(link.inlinks || 0).toLocaleString()}</span>
+                    <span className="font-mono text-md-sys-on-surface-variant truncate flex-1 min-w-0">{link.url}</span>
+                    <span className="tabular-nums text-md-sys-on-surface-variant">{Number(link.inlinks || 0).toLocaleString()}</span>
                     <UrlInspectorButton url={link.url} />
                   </li>
                 ))}
@@ -563,7 +563,7 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
             </Card>
           ) : null}
           {!tree ? (
-            <p className="text-muted-foreground text-sm py-8 text-center">
+            <p className="text-md-sys-on-surface-variant text-sm py-8 text-center">
               {filteredLinks.length === 0 && (data?.links?.length ?? 0) > 0 ? s.emptyFilter : s.empty}
             </p>
           ) : null}
@@ -574,7 +574,7 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
         <ViewTabPanel idPrefix="site-structure" tabId="tree">
           <Card padding="none" overflowHidden>
             {!tree ? (
-              <p className="text-muted-foreground text-sm py-12 text-center px-4">
+              <p className="text-md-sys-on-surface-variant text-sm py-12 text-center px-4">
                 {filteredLinks.length === 0 && (data?.links?.length ?? 0) > 0 ? s.emptyFilter : s.empty}
               </p>
             ) : (
@@ -637,7 +637,7 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
       {activeTab === 'graph' && data ? (
         <ViewTabPanel idPrefix="site-structure" tabId="graph">
           <Card padding="default">
-            <Suspense fallback={<p className="text-sm text-muted-foreground py-8 text-center">Loading link graph…</p>}>
+            <Suspense fallback={<p className="text-sm text-md-sys-on-surface-variant py-8 text-center">Loading link graph…</p>}>
               <SiteStructureLinkGraph />
             </Suspense>
           </Card>

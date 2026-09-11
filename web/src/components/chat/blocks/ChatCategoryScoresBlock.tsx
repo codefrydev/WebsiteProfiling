@@ -13,13 +13,13 @@ export default function ChatCategoryScoresBlock({ block }: { block: Block }) {
   const [view, setView] = useState<'gauges' | 'bars'>('gauges');
 
   return (
-    <div className="rounded-xl border border-default bg-[var(--chat-bg)]/60 p-4">
+    <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface/60 p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           {block.healthScore != null ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-md-sys-on-surface-variant">
               Health score:{' '}
-              <span className="font-semibold text-foreground">{block.healthScore}</span>
+              <span className="font-semibold text-md-sys-on-surface">{block.healthScore}</span>
             </p>
           ) : null}
         </div>
@@ -27,14 +27,14 @@ export default function ChatCategoryScoresBlock({ block }: { block: Block }) {
           <button
             type="button"
             onClick={() => setView('gauges')}
-            className={`rounded-md px-2 py-1 ${view === 'gauges' ? 'bg-brand-700/60 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`rounded-md px-2 py-1 ${view === 'gauges' ? 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface' : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface'}`}
           >
             {cb.viewGauges}
           </button>
           <button
             type="button"
             onClick={() => setView('bars')}
-            className={`rounded-md px-2 py-1 ${view === 'bars' ? 'bg-brand-700/60 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`rounded-md px-2 py-1 ${view === 'bars' ? 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface' : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface'}`}
           >
             {cb.viewBars}
           </button>
@@ -65,21 +65,21 @@ export default function ChatCategoryScoresBlock({ block }: { block: Block }) {
                 <div className="mb-1 flex items-center justify-between gap-2 text-xs">
                   <button
                     type="button"
-                    className="truncate text-left text-link hover:underline"
+                    className="truncate text-left text-md-sys-primary hover:underline"
                     onClick={() =>
                       suggestFollowUp(format(cb.askCategoryIssues, { category: cat.name }))
                     }
                   >
                     {cat.name}
                   </button>
-                  <span className="shrink-0 text-muted-foreground">
+                  <span className="shrink-0 text-md-sys-on-surface-variant">
                     {cat.score != null ? score : '—'}
                     {cat.issue_count != null ? ` · ${cat.issue_count} issues` : ''}
                   </span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-brand-700/40">
+                <div className="h-1.5 overflow-hidden rounded-full bg-md-sys-surface-container-high/40">
                   <div
-                    className="h-full rounded-full bg-link/70"
+                    className="h-full rounded-full bg-md-sys-primary/70"
                     style={{ width: `${pct}%` }}
                   />
                 </div>

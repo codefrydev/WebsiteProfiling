@@ -74,11 +74,11 @@ export default function PortfolioGroupList({
         {[0, 1, 2].map((i) => (
           <section
             key={i}
-            className="min-w-0 rounded-xl border border-default/80 bg-brand-900/20 px-3 py-2.5"
+            className="min-w-0 rounded-xl border border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/20 px-3 py-2.5"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
-                <Building2 className="h-4 w-4 shrink-0 text-muted-foreground/40" aria-hidden />
+                <Building2 className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant/40" aria-hidden />
                 <Skeleton className="h-4 w-28" />
               </div>
               <Skeleton className="h-4 w-20" />
@@ -97,25 +97,25 @@ export default function PortfolioGroupList({
           return (
             <section
               key={rootDomain}
-              className="animate-in min-w-0 rounded-xl border border-default/80 bg-brand-900/20"
+              className="animate-in min-w-0 rounded-xl border border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/20"
             >
               <button
                 type="button"
                 onClick={() => onToggleCollapsed(rootDomain)}
                 aria-expanded={!collapsed}
                 aria-controls={`portfolio-group-${rootDomain}`}
-                className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-brand-900/35"
+                className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-md-sys-surface-container-low/35"
               >
-                <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
-                  <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-md-sys-on-surface">
+                  <Building2 className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />
                   <span className="truncate">{rootDomain}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
-                  <span className="text-xs text-muted-foreground tabular-nums">
+                  <span className="text-xs text-md-sys-on-surface-variant tabular-nums">
                     {format(vh.groupPropertyCount, { count: items.length })}
                   </span>
                   <ChevronDown
-                    className={`h-4 w-4 text-muted-foreground transition-transform ${collapsed ? '' : 'rotate-180'}`}
+                    className={`h-4 w-4 text-md-sys-on-surface-variant transition-transform ${collapsed ? '' : 'rotate-180'}`}
                     aria-hidden
                   />
                 </span>

@@ -47,8 +47,8 @@ function viewLoading(label = 'Loading view…') {
   return (
     <div className="px-[var(--spacing-page-x)] pt-4 pb-6 sm:px-6 lg:px-8 lg:pt-5 lg:pb-8 space-y-4" role="status" aria-busy="true" aria-label={label}>
       <span className="sr-only">{label}</span>
-      <div className="h-8 w-56 max-w-[70%] animate-pulse rounded-md bg-brand-800/90 dark:bg-white/[0.07]" />
-      <div className="h-40 w-full rounded-xl border border-default animate-pulse bg-brand-800/40 dark:bg-white/[0.04]" />
+      <div className="h-8 w-56 max-w-[70%] animate-pulse rounded-md bg-md-sys-surface-container/90 dark:bg-white/[0.07]" />
+      <div className="h-40 w-full rounded-xl border border-md-sys-outline-variant/40 animate-pulse bg-md-sys-surface-container/40 dark:bg-white/[0.04]" />
     </div>
   );
 }
@@ -249,13 +249,13 @@ function AppContent({ slug }: SlugProps): ReactNode {
             <p className="text-red-700 dark:text-red-400 font-medium">
               {isDomainError ? strings.app.noReportForDomainTitle : strings.app.failedTitle}
             </p>
-            <p className="text-muted-foreground text-sm mt-2">{error}</p>
+            <p className="text-md-sys-on-surface-variant text-sm mt-2">{error}</p>
             {!isDomainError ? (
-              <p className="text-muted-foreground text-sm mt-4">{strings.app.failedHint}</p>
+              <p className="text-md-sys-on-surface-variant text-sm mt-4">{strings.app.failedHint}</p>
             ) : null}
             <Link
               to="/pipeline"
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
+              className="press mt-6 inline-flex items-center gap-2 rounded-full bg-md-sys-primary px-5 py-2.5 text-sm font-medium text-md-sys-on-primary hover:brightness-105 active:scale-[0.98] transition-all duration-200"
             >
               {strings.app.openRunAudit}
             </Link>

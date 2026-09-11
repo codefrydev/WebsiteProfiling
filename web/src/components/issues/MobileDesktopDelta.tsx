@@ -82,7 +82,7 @@ export default function MobileDesktopDelta({ runId }: Props) {
       <div className="flex items-center gap-2">
         <Smartphone className="h-4 w-4 text-blue-400 shrink-0" />
         <h3 className="text-sm font-semibold">Mobile vs Desktop differences</h3>
-        <span className="ml-auto text-xs text-muted-foreground">{rows.length} URL{rows.length !== 1 ? 's' : ''} differ</span>
+        <span className="ml-auto text-xs text-md-sys-on-surface-variant">{rows.length} URL{rows.length !== 1 ? 's' : ''} differ</span>
       </div>
 
       {/* Summary chips */}
@@ -108,7 +108,7 @@ export default function MobileDesktopDelta({ runId }: Props) {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-border text-left text-muted-foreground">
+            <tr className="border-b border-md-sys-outline-variant/40 text-left text-md-sys-on-surface-variant">
               <th className="pb-1.5 pr-3 font-medium">URL</th>
               <th className="pb-1.5 pr-3 font-medium">Difference</th>
               <th className="pb-1.5 pr-3 font-medium">Desktop</th>
@@ -124,10 +124,10 @@ export default function MobileDesktopDelta({ runId }: Props) {
               if (row.word_count_delta > 50) diffs.push('words');
 
               return (
-                <tr key={row.url} className="border-b border-border/50 hover:bg-muted/30">
+                <tr key={row.url} className="border-b border-md-sys-outline-variant/30 hover:bg-md-sys-surface-container-high/40">
                   <td className="py-1.5 pr-3 max-w-[260px]">
                     <span
-                      className="block truncate text-muted-foreground"
+                      className="block truncate text-md-sys-on-surface-variant"
                       title={row.url}
                     >
                       {row.url}
@@ -145,17 +145,17 @@ export default function MobileDesktopDelta({ runId }: Props) {
                       <div className={STATUS_CLS(row.desktop.status)}>{row.desktop.status}</div>
                     )}
                     {row.title_differs && (
-                      <div className="truncate text-muted-foreground" title={row.desktop.title}>
+                      <div className="truncate text-md-sys-on-surface-variant" title={row.desktop.title}>
                         {row.desktop.title || '–'}
                       </div>
                     )}
                     {row.h1_differs && !row.title_differs && (
-                      <div className="truncate text-muted-foreground" title={row.desktop.h1}>
+                      <div className="truncate text-md-sys-on-surface-variant" title={row.desktop.h1}>
                         H1: {row.desktop.h1 || '–'}
                       </div>
                     )}
                     {row.word_count_delta > 50 && !row.title_differs && !row.h1_differs && (
-                      <div className="text-muted-foreground">{row.desktop.word_count} words</div>
+                      <div className="text-md-sys-on-surface-variant">{row.desktop.word_count} words</div>
                     )}
                   </td>
                   <td className="py-1.5 max-w-[200px]">
@@ -163,17 +163,17 @@ export default function MobileDesktopDelta({ runId }: Props) {
                       <div className={STATUS_CLS(row.mobile.status)}>{row.mobile.status}</div>
                     )}
                     {row.title_differs && (
-                      <div className="truncate text-muted-foreground" title={row.mobile.title}>
+                      <div className="truncate text-md-sys-on-surface-variant" title={row.mobile.title}>
                         {row.mobile.title || '–'}
                       </div>
                     )}
                     {row.h1_differs && !row.title_differs && (
-                      <div className="truncate text-muted-foreground" title={row.mobile.h1}>
+                      <div className="truncate text-md-sys-on-surface-variant" title={row.mobile.h1}>
                         H1: {row.mobile.h1 || '–'}
                       </div>
                     )}
                     {row.word_count_delta > 50 && !row.title_differs && !row.h1_differs && (
-                      <div className="text-muted-foreground">{row.mobile.word_count} words</div>
+                      <div className="text-md-sys-on-surface-variant">{row.mobile.word_count} words</div>
                     )}
                   </td>
                 </tr>
@@ -182,7 +182,7 @@ export default function MobileDesktopDelta({ runId }: Props) {
           </tbody>
         </table>
         {rows.length > 50 && (
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-xs text-md-sys-on-surface-variant">
             Showing top 50 of {rows.length} differing URLs (sorted by severity).
           </p>
         )}

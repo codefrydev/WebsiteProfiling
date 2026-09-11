@@ -2,32 +2,32 @@ import { formatGscCtr } from '../../lib/gscMetrics';
 import type { ExportColumn, KeywordIntent, KeywordRow } from '@/types/components';
 
 export const INTENT_COLORS: Record<string, string> = {
-  informational: 'bg-blue-500/20 text-blue-700 dark:text-blue-300',
-  commercial: 'bg-purple-500/20 text-purple-700 dark:text-purple-300',
-  transactional: 'bg-green-500/20 text-green-700 dark:text-green-300',
-  navigational: 'bg-orange-500/20 text-orange-700 dark:text-orange-300',
+  informational: 'bg-md-sys-primary-container text-md-sys-on-primary-container border border-md-sys-primary/20',
+  commercial: 'bg-md-sys-tertiary-container text-md-sys-on-tertiary-container border border-md-sys-tertiary/20',
+  transactional: 'bg-md-sys-success-container text-md-sys-on-success-container border border-md-sys-success/20',
+  navigational: 'bg-md-sys-secondary-container text-md-sys-on-secondary-container border border-md-sys-outline-variant/30',
 };
 
 export const SOURCE_CONFIG: Record<string, { label: string; color: string }> = {
-  site: { label: 'Crawl', color: 'bg-sky-500/20 text-sky-700 dark:text-sky-300' },
-  'site+gsc': { label: 'Crawl + Search Console', color: 'bg-teal-500/20 text-teal-800 dark:text-teal-300' },
-  gsc: { label: 'Search Console', color: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' },
-  crawl_heuristic: { label: 'Estimated (crawl)', color: 'bg-orange-500/20 text-orange-800 dark:text-orange-300' },
-  suggest: { label: 'Google Suggest', color: 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300' },
-  youtube: { label: 'YouTube', color: 'bg-red-500/20 text-red-700 dark:text-red-300' },
-  questions: { label: 'Questions', color: 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-300' },
-  datamuse: { label: 'Related terms', color: 'bg-pink-500/20 text-pink-700 dark:text-pink-300' },
-  wiki: { label: 'Wikipedia', color: 'bg-gray-500/20 text-gray-700 dark:text-gray-300' },
-  planner: { label: 'Keyword Planner', color: 'bg-violet-500/20 text-violet-700 dark:text-violet-300' },
+  site: { label: 'Crawl', color: 'bg-md-sys-primary-container text-md-sys-on-primary-container' },
+  'site+gsc': { label: 'Crawl + Search Console', color: 'bg-md-sys-primary-container/80 text-md-sys-on-primary-container' },
+  gsc: { label: 'Search Console', color: 'bg-md-sys-success-container text-md-sys-on-success-container' },
+  crawl_heuristic: { label: 'Estimated (crawl)', color: 'bg-md-sys-surface-container-high text-md-sys-on-surface-variant' },
+  suggest: { label: 'Google Suggest', color: 'bg-md-sys-tertiary-container text-md-sys-on-tertiary-container' },
+  youtube: { label: 'YouTube', color: 'bg-md-sys-error-container text-md-sys-on-error-container' },
+  questions: { label: 'Questions', color: 'bg-md-sys-secondary-container text-md-sys-on-secondary-container' },
+  datamuse: { label: 'Related terms', color: 'bg-md-sys-tertiary-container/80 text-md-sys-on-tertiary-container' },
+  wiki: { label: 'Wikipedia', color: 'bg-md-sys-surface-container-highest text-md-sys-on-surface-variant' },
+  planner: { label: 'Keyword Planner', color: 'bg-md-sys-primary-container/60 text-md-sys-on-primary-container' },
 };
 
 export type IntentCounts = Record<KeywordIntent, number>;
 
 export function difficultyColor(kd: number): string {
-  if (kd <= 30) return 'text-green-700 dark:text-green-400';
-  if (kd <= 55) return 'text-yellow-700 dark:text-yellow-400';
-  if (kd <= 75) return 'text-orange-700 dark:text-orange-400';
-  return 'text-red-700 dark:text-red-400';
+  if (kd <= 30) return 'text-md-sys-success';
+  if (kd <= 55) return 'text-md-sys-primary';
+  if (kd <= 75) return 'text-md-sys-warning';
+  return 'text-md-sys-error';
 }
 
 export function buildIntentCounts(rows: KeywordRow[]): IntentCounts {

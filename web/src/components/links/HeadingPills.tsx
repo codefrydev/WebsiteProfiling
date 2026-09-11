@@ -2,12 +2,12 @@ import { useMemo } from 'react';
 import { ChevronRight, AlertTriangle } from 'lucide-react';
 
 const H_COLORS: Record<string, string> = {
-  h1: 'bg-blue-500/20 text-link-soft border-blue-500/30',
+  h1: 'bg-blue-500/20 text-md-sys-primary-soft border-blue-500/30',
   h2: 'bg-purple-500/20 text-purple-800 dark:text-purple-300 border-purple-500/30',
   h3: 'bg-teal-500/20 text-teal-800 dark:text-teal-300 border-teal-500/30',
-  h4: 'bg-brand-700/20 text-foreground border-brand-700/30',
-  h5: 'bg-brand-700/20 text-muted-foreground border-brand-700/30',
-  h6: 'bg-brand-700/20 text-muted-foreground border-brand-700/30',
+  h4: 'bg-md-sys-surface-container-high/20 text-md-sys-on-surface border-md-sys-outline-variant/50/30',
+  h5: 'bg-md-sys-surface-container-high/20 text-md-sys-on-surface-variant border-md-sys-outline-variant/50/30',
+  h6: 'bg-md-sys-surface-container-high/20 text-md-sys-on-surface-variant border-md-sys-outline-variant/50/30',
 };
 
 export interface HeadingPillsProps {
@@ -28,7 +28,7 @@ export default function HeadingPills({ sequence }: HeadingPillsProps) {
   }, [sequence]);
 
   if (!pills.length) {
-    return <span className="text-muted-foreground text-xs">No heading data</span>;
+    return <span className="text-md-sys-on-surface-variant text-xs">No heading data</span>;
   }
 
   let lastLevel = 0;
@@ -43,9 +43,9 @@ export default function HeadingPills({ sequence }: HeadingPillsProps) {
     <div className="flex flex-wrap gap-1 items-center">
       {items.map(({ h, skip }, i) => (
         <div key={i} className="flex items-center gap-1">
-          {i > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+          {i > 0 && <ChevronRight className="h-3 w-3 text-md-sys-on-surface-variant" />}
           <span
-            className={`text-xs px-2 py-0.5 rounded border font-mono ${H_COLORS[h] || 'bg-brand-700/20 text-muted-foreground border-brand-700/30'}`}
+            className={`text-xs px-2 py-0.5 rounded border font-mono ${H_COLORS[h] || 'bg-md-sys-surface-container-high/20 text-md-sys-on-surface-variant border-md-sys-outline-variant/50/30'}`}
             title={skip ? `⚠ Heading level skipped before ${h}` : h}
           >
             {h}

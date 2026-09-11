@@ -14,7 +14,7 @@ export interface DiagnosticGroupProps {
 function severityDot(s: string): string {
   if (s === 'critical' || s === 'high') return 'bg-red-500';
   if (s === 'medium') return 'bg-yellow-500';
-  return 'bg-brand-700';
+  return 'bg-md-sys-surface-container-high';
 }
 
 export default function DiagnosticGroup({ group, items, defaultOpen = false }: DiagnosticGroupProps) {
@@ -30,21 +30,21 @@ export default function DiagnosticGroup({ group, items, defaultOpen = false }: D
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 px-5 py-4 bg-brand-800 hover:bg-brand-700 transition-colors text-left"
+        className="w-full flex items-center gap-3 px-5 py-4 bg-md-sys-surface-container hover:bg-md-sys-surface-container-high transition-colors text-left"
       >
         <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${severityDot(maxSeverity)}`} />
         <span className={`text-sm font-semibold ${group.color}`}>{group.label}</span>
-        <span className="text-xs bg-brand-700/60 text-muted-foreground px-2 py-0.5 rounded-full">
+        <span className="text-xs bg-md-sys-surface-container-high/60 text-md-sys-on-surface-variant px-2 py-0.5 rounded-full">
           {items.length} issue{items.length !== 1 ? 's' : ''}
         </span>
         <div className="flex-1" />
         {open
-          ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-          : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          ? <ChevronUp className="h-4 w-4 text-md-sys-on-surface-variant" />
+          : <ChevronDown className="h-4 w-4 text-md-sys-on-surface-variant" />}
       </button>
 
       {open && (
-          <div className="divide-y divide-muted p-3 space-y-2 bg-brand-900">
+          <div className="divide-y divide-md-sys-outline-variant/40 p-3 space-y-2 bg-md-sys-surface-container-low">
           {items.map((d, i) => <DiagnosticItem key={i} d={d} />)}
         </div>
       )}

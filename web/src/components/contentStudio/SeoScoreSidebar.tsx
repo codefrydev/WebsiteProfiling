@@ -55,18 +55,18 @@ export default function SeoScoreSidebar({ score, loading, error, keyword }: SeoS
 
   if (!keyword.trim()) {
     return (
-      <aside className="rounded-xl border border-default bg-[var(--chat-bg)] p-4 text-sm text-muted-foreground">
+      <aside className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface p-4 text-sm text-md-sys-on-surface-variant">
         {s.noKeyword}
       </aside>
     );
   }
 
   return (
-    <aside className="space-y-4 rounded-xl border border-default bg-[var(--chat-bg)] p-4 text-sm">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{s.provenanceBanner}</p>
+    <aside className="space-y-4 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface p-4 text-sm">
+      <p className="text-[10px] uppercase tracking-wide text-md-sys-on-surface-variant">{s.provenanceBanner}</p>
 
       {loading && !score ? (
-        <p className="text-muted-foreground">{s.scoring}</p>
+        <p className="text-md-sys-on-surface-variant">{s.scoring}</p>
       ) : null}
       {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
 
@@ -76,7 +76,7 @@ export default function SeoScoreSidebar({ score, loading, error, keyword }: SeoS
             <span className={`text-3xl font-bold tabular-nums ${gradeColor(score.grade_label)}`}>
               {score.grade_label}
             </span>
-            <span className="text-muted-foreground tabular-nums">({score.grade_score}/100)</span>
+            <span className="text-md-sys-on-surface-variant tabular-nums">({score.grade_score}/100)</span>
           </div>
 
           <WordCountTile score={score} />
@@ -85,7 +85,7 @@ export default function SeoScoreSidebar({ score, loading, error, keyword }: SeoS
           <TermsSection terms={score.terms} />
 
           <div>
-            <h3 className="text-xs font-semibold text-foreground mb-2">{s.checksTitle}</h3>
+            <h3 className="text-xs font-semibold text-md-sys-on-surface mb-2">{s.checksTitle}</h3>
             <ul className="space-y-2">
               {score.checks.map((c) => (
                 <li key={c.id} className="text-xs">
@@ -98,7 +98,7 @@ export default function SeoScoreSidebar({ score, loading, error, keyword }: SeoS
           </div>
         </>
       ) : !loading && !error ? (
-        <p className="text-muted-foreground text-xs">{s.startWriting}</p>
+        <p className="text-md-sys-on-surface-variant text-xs">{s.startWriting}</p>
       ) : null}
     </aside>
   );
@@ -114,15 +114,15 @@ function WordCountTile({ score }: { score: ContentScoreResult }) {
   return (
     <div>
       <div className="flex items-baseline justify-between text-xs">
-        <span className="text-muted-foreground">{s.wordCount}</span>
+        <span className="text-md-sys-on-surface-variant">{s.wordCount}</span>
         <span className="tabular-nums">
-          <span className="font-medium text-foreground">{score.word_count.toLocaleString()}</span>
+          <span className="font-medium text-md-sys-on-surface">{score.word_count.toLocaleString()}</span>
           {target > 0 ? (
-            <span className="text-muted-foreground"> · {format(s.wordCountTarget, { target: target.toLocaleString() })}</span>
+            <span className="text-md-sys-on-surface-variant"> · {format(s.wordCountTarget, { target: target.toLocaleString() })}</span>
           ) : null}
         </span>
       </div>
-      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-brand-800">
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-md-sys-surface-container">
         <div className={`h-full rounded-full transition-all ${bar}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -134,7 +134,7 @@ function ReadingLevelTile({ score }: { score: ContentScoreResult }) {
   const grade = score.reading_level;
   const target = score.reading_level_target || 12;
   let label = s.readabilityNone;
-  let tone = 'text-muted-foreground';
+  let tone = 'text-md-sys-on-surface-variant';
   if (grade > 0) {
     if (grade <= target) {
       label = s.readabilityClear;
@@ -149,9 +149,9 @@ function ReadingLevelTile({ score }: { score: ContentScoreResult }) {
   }
   return (
     <div className="flex items-baseline justify-between text-xs">
-      <span className="text-muted-foreground">{s.readingLevel}</span>
+      <span className="text-md-sys-on-surface-variant">{s.readingLevel}</span>
       <span className="tabular-nums">
-        <span className="font-medium text-foreground">{format(s.readingGrade, { grade })}</span>
+        <span className="font-medium text-md-sys-on-surface">{format(s.readingGrade, { grade })}</span>
         <span className={`ml-1.5 ${tone}`}>· {label}</span>
       </span>
     </div>
@@ -185,11 +185,11 @@ function TermRow({ t }: { t: ContentScoreTerm }) {
           {covered ? (
             <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
           ) : (
-            <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50" aria-hidden />
+            <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-md-sys-on-surface-variant/50" aria-hidden />
           )}
           <span className="min-w-0">
             <span className={`block truncate text-xs font-medium ${tone.text}`}>{t.term}</span>
-            <span className="block text-[10px] text-muted-foreground">
+            <span className="block text-[10px] text-md-sys-on-surface-variant">
               {format(s.recommendedRange, { low, high })} · {format(s.yourUses, { count: t.count })}
             </span>
           </span>
@@ -200,7 +200,7 @@ function TermRow({ t }: { t: ContentScoreTerm }) {
           </span>
         ) : null}
       </div>
-      <div className="h-1 w-full overflow-hidden rounded-full bg-brand-800">
+      <div className="h-1 w-full overflow-hidden rounded-full bg-md-sys-surface-container">
         <div className={`h-full rounded-full transition-all ${tone.bar}`} style={{ width: `${pct}%` }} />
       </div>
     </li>
@@ -233,9 +233,9 @@ function TermsSection({ terms }: { terms: ContentScoreTerm[] }) {
   return (
     <div>
       <div className="mb-2 flex items-baseline justify-between">
-        <h3 className="text-xs font-semibold text-foreground">{s.termsTitle}</h3>
+        <h3 className="text-xs font-semibold text-md-sys-on-surface">{s.termsTitle}</h3>
         {terms.length > 0 ? (
-          <span className="text-[10px] tabular-nums text-muted-foreground">
+          <span className="text-[10px] tabular-nums text-md-sys-on-surface-variant">
             {format(s.termsCovered, { covered, total: terms.length })}
           </span>
         ) : null}
@@ -246,14 +246,14 @@ function TermsSection({ terms }: { terms: ContentScoreTerm[] }) {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as TermSort)}
-            className="rounded-md border border-default bg-[var(--chat-surface)] px-1.5 py-1 text-[11px] text-foreground focus:outline-none"
+            className="rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-1.5 py-1 text-[11px] text-md-sys-on-surface focus:outline-none"
             aria-label={s.sortImportance}
           >
             <option value="importance">{s.sortImportance}</option>
             <option value="coverage">{s.sortCoverage}</option>
             <option value="alpha">{s.sortAlpha}</option>
           </select>
-          <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground">
+          <label className="flex cursor-pointer items-center gap-1 text-[11px] text-md-sys-on-surface-variant">
             <input type="checkbox" checked={grouped} onChange={(e) => setGrouped(e.target.checked)} className="h-3 w-3" />
             {s.groupByImportance}
           </label>
@@ -261,7 +261,7 @@ function TermsSection({ terms }: { terms: ContentScoreTerm[] }) {
             type="button"
             onClick={copyTerms}
             title={s.copyTerms}
-            className="ml-auto flex items-center gap-1 rounded-md border border-default px-1.5 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+            className="press ml-auto flex items-center gap-1 rounded-full border border-md-sys-outline-variant/40 px-2.5 py-1 text-[11px] font-medium text-md-sys-on-surface-variant hover:text-md-sys-on-surface active:scale-[0.98] transition-all"
           >
             <Copy className="h-3 w-3" aria-hidden />
             {copied ? s.copied : null}
@@ -270,12 +270,12 @@ function TermsSection({ terms }: { terms: ContentScoreTerm[] }) {
       ) : null}
 
       {sorted.length === 0 ? (
-        <p className="text-xs text-muted-foreground">{s.noTerms}</p>
+        <p className="text-xs text-md-sys-on-surface-variant">{s.noTerms}</p>
       ) : grouped ? (
         <div className="max-h-72 space-y-3 overflow-y-auto">
           {high.length > 0 ? (
             <div>
-              <p className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">{s.groupHigh}</p>
+              <p className="mb-1 text-[10px] uppercase tracking-wide text-md-sys-on-surface-variant">{s.groupHigh}</p>
               <ul className="space-y-2">
                 {high.map((t) => (
                   <TermRow key={t.term} t={t} />
@@ -285,7 +285,7 @@ function TermsSection({ terms }: { terms: ContentScoreTerm[] }) {
           ) : null}
           {other.length > 0 ? (
             <div>
-              <p className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">{s.groupOther}</p>
+              <p className="mb-1 text-[10px] uppercase tracking-wide text-md-sys-on-surface-variant">{s.groupOther}</p>
               <ul className="space-y-2">
                 {other.map((t) => (
                   <TermRow key={t.term} t={t} />

@@ -78,7 +78,7 @@ function UrlDiffTable({
   copyLabel: string;
 }) {
   if (urls.length === 0) {
-    return <p className="text-sm text-muted-foreground py-4">{emptyLabel}</p>;
+    return <p className="text-sm text-md-sys-on-surface-variant py-4">{emptyLabel}</p>;
   }
   return (
     <>
@@ -86,12 +86,12 @@ function UrlDiffTable({
         <button
           type="button"
           onClick={() => onCopy(urls)}
-          className="text-xs text-link hover:underline font-medium"
+          className="text-xs text-md-sys-primary hover:underline font-medium"
         >
           {copyLabel}
         </button>
       </div>
-      <div className="max-h-[min(480px,55vh)] overflow-y-auto border border-default rounded-lg">
+      <div className="max-h-[min(480px,55vh)] overflow-y-auto border border-md-sys-outline-variant/40 rounded-2xl">
         <Table>
           <TableHead sticky>
             <tr>
@@ -287,20 +287,20 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
       <Card shadow>
         <div className="flex items-center gap-2 mb-4">
           <ArrowLeftRight className="h-5 w-5 text-cyan-700 dark:text-cyan-400 shrink-0" />
-          <h2 className="text-sm font-bold text-foreground">{vc.selectReports}</h2>
+          <h2 className="text-sm font-bold text-md-sys-on-surface">{vc.selectReports}</h2>
         </div>
         <ReportCompareControls />
         {reportList.length >= 2 && newerRow && baselineRow && compareReportId != null ? (
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded-md bg-blue-500/15 border border-blue-500/30 px-2 py-1 text-link">
+            <span className="rounded-full bg-blue-500/15 border border-blue-500/30 px-3 py-1 text-md-sys-primary font-medium">
               {vc.newerLabel}: {formatReportGeneratedAt(newerRow.generated_at)}
             </span>
-            <span className="rounded-md bg-brand-900 border border-default px-2 py-1 text-muted-foreground">
+            <span className="rounded-full bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 px-3 py-1 text-md-sys-on-surface-variant font-medium">
               {vc.baselineLabel}: {formatReportGeneratedAt(baselineRow.generated_at)}
             </span>
             <button
               type="button"
-              className="ml-auto px-3 py-1.5 rounded-lg border border-default bg-brand-800 hover:bg-brand-700 text-foreground text-xs font-medium"
+              className="ml-auto px-4 py-1.5 rounded-full border border-md-sys-outline-variant/50 bg-md-sys-surface-container hover:bg-md-sys-surface-container-high text-md-sys-on-surface text-xs font-medium active:scale-[0.98] transition-all"
               onClick={() => {
                 void apiFetch(apiUrl('/compare/export'), {
                   method: 'POST',
@@ -331,7 +331,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
           </div>
         ) : null}
         {reportList.length >= 2 && compareReportId == null && !loading && !error ? (
-          <p className="text-sm text-muted-foreground mt-4">{vc.pickBaseline}</p>
+          <p className="text-sm text-md-sys-on-surface-variant mt-4">{vc.pickBaseline}</p>
         ) : null}
       </Card>
 
@@ -343,7 +343,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
             </AlertBanner>
           ) : null}
 
-          <div className="flex flex-wrap gap-1 border-b border-default pb-1 overflow-x-auto">
+          <div className="flex flex-wrap gap-1 border-b border-md-sys-outline-variant/40 pb-1 overflow-x-auto">
             {visibleTabs.map((id) => {
               let badge: number | null = null;
               if (reportCompare && id !== 'overview' && id !== 'audit') {
@@ -375,8 +375,8 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                   onClick={() => setTab(id)}
                   className={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap shrink-0 ${
                     tab === id
-                      ? 'bg-blue-500/15 text-link border border-b-0 border-blue-500/30 -mb-px'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-blue-500/15 text-md-sys-primary border border-b-0 border-blue-500/30 -mb-px'
+                      : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                   }`}
                 >
                   {tabLabels[id]}
@@ -390,7 +390,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
 
           {tab === 'overview' ? (
             <div className="space-y-6">
-              <Suspense fallback={<div className="h-56 rounded-xl bg-brand-800/40 animate-pulse" />}>
+              <Suspense fallback={<div className="h-56 rounded-xl bg-md-sys-surface-container/40 animate-pulse" />}>
                 <CompareOverviewCharts
                   compare={reportCompare}
                   metrics={reportCompare.metrics}
@@ -399,8 +399,8 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
               </Suspense>
 
               <div>
-                <h3 className="text-sm font-bold text-foreground mb-1">{vc.siteMetrics}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vc.siteMetricsHint}</p>
+                <h3 className="text-sm font-bold text-md-sys-on-surface mb-1">{vc.siteMetrics}</h3>
+                <p className="text-xs text-md-sys-on-surface-variant mb-3">{vc.siteMetricsHint}</p>
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                   {reportCompare.metrics.map((row) => (
                     <CompareMetricCard key={row.id} row={row} />
@@ -415,7 +415,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                 urlLists.structureChanged.length > 0) ? (
                 <>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <Suspense fallback={<div className="h-56 rounded-xl bg-brand-800/40 animate-pulse" />}>
+                  <Suspense fallback={<div className="h-56 rounded-xl bg-md-sys-surface-container/40 animate-pulse" />}>
                     <CompareUrlChangeChart
                       newCount={urlLists.newUrls.length}
                       removedCount={urlLists.removedUrls.length}
@@ -427,34 +427,34 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <Card className="p-4">
-                    <div className="text-muted-foreground text-xs uppercase tracking-wider">
+                    <div className="text-md-sys-on-surface-variant text-xs uppercase tracking-wider">
                       <LabelWithHint label={vo.newUrls} helpKey="views.compare.newUrls" />
                     </div>
                     <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{urlLists.newUrls.length}</div>
                   </Card>
                   <Card className="p-4">
-                    <div className="text-muted-foreground text-xs uppercase tracking-wider">
+                    <div className="text-md-sys-on-surface-variant text-xs uppercase tracking-wider">
                       <LabelWithHint label={vo.removedUrls} helpKey="views.compare.removedUrls" />
                     </div>
                     <div className="text-2xl font-bold text-rose-700 dark:text-rose-400">{urlLists.removedUrls.length}</div>
                   </Card>
                   <Card className="p-4">
-                    <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.contentChanged}</div>
+                    <div className="text-md-sys-on-surface-variant text-xs uppercase tracking-wider">{vo.contentChanged}</div>
                     <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">{urlLists.contentChanged.length}</div>
                   </Card>
                   <Card className="p-4">
-                    <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.structureChanged}</div>
-                    <div className="text-2xl font-bold text-foreground">{urlLists.structureChanged.length}</div>
+                    <div className="text-md-sys-on-surface-variant text-xs uppercase tracking-wider">{vo.structureChanged}</div>
+                    <div className="text-2xl font-bold text-md-sys-on-surface">{urlLists.structureChanged.length}</div>
                   </Card>
                 </div>
                 </>
               ) : (
                 <Card shadow>
-                  <p className="text-sm text-muted-foreground">{vc.noDifferences}</p>
+                  <p className="text-sm text-md-sys-on-surface-variant">{vc.noDifferences}</p>
                 </Card>
               )}
 
-              <p className="text-xs text-muted-foreground max-w-3xl">{vo.reportComparisonHint}</p>
+              <p className="text-xs text-md-sys-on-surface-variant max-w-3xl">{vo.reportComparisonHint}</p>
             </div>
           ) : null}
 
@@ -466,10 +466,10 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                     key={id}
                     type="button"
                     onClick={() => setUrlTab(id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-[0.98] ${
                       urlTab === id
-                        ? 'bg-blue-500/15 border-blue-500/35 text-link'
-                        : 'border-default text-muted-foreground hover:text-foreground'
+                        ? 'bg-blue-500/15 border-blue-500/35 text-md-sys-primary shadow-elevation-1'
+                        : 'border-md-sys-outline-variant/40 text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                     }`}
                   >
                     {label} ({count})
@@ -496,9 +496,9 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
 
           {tab === 'status' ? (
             <Card shadow>
-              <h3 className="text-sm font-bold text-foreground mb-3">{vc.statusChanges}</h3>
+              <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vc.statusChanges}</h3>
               {statusFiltered.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">{vc.unchangedSummary}</p>
+                <p className="text-sm text-md-sys-on-surface-variant py-4">{vc.unchangedSummary}</p>
               ) : (
                 <div className="max-h-[min(480px,55vh)] overflow-y-auto">
                   <Table>
@@ -542,7 +542,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
             <div className="space-y-6">
               {reportCompare.categoryScores.length > 0 ? (
                 <Card shadow>
-                  <h3 className="text-sm font-bold text-foreground mb-3">{vc.categoryScores}</h3>
+                  <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vc.categoryScores}</h3>
                   <Table>
                     <TableHead>
                       <tr>
@@ -557,7 +557,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                         <TableRow key={row.id}>
                           <TableCell className="font-medium">{row.name}</TableCell>
                           <TableCell className="tabular-nums">{row.current ?? '—'}</TableCell>
-                          <TableCell className="tabular-nums text-muted-foreground">{row.baseline ?? '—'}</TableCell>
+                          <TableCell className="tabular-nums text-md-sys-on-surface-variant">{row.baseline ?? '—'}</TableCell>
                           <TableCell>
                             <ScoreDelta delta={row.delta} />
                           </TableCell>
@@ -568,13 +568,13 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                 </Card>
               ) : (
                 <Card shadow>
-                  <p className="text-sm text-muted-foreground">{vc.unchangedSummary}</p>
+                  <p className="text-sm text-md-sys-on-surface-variant">{vc.unchangedSummary}</p>
                 </Card>
               )}
 
               {reportCompare.seoHealth.length > 0 ? (
                 <Card shadow>
-                  <h3 className="text-sm font-bold text-foreground mb-3">{vc.seoSignals}</h3>
+                  <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vc.seoSignals}</h3>
                   <Table>
                     <TableHead>
                       <tr>
@@ -589,7 +589,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                         <TableRow key={row.id}>
                           <TableCell>{row.label}</TableCell>
                           <TableCell className="tabular-nums">{row.current}</TableCell>
-                          <TableCell className="tabular-nums text-muted-foreground">{row.baseline}</TableCell>
+                          <TableCell className="tabular-nums text-md-sys-on-surface-variant">{row.baseline}</TableCell>
                           <TableCell>
                             <ScoreDelta delta={row.delta} higherIsBetter={row.higherIsBetter} />
                           </TableCell>
@@ -606,11 +606,11 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
               <div className="flex items-start gap-2 min-w-0">
                 <FolderTree className="h-5 w-5 text-cyan-700 dark:text-cyan-400 shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground">{vc.siteStructureHint}</p>
+                <p className="text-sm text-md-sys-on-surface-variant">{vc.siteStructureHint}</p>
               </div>
               <Link
                 to={siteStructureHref}
-                className="shrink-0 inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
+                className="shrink-0 inline-flex items-center justify-center rounded-full bg-md-sys-primary px-5 py-2 text-sm font-medium text-md-sys-on-primary shadow-elevation-1 hover:shadow-elevation-2 active:scale-[0.98] transition-all"
               >
                 {vc.openSiteStructure}
               </Link>
@@ -621,7 +621,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
 
       {!loading && !error && reportList.length >= 2 && compareReportId != null && !reportCompare ? (
         <Card shadow>
-          <p className="text-sm text-muted-foreground">{vc.urlChangeListsUnavailable}</p>
+          <p className="text-sm text-md-sys-on-surface-variant">{vc.urlChangeListsUnavailable}</p>
         </Card>
       ) : null}
     </PageLayout>

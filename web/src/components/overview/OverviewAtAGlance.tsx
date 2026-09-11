@@ -52,7 +52,7 @@ function WidgetLink({
       {children}
       <Link
         to={href}
-        className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-link hover:underline sm:text-xs"
+        className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-md-sys-primary hover:underline sm:text-xs"
       >
         {label}
         <ChevronRight className="h-3 w-3" />
@@ -184,11 +184,11 @@ export function OverviewAtAGlance({
   if (!showHeader) return grid;
 
   return (
-    <Card shadow className="border border-default">
+    <Card shadow className="border border-md-sys-outline-variant/40">
       <div className="p-4 sm:p-5">
         <div className="mb-4">
-          <h2 className="text-lg font-bold text-bright">{vo.atAGlanceTitle}</h2>
-          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{vo.atAGlanceHint}</p>
+          <h2 className="text-lg font-bold text-md-sys-on-surface">{vo.atAGlanceTitle}</h2>
+          <p className="mt-1 text-xs text-md-sys-on-surface-variant sm:text-sm">{vo.atAGlanceHint}</p>
         </div>
         {grid}
       </div>

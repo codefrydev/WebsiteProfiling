@@ -13,16 +13,16 @@ export default function ChatLighthouseBlock({ block }: { block: Block }) {
     .map(([k, v]) => `${lhLabels[k] || k}: ${v}`);
 
   return (
-    <div className="rounded-xl border border-default bg-[var(--chat-bg)]/60 p-4">
-      <p className="mb-3 text-sm font-medium text-bright">{cb.lighthouseScores}</p>
+    <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface/60 p-4">
+      <p className="mb-3 text-sm font-medium text-md-sys-on-surface">{cb.lighthouseScores}</p>
       <LighthouseScoreGrid
         scores={block.scores}
         categoryLabels={lhLabels}
         aria={ariaParts.join(', ')}
       />
       {block.poorPages.length > 0 ? (
-        <div className="mt-4 border-t border-muted/30 pt-3">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">{cb.poorPerformance}</p>
+        <div className="mt-4 border-t border-md-sys-outline-variant/30 pt-3">
+          <p className="mb-2 text-xs font-medium text-md-sys-on-surface-variant">{cb.poorPerformance}</p>
           <ul className="space-y-1 text-xs">
             {block.poorPages.map((p) => (
               <li key={p.url} className="flex justify-between gap-2">
@@ -30,12 +30,12 @@ export default function ChatLighthouseBlock({ block }: { block: Block }) {
                   href={p.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="truncate font-mono text-link hover:underline"
+                  className="truncate font-mono text-md-sys-primary hover:underline"
                   title={p.url}
                 >
                   {p.url}
                 </a>
-                <span className="shrink-0 tabular-nums text-muted-foreground">{p.performance}</span>
+                <span className="shrink-0 tabular-nums text-md-sys-on-surface-variant">{p.performance}</span>
               </li>
             ))}
           </ul>

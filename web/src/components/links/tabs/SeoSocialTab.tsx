@@ -38,12 +38,12 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
   return (
     <div className="space-y-6">
       <div>
-        <div className="text-xs text-muted-foreground mb-2">SERP snippet preview</div>
+        <div className="text-xs text-md-sys-on-surface-variant mb-2">SERP snippet preview</div>
         <SerpPreview link={link} />
       </div>
-      <div className="bg-brand-900 border border-default rounded-xl p-4 space-y-3">
+      <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="text-xs text-muted-foreground">{s.canonicalUrl}</div>
+          <div className="text-xs text-md-sys-on-surface-variant">{s.canonicalUrl}</div>
           <CopyBtn text={link.canonical_url} />
         </div>
         {link.canonical_url ? (
@@ -51,7 +51,7 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
             href={link.canonical_url}
             target="_blank"
             rel="noreferrer"
-            className="text-xs font-mono text-link hover:underline break-all"
+            className="text-xs font-mono text-md-sys-primary hover:underline break-all"
           >
             {link.canonical_url}
           </a>
@@ -62,8 +62,8 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
 
       <div className="grid grid-cols-3 gap-3">
         {flagItems.map(({ label, value, bad }) => (
-          <div key={label} className="bg-brand-900 border border-default rounded-xl p-3 flex flex-col items-center gap-2">
-            <div className="text-xs text-muted-foreground">{label}</div>
+          <div key={label} className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-3 flex flex-col items-center gap-2">
+            <div className="text-xs text-md-sys-on-surface-variant">{label}</div>
             {value
               ? bad ? <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" /> : <CheckCircle className="h-6 w-6 text-green-700 dark:text-green-400" />
               : bad ? <CheckCircle className="h-6 w-6 text-green-700 dark:text-green-400" /> : <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />}
@@ -75,7 +75,7 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
       </div>
 
       <div>
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{s.openGraphHeading}</h3>
+        <h3 className="text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider mb-3">{s.openGraphHeading}</h3>
         <div className="flex flex-col sm:flex-row gap-4">
           <OGPreview
             url={link.url}
@@ -85,12 +85,12 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
           />
           <div className="flex-1 space-y-2">
             {ogFields.map(({ label, value }) => (
-              <div key={label} className="bg-brand-900 border border-default rounded-lg p-3">
+              <div key={label} className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-mono text-muted-foreground">{label}</span>
+                  <span className="text-xs font-mono text-md-sys-on-surface-variant">{label}</span>
                   {value && <CopyBtn text={value} />}
                 </div>
-                <span className={`text-xs ${value ? 'text-foreground' : 'text-red-600 dark:text-red-400'}`}>
+                <span className={`text-xs ${value ? 'text-md-sys-on-surface' : 'text-red-600 dark:text-red-400'}`}>
                   {value || s.missingValue}
                 </span>
               </div>
@@ -100,17 +100,17 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
       </div>
 
       <div>
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{s.twitterCardHeading}</h3>
+        <h3 className="text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider mb-3">{s.twitterCardHeading}</h3>
         <div className="grid grid-cols-2 gap-3">
           {twitterFields.map(({ label, value }) => (
             <div
               key={label}
               className={`border rounded-xl p-3 ${value ? 'border-green-700/40 bg-green-500/5' : 'border-red-700/40 bg-red-500/5'}`}
             >
-              <div className="text-xs font-mono text-muted-foreground mb-1">{label}</div>
+              <div className="text-xs font-mono text-md-sys-on-surface-variant mb-1">{label}</div>
               <div className="flex items-center gap-2">
                 {value ? <CheckCircle className="h-3.5 w-3.5 text-green-700 dark:text-green-400 shrink-0" /> : <XCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 shrink-0" />}
-                <span className={`text-xs ${value ? 'text-foreground' : 'text-red-600 dark:text-red-400'}`}>
+                <span className={`text-xs ${value ? 'text-md-sys-on-surface' : 'text-red-600 dark:text-red-400'}`}>
                   {value || s.missingValue}
                 </span>
               </div>
@@ -121,14 +121,14 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
 
       {techStack.length > 0 && (
         <div>
-          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{s.detectedTech}</h3>
+          <h3 className="text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider mb-3">{s.detectedTech}</h3>
           <div className="flex flex-wrap gap-2">
             {techStack.map((entry, i) => {
               const t = entry as TechStackEntry | string;
               return (
               <span
                 key={i}
-                className="text-xs bg-brand-900 border border-default text-foreground px-2.5 py-1 rounded-full font-mono"
+                className="text-xs bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 text-md-sys-on-surface px-2.5 py-1 rounded-full font-mono"
               >
                 {typeof t === 'object' ? (t.name || t.tech || JSON.stringify(t)) : t}
               </span>

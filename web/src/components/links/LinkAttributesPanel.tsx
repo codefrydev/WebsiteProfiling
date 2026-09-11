@@ -86,7 +86,7 @@ export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAt
       render: (v) => {
         const pos = String(v ?? '').toLowerCase();
         if (!pos) return null;
-        const cls = POSITION_COLORS[pos] ?? 'bg-brand-700/30 text-muted-foreground';
+        const cls = POSITION_COLORS[pos] ?? 'bg-md-sys-surface-container-high/30 text-md-sys-on-surface-variant';
         return (
           <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>
             {pos}
@@ -113,11 +113,11 @@ export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAt
       />
       {summary ? (
         <Card devData={summaryDevData ?? undefined} className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
-          <div><span className="text-muted-foreground">{labels.total}</span><div className="font-semibold">{(summary.total_edges ?? 0).toLocaleString()}</div></div>
-          <div><span className="text-muted-foreground">{labels.internal}</span><div className="font-semibold">{(summary.internal_edges ?? 0).toLocaleString()}</div></div>
-          <div><span className="text-muted-foreground">{labels.nofollow}</span><div className="font-semibold">{(summary.nofollow_internal ?? 0).toLocaleString()}</div></div>
-          <div><span className="text-muted-foreground">{labels.sponsored}</span><div className="font-semibold">{(summary.sponsored_internal ?? 0).toLocaleString()}</div></div>
-          <div><span className="text-muted-foreground">{labels.external}</span><div className="font-semibold">{(summary.external_edges ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-md-sys-on-surface-variant">{labels.total}</span><div className="font-semibold">{(summary.total_edges ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-md-sys-on-surface-variant">{labels.internal}</span><div className="font-semibold">{(summary.internal_edges ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-md-sys-on-surface-variant">{labels.nofollow}</span><div className="font-semibold">{(summary.nofollow_internal ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-md-sys-on-surface-variant">{labels.sponsored}</span><div className="font-semibold">{(summary.sponsored_internal ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-md-sys-on-surface-variant">{labels.external}</span><div className="font-semibold">{(summary.external_edges ?? 0).toLocaleString()}</div></div>
         </Card>
       ) : null}
       {anchors?.length ? (

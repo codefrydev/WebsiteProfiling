@@ -168,7 +168,7 @@ export default function ContentEditor({
 
   const gradeBadge =
     score != null ? (
-      <span className="shrink-0 rounded border border-default bg-brand-800 px-1.5 py-0.5 text-[10px] font-bold tabular-nums sm:text-xs">
+      <span className="shrink-0 rounded border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-1.5 py-0.5 text-[10px] font-bold tabular-nums sm:text-xs">
         {score.grade_label} · {score.grade_score}
       </span>
     ) : null;
@@ -176,12 +176,12 @@ export default function ContentEditor({
   if (isPage) {
     return (
       <div className="flex h-full min-h-0 flex-col">
-        <div className="shrink-0 border-b border-muted/30 bg-[var(--chat-bg)]">
+        <div className="shrink-0 border-b border-md-sys-outline-variant/30 bg-md-sys-surface">
           <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               {siteLabel ? (
                 <span
-                  className="hidden shrink-0 truncate text-[10px] text-muted-foreground sm:inline-block sm:max-w-[7rem]"
+                  className="hidden shrink-0 truncate text-[10px] text-md-sys-on-surface-variant sm:inline-block sm:max-w-[7rem]"
                   title={siteLabel}
                 >
                   {siteLabel}
@@ -193,14 +193,14 @@ export default function ContentEditor({
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={readOnly}
                 placeholder={s.draftTitlePlaceholder}
-                className="min-w-0 flex-1 bg-transparent text-base font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60 sm:text-lg"
+                className="min-w-0 flex-1 bg-transparent text-base font-semibold text-md-sys-on-surface placeholder:text-md-sys-on-surface-variant/60 focus:outline-none disabled:opacity-60 sm:text-lg"
               />
             </div>
             <label
-              className="flex shrink-0 cursor-pointer select-none items-center gap-1.5 text-xs text-muted-foreground"
+              className="flex shrink-0 cursor-pointer select-none items-center gap-1.5 text-xs text-md-sys-on-surface-variant"
               title={ai.toggleLabel}
             >
-              <Sparkles className="h-3.5 w-3.5 text-link" aria-hidden />
+              <Sparkles className="h-3.5 w-3.5 text-md-sys-primary" aria-hidden />
               <button
                 type="button"
                 role="switch"
@@ -208,7 +208,7 @@ export default function ContentEditor({
                 aria-label={ai.toggleLabel}
                 onClick={() => onAiSuggestionsEnabledChange?.(!aiSuggestionsEnabled)}
                 className={`relative h-4 w-7 rounded-full transition-colors ${
-                  aiSuggestionsEnabled ? 'bg-blue-600' : 'bg-brand-700'
+                  aiSuggestionsEnabled ? 'bg-md-sys-primary' : 'bg-md-sys-surface-container-high'
                 }`}
               >
                 <span
@@ -255,7 +255,7 @@ export default function ContentEditor({
               onChange={(e) => setKeyword(e.target.value)}
               disabled={readOnly}
               placeholder={s.targetKeyword}
-              className="min-w-[7rem] flex-1 rounded-md border border-default bg-[var(--chat-surface)] px-2 py-1 text-xs text-foreground focus:border-blue-500 focus:outline-none disabled:opacity-60"
+              className="min-w-[7rem] flex-1 rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-blue-500 focus:outline-none disabled:opacity-60"
             />
             <input
               type="url"
@@ -263,12 +263,12 @@ export default function ContentEditor({
               onChange={(e) => setLandingUrl(e.target.value)}
               disabled={readOnly}
               placeholder={s.landingUrl}
-              className="min-w-[9rem] flex-[2] rounded-md border border-default bg-[var(--chat-surface)] px-2 py-1 text-xs text-foreground focus:border-blue-500 focus:outline-none disabled:opacity-60"
+              className="min-w-[9rem] flex-[2] rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-blue-500 focus:outline-none disabled:opacity-60"
             />
             <button
               type="button"
               onClick={() => setSeoOpen((v) => !v)}
-              className="shrink-0 text-xs text-link hover:underline"
+              className="shrink-0 text-xs text-md-sys-primary hover:underline"
             >
               {seoOpen ? s.hideSeoFields : s.showSeoFields}
             </button>
@@ -282,7 +282,7 @@ export default function ContentEditor({
                 onChange={(e) => setTitleTag(e.target.value)}
                 disabled={readOnly}
                 placeholder={s.titleTag}
-                className="rounded-md border border-default bg-[var(--chat-surface)] px-2 py-1 text-xs text-foreground focus:border-blue-500 focus:outline-none disabled:opacity-60"
+                className="rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-blue-500 focus:outline-none disabled:opacity-60"
               />
               <input
                 type="text"
@@ -290,7 +290,7 @@ export default function ContentEditor({
                 onChange={(e) => setMetaDescription(e.target.value)}
                 disabled={readOnly}
                 placeholder={s.metaDescription}
-                className="rounded-md border border-default bg-[var(--chat-surface)] px-2 py-1 text-xs text-foreground focus:border-blue-500 focus:outline-none disabled:opacity-60"
+                className="rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-blue-500 focus:outline-none disabled:opacity-60"
               />
             </div>
           ) : null}
@@ -307,7 +307,7 @@ export default function ContentEditor({
           />
         </div>
 
-        <div className="max-h-72 space-y-3 overflow-y-auto border-t border-muted/30 bg-[var(--chat-surface)]/40 p-3 xl:hidden">
+        <div className="max-h-72 space-y-3 overflow-y-auto border-t border-md-sys-outline-variant/30 bg-md-sys-surface-container/40 p-3 xl:hidden">
           <EditorInsightsPanel
             score={score}
             scoreLoading={scoreLoading}
@@ -343,28 +343,28 @@ export default function ContentEditor({
 
       <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         <div className="space-y-4 min-w-0">
-          <label className="block text-xs text-muted-foreground">
+          <label className="block text-xs text-md-sys-on-surface-variant">
             {s.draftTitle}
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={readOnly}
-              className="mt-1 w-full rounded-md border border-default bg-brand-900 px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              className="mt-1 w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface disabled:opacity-60"
             />
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block text-xs text-muted-foreground">
+            <label className="block text-xs text-md-sys-on-surface-variant">
               {s.targetKeyword}
               <input
                 type="text"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 disabled={readOnly}
-                className="mt-1 w-full rounded-md border border-default bg-brand-900 px-3 py-2 text-sm text-foreground disabled:opacity-60"
+                className="mt-1 w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface disabled:opacity-60"
               />
             </label>
-            <label className="block text-xs text-muted-foreground">
+            <label className="block text-xs text-md-sys-on-surface-variant">
               {s.landingUrl}
               <input
                 type="url"
@@ -372,32 +372,32 @@ export default function ContentEditor({
                 onChange={(e) => setLandingUrl(e.target.value)}
                 disabled={readOnly}
                 placeholder="https://"
-                className="mt-1 w-full rounded-md border border-default bg-brand-900 px-3 py-2 text-sm text-foreground disabled:opacity-60"
+                className="mt-1 w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface disabled:opacity-60"
               />
             </label>
           </div>
-          <label className="block text-xs text-muted-foreground">
+          <label className="block text-xs text-md-sys-on-surface-variant">
             {s.titleTag}
             <input
               type="text"
               value={titleTag}
               onChange={(e) => setTitleTag(e.target.value)}
               disabled={readOnly}
-              className="mt-1 w-full rounded-md border border-default bg-brand-900 px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              className="mt-1 w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface disabled:opacity-60"
             />
           </label>
-          <label className="block text-xs text-muted-foreground">
+          <label className="block text-xs text-md-sys-on-surface-variant">
             {s.metaDescription}
             <textarea
               value={metaDescription}
               onChange={(e) => setMetaDescription(e.target.value)}
               disabled={readOnly}
               rows={2}
-              className="mt-1 w-full rounded-md border border-default bg-brand-900 px-3 py-2 text-sm text-foreground resize-y disabled:opacity-60"
+              className="mt-1 w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface resize-y disabled:opacity-60"
             />
           </label>
           <div>
-            <p className="text-xs text-muted-foreground mb-1">{s.body}</p>
+            <p className="text-xs text-md-sys-on-surface-variant mb-1">{s.body}</p>
             <RichTextEditor
               value={bodyHtml}
               onChange={handleBodyChange}

@@ -53,7 +53,7 @@ export default function EditorInsightsPanel(props: EditorInsightsPanelProps) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-4 border-b border-default">
+      <div className="flex items-center gap-4 border-b border-md-sys-outline-variant/40">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -61,8 +61,8 @@ export default function EditorInsightsPanel(props: EditorInsightsPanelProps) {
             onClick={() => setTab(t.id)}
             className={`-mb-px border-b-2 pb-2 text-sm font-medium transition-colors ${
               tab === t.id
-                ? 'border-link text-link'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'border-link text-md-sys-primary'
+                : 'border-transparent text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
             }`}
           >
             {t.label}
@@ -107,7 +107,7 @@ export default function EditorInsightsPanel(props: EditorInsightsPanelProps) {
 
 function AiNote() {
   return (
-    <p className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
+    <p className="flex items-start gap-1.5 text-[10px] text-md-sys-on-surface-variant">
       <Info className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
       {strings.views.contentStudio.panel.aiNote}
     </p>
@@ -144,7 +144,7 @@ function ResearchTab({ active, keyword, title }: { active: boolean; keyword: str
     if (active && kw && loadedKey.current !== kw && !loading) void load();
   }, [active, kw, load, loading]);
 
-  if (!kw) return <p className="text-xs text-muted-foreground">{p.keywordNeeded}</p>;
+  if (!kw) return <p className="text-xs text-md-sys-on-surface-variant">{p.keywordNeeded}</p>;
 
   return (
     <div className="space-y-3 text-sm">
@@ -154,7 +154,7 @@ function ResearchTab({ active, keyword, title }: { active: boolean; keyword: str
           type="button"
           onClick={() => void load()}
           disabled={loading}
-          className="flex shrink-0 items-center gap-1 text-xs text-link hover:underline disabled:opacity-50"
+          className="flex shrink-0 items-center gap-1 text-xs text-md-sys-primary hover:underline disabled:opacity-50"
         >
           <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} aria-hidden />
           {p.refresh}
@@ -162,7 +162,7 @@ function ResearchTab({ active, keyword, title }: { active: boolean; keyword: str
       </div>
 
       {loading && !questions ? (
-        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <p className="flex items-center gap-2 text-xs text-md-sys-on-surface-variant">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
           {p.loading}
         </p>
@@ -171,10 +171,10 @@ function ResearchTab({ active, keyword, title }: { active: boolean; keyword: str
 
       {questions && questions.length > 0 ? (
         <div>
-          <h3 className="mb-1.5 text-xs font-semibold text-foreground">{p.questions}</h3>
+          <h3 className="mb-1.5 text-xs font-semibold text-md-sys-on-surface">{p.questions}</h3>
           <ul className="space-y-1.5">
             {questions.map((q) => (
-              <li key={q} className="text-xs text-foreground/90">
+              <li key={q} className="text-xs text-md-sys-on-surface/90">
                 {q}
               </li>
             ))}
@@ -184,12 +184,12 @@ function ResearchTab({ active, keyword, title }: { active: boolean; keyword: str
 
       {sources && sources.length > 0 ? (
         <div>
-          <h3 className="mb-1.5 text-xs font-semibold text-foreground">{p.sources}</h3>
+          <h3 className="mb-1.5 text-xs font-semibold text-md-sys-on-surface">{p.sources}</h3>
           <ul className="space-y-1.5">
             {sources.map((s) => (
               <li key={s.label} className="text-xs">
-                <span className="font-medium text-foreground">{s.label}</span>
-                {s.description ? <span className="text-muted-foreground"> — {s.description}</span> : null}
+                <span className="font-medium text-md-sys-on-surface">{s.label}</span>
+                {s.description ? <span className="text-md-sys-on-surface-variant"> — {s.description}</span> : null}
               </li>
             ))}
           </ul>
@@ -251,7 +251,7 @@ function OutlineTab({
     if (active && kw && loadedKey.current !== kw && !loading) void load();
   }, [active, kw, load, loading]);
 
-  if (!kw) return <p className="text-xs text-muted-foreground">{p.keywordNeeded}</p>;
+  if (!kw) return <p className="text-xs text-md-sys-on-surface-variant">{p.keywordNeeded}</p>;
 
   const headings = draftHeadings(bodyHtml);
 
@@ -259,14 +259,14 @@ function OutlineTab({
     <div className="space-y-3 text-sm">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xs font-semibold text-foreground">{p.outlineHeading}</h3>
-          <p className="text-[10px] text-muted-foreground">{p.outlineSub}</p>
+          <h3 className="text-xs font-semibold text-md-sys-on-surface">{p.outlineHeading}</h3>
+          <p className="text-[10px] text-md-sys-on-surface-variant">{p.outlineSub}</p>
         </div>
         <button
           type="button"
           onClick={() => void load()}
           disabled={loading}
-          className="flex shrink-0 items-center gap-1 text-xs text-link hover:underline disabled:opacity-50"
+          className="flex shrink-0 items-center gap-1 text-xs text-md-sys-primary hover:underline disabled:opacity-50"
         >
           <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} aria-hidden />
           {p.refresh}
@@ -274,7 +274,7 @@ function OutlineTab({
       </div>
 
       {loading && !outline ? (
-        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <p className="flex items-center gap-2 text-xs text-md-sys-on-surface-variant">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
           {p.loading}
         </p>
@@ -295,11 +295,11 @@ function OutlineTab({
                 {covered ? (
                   <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
                 ) : (
-                  <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/40" aria-hidden />
+                  <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-md-sys-on-surface-variant/40" aria-hidden />
                 )}
                 <span className="flex min-w-0 items-baseline gap-1.5">
-                  <span className="shrink-0 text-[9px] uppercase text-muted-foreground/70">{item.level}</span>
-                  <span className={covered ? 'text-foreground' : 'text-muted-foreground'}>{item.text}</span>
+                  <span className="shrink-0 text-[9px] uppercase text-md-sys-on-surface-variant/70">{item.level}</span>
+                  <span className={covered ? 'text-md-sys-on-surface' : 'text-md-sys-on-surface-variant'}>{item.text}</span>
                 </span>
               </li>
             );

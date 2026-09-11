@@ -157,7 +157,7 @@ export default function LandingPage() {
       <LandingPageSection
         id={LANDING_SECTION_IDS.finalCta}
         fullBleed
-        className="border-t border-muted/40"
+        className="border-t border-md-sys-outline-variant/40"
       >
         <LandingFinalCta />
       </LandingPageSection>

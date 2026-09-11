@@ -33,9 +33,9 @@ const SECRETS_BANNER_SECTIONS = new Set(['crawl', 'lighthouse', 'google', 'llm_p
 
 function SecretsLinkBanner() {
   return (
-    <p className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs text-muted-foreground">
+    <p className="rounded-2xl border border-md-sys-primary/20 bg-md-sys-primary-container/10 px-3 py-2 text-xs text-md-sys-on-surface-variant">
       {strings.secrets.pipelineBanner}{' '}
-      <Link to="/secrets" className="text-link hover:underline">
+      <Link to="/secrets" className="press text-md-sys-primary hover:underline active:scale-[0.98]">
         {strings.secrets.pageTitle}
       </Link>
       .
@@ -75,7 +75,7 @@ function ConfigSectionFields({
 
   return (
     <div className="space-y-4">
-      {intro ? <p className="text-xs leading-relaxed text-muted-foreground">{intro}</p> : null}
+      {intro ? <p className="text-xs leading-relaxed text-md-sys-on-surface-variant">{intro}</p> : null}
       <SectionFieldLayout
         section={section}
         basicFields={basic}
@@ -113,7 +113,7 @@ function RunnerSettingsFields({
       <div>
         <label
           htmlFor="pipe-custom-command"
-          className="mb-1.5 block text-xs font-medium text-muted-foreground"
+          className="mb-1.5 block text-xs font-medium text-md-sys-on-surface-variant"
         >
           {s.customCommandLabel}
         </label>
@@ -124,15 +124,15 @@ function RunnerSettingsFields({
           onChange={(e) => onCustomCommandChange(e.target.value)}
           disabled={disabled}
           placeholder="e.g. warnings, enrich, plot"
-          className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-4 py-2 font-mono text-sm text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none focus:ring-2 focus:ring-md-sys-primary/20"
         />
-        <p className="mt-1.5 text-xs text-muted-foreground">{s.customCommandHelp}</p>
+        <p className="mt-1.5 text-xs text-md-sys-on-surface-variant">{s.customCommandHelp}</p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label
             htmlFor="pipe-python"
-            className="mb-1.5 block text-xs font-medium text-muted-foreground"
+            className="mb-1.5 block text-xs font-medium text-md-sys-on-surface-variant"
           >
             {s.pythonExeLabel}
           </label>
@@ -143,13 +143,13 @@ function RunnerSettingsFields({
             onChange={(e) => onPythonExeChange(e.target.value)}
             disabled={disabled}
             placeholder="python"
-            className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-4 py-2 font-mono text-sm text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none focus:ring-2 focus:ring-md-sys-primary/20"
           />
         </div>
         <div>
           <label
             htmlFor="pipe-repo"
-            className="mb-1.5 block text-xs font-medium text-muted-foreground"
+            className="mb-1.5 block text-xs font-medium text-md-sys-on-surface-variant"
           >
             {s.repoRootLabel}
           </label>
@@ -160,7 +160,7 @@ function RunnerSettingsFields({
             onChange={(e) => onRepoRootChange(e.target.value)}
             disabled={disabled}
             placeholder="Default: parent folder of web/"
-            className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-4 py-2 font-mono text-sm text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none focus:ring-2 focus:ring-md-sys-primary/20"
           />
         </div>
       </div>
@@ -169,7 +169,7 @@ function RunnerSettingsFields({
           variant="secondary"
           onClick={onReset}
           disabled={disabled}
-          className="border-amber-500/40 text-amber-900 hover:bg-amber-500/10 dark:border-amber-500/35 dark:text-amber-300 dark:hover:bg-amber-500/15"
+          className="border-md-sys-warning/40 text-md-sys-warning hover:bg-md-sys-warning-container/20"
         >
           {s.resetDefaults}
         </Button>
@@ -229,7 +229,7 @@ export function PipelineSettingsSaveBar({ onSaved }: { onSaved?: () => void }) {
     <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
       <div className="min-w-0 flex-1">
         <span
-          className={`text-sm ${saveMsg ? (saveFailed ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400') : 'text-xs text-muted-foreground'}`}
+          className={`text-sm ${saveMsg ? (saveFailed ? 'text-md-sys-error' : 'text-md-sys-success') : 'text-xs text-md-sys-on-surface-variant'}`}
         >
           {statusHint}
         </span>
@@ -385,21 +385,21 @@ export default function PipelineSettingsPanel({
     return null;
   }
 
-  const settingsCardClass = 'rounded-2xl border border-muted/30 bg-[var(--chat-surface)] p-5 sm:p-6';
+  const settingsCardClass = 'rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container p-5 sm:p-6';
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       {readOnly ? (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-          <p className="text-sm text-amber-950 dark:text-amber-100/90">{strings.app.readonlyBanner}</p>
+        <div className="rounded-2xl border border-md-sys-warning/30 bg-md-sys-warning-container/20 px-4 py-3">
+          <p className="text-sm text-md-sys-on-warning-container">{strings.app.readonlyBanner}</p>
         </div>
       ) : null}
       {showBrowserCrawlBanner ? (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-          <p className="text-sm font-medium text-amber-950 dark:text-amber-100/90">
+        <div className="rounded-2xl border border-md-sys-warning/30 bg-md-sys-warning-container/20 px-4 py-3">
+          <p className="text-sm font-medium text-md-sys-on-warning-container">
             {s.browserCrawlBannerTitle}
           </p>
-          <p className="mt-1 text-sm text-amber-900/90 dark:text-amber-100/80">
+          <p className="mt-1 text-sm text-md-sys-on-warning-container/90">
             {browserCrawlChecking
               ? s.browserCrawlChecking
               : browserCrawlStatus?.message?.trim() || s.browserCrawlBannerHint}
@@ -408,34 +408,34 @@ export default function PipelineSettingsPanel({
       ) : null}
 
       {llmLoadWarning ? (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-          <p className="text-sm text-amber-900 dark:text-amber-100">{llmLoadWarning}</p>
+        <div className="rounded-2xl border border-md-sys-warning/30 bg-md-sys-warning-container/20 px-4 py-3">
+          <p className="text-sm text-md-sys-on-warning-container">{llmLoadWarning}</p>
         </div>
       ) : null}
 
       {loadError ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
-          <p className="text-sm text-red-800 dark:text-red-300">
+        <div className="rounded-2xl border border-md-sys-error/30 bg-md-sys-error-container/20 px-4 py-3">
+          <p className="text-sm text-md-sys-on-error-container">
             {format(s.loadError, { message: loadError })}
           </p>
         </div>
       ) : null}
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin text-link" />
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-md-sys-on-surface-variant">
+          <Loader2 className="h-6 w-6 animate-spin text-md-sys-primary" />
           <span className="text-sm">{s.loadingSettings}</span>
         </div>
       ) : (
         <div className={group.id === 'google' && !useSectionTabs ? 'space-y-6' : 'space-y-4'}>
           {group.id === 'content-ai' ? (
-            <p className="rounded-lg border border-muted/30 bg-[var(--chat-bg)] px-4 py-3 text-xs text-muted-foreground">
+            <p className="rounded-lg border border-md-sys-outline-variant/30 bg-md-sys-surface px-4 py-3 text-xs text-md-sys-on-surface-variant">
               {s.contentAiHint}
             </p>
           ) : null}
 
           {group.id === 'google' ? (
-            <p className="rounded-lg border border-muted/30 bg-[var(--chat-bg)] px-4 py-3 text-xs text-muted-foreground">
+            <p className="rounded-lg border border-md-sys-outline-variant/30 bg-md-sys-surface px-4 py-3 text-xs text-md-sys-on-surface-variant">
               {s.googleGroupHint}
             </p>
           ) : null}

@@ -24,7 +24,7 @@ export default function StatCard({
   value,
   sub,
   band,
-  bandClassName = 'text-muted-foreground',
+  bandClassName = 'text-md-sys-on-surface-variant',
   icon,
   hint,
   size = 'md',
@@ -32,7 +32,7 @@ export default function StatCard({
   shadow = false,
   href,
   fillHeight = false,
-  valueClassName = 'text-bright',
+  valueClassName = 'text-md-sys-on-surface',
 }: StatCardProps) {
   const valueClass =
     size === 'lg' ? `text-3xl font-bold tabular-nums ${valueClassName}` : `text-2xl font-bold tabular-nums ${valueClassName}`;
@@ -56,14 +56,14 @@ export default function StatCard({
       >
         {band ?? '—'}
       </p>
-      <p className={`min-h-4 text-xs leading-tight text-muted-foreground ${sub ? '' : 'invisible'}`} aria-hidden={!sub}>
+      <p className={`min-h-4 text-xs leading-tight text-md-sys-on-surface-variant ${sub ? '' : 'invisible'}`} aria-hidden={!sub}>
         {sub ?? '—'}
       </p>
     </div>
   ) : (
     <>
       {band ? <p className={`text-xs font-semibold mt-1 ${bandClassName}`}>{band}</p> : null}
-      {sub ? <p className="text-xs text-muted-foreground mt-1">{sub}</p> : null}
+      {sub ? <p className="text-xs text-md-sys-on-surface-variant mt-1">{sub}</p> : null}
     </>
   );
 
@@ -71,9 +71,10 @@ export default function StatCard({
     <Card
       padding="tight"
       shadow={shadow}
-      className={`${href ? 'w-full transition-colors group-hover:border-blue-500/30 group-hover:bg-brand-800/90' : ''} ${heightClass} ${className}`.trim()}
+      interactive={Boolean(href)}
+      className={`${href ? 'w-full transition-colors group-hover:border-md-sys-primary/40 group-hover:bg-md-sys-surface-container-high' : ''} ${heightClass} ${className}`.trim()}
     >
-      <p className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+      <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-md-sys-on-surface-variant">
         {icon}
         <span className="min-w-0 flex-1">{label}</span>
         {hintNode}
@@ -87,7 +88,7 @@ export default function StatCard({
     return (
       <Link
         to={href}
-        className={`group block w-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${linkHeightClass}`.trim()}
+        className={`group block w-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-sys-primary ${linkHeightClass}`.trim()}
       >
         {card}
       </Link>

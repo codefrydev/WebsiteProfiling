@@ -43,16 +43,16 @@ export default function LandingUseCases() {
         </div>
 
         <div className="flex min-h-0 flex-col justify-center @md:pl-2 @lg:pl-4">
-          <ul className="divide-y divide-default/60 overflow-hidden rounded-xl border border-default/60">
+          <ul className="divide-y divide-md-sys-outline-variant/30/60 overflow-hidden rounded-xl border border-md-sys-outline-variant/40">
             {USE_CASES.map(({ icon: Icon, title, description }) => (
               <li key={title}>
                 <article className="flex gap-4 px-4 py-4 @sm:gap-5 @sm:px-5 @sm:py-5">
-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-link">
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-md-sys-primary">
                     <Icon className="h-4 w-4" aria-hidden />
                   </span>
                   <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-foreground @sm:text-base">{title}</h3>
-                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{description}</p>
+                    <h3 className="text-sm font-semibold text-md-sys-on-surface @sm:text-base">{title}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-md-sys-on-surface-variant">{description}</p>
                   </div>
                 </article>
               </li>

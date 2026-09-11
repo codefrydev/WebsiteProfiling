@@ -15,9 +15,9 @@ type CardProps = {
 };
 
 /**
- * Standard card container: bg-brand-800, border, rounded-xl, padding.
- * Use shadow for stat cards, overflowHidden for table wrappers,
- * interactive for clickable cards (hover lift).
+ * Standard card container adhering to Google Material 3 (M3) Expressive Design:
+ * bg-md-sys-surface-container, rounded-2xl (16px), subtle tonal border, and tactile spring motion.
+ * Interactive cards feature hover lift and active:scale-[0.99] press feedback.
  */
 export default function Card({
   children,
@@ -30,15 +30,17 @@ export default function Card({
   devData,
 }: CardProps) {
   const showDevCopy = import.meta.env.DEV && devData != null;
-  const paddingClass = padding === 'none' ? '' : padding === 'tight' ? 'p-4' : 'p-5';
-  const shadowClass = shadow ? 'shadow-sm' : '';
+  const paddingClass = padding === 'none' ? '' : padding === 'tight' ? 'p-4' : 'p-6';
+  const shadowClass = shadow ? 'shadow-[var(--elevation-1)]' : '';
   const overflowClass = overflowHidden ? 'overflow-hidden' : '';
-  const interactiveClass = interactive ? 'hover-lift cursor-pointer' : '';
+  const interactiveClass = interactive
+    ? 'cursor-pointer transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)] active:scale-[0.99]'
+    : 'transition-all duration-200';
   const devClass = showDevCopy ? 'relative group/dev-card' : '';
   return (
     <div
       onClick={onClick}
-      className={`bg-brand-800 border border-default rounded-xl ${paddingClass} ${shadowClass} ${overflowClass} ${interactiveClass} ${devClass} ${className}`.trim()}
+      className={`bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-2xl ${paddingClass} ${shadowClass} ${overflowClass} ${interactiveClass} ${devClass} ${className}`.trim()}
     >
       {showDevCopy ? <DevCopyJsonButton data={devData} /> : null}
       {children}

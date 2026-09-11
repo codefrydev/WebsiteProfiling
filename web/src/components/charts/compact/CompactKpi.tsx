@@ -14,12 +14,12 @@ export function CompactKpi({
   deltaClassName = 'text-emerald-400',
 }: CompactKpiProps) {
   return (
-    <div className="rounded-lg border border-default/80 bg-brand-900/50 px-2.5 py-2">
-      <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[10px]">
+    <div className="rounded-lg border border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/50 px-2.5 py-2">
+      <p className="text-[9px] font-medium uppercase tracking-wider text-md-sys-on-surface-variant sm:text-[10px]">
         {label}
       </p>
       <div className="mt-0.5 flex items-end justify-between gap-1">
-        <p className={`text-sm font-bold tabular-nums ${accent ? 'text-link' : 'text-bright'}`}>{value}</p>
+        <p className={`text-sm font-bold tabular-nums ${accent ? 'text-md-sys-primary' : 'text-md-sys-on-surface'}`}>{value}</p>
         {delta ? <span className={`text-[9px] font-medium ${deltaClassName}`}>{delta}</span> : null}
       </div>
     </div>

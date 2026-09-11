@@ -66,7 +66,7 @@ export function TopQueriesBarChart({ queries, devData }: TopQueriesBarChartProps
   if (!chart) {
     return (
       <ChartCard title={sp.charts.topQueriesTitle} hint={sp.charts.topQueriesHint} ariaLabel={sp.charts.topQueriesAria} devData={devData}>
-        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        <div className="flex items-center justify-center h-full text-sm text-md-sys-on-surface-variant">
           {strings.common.notEnoughData}
         </div>
       </ChartCard>
@@ -93,7 +93,7 @@ export function TopPagesBarChart({ pages, devData }: TopPagesBarChartProps) {
   if (!chart) {
     return (
       <ChartCard title={sp.charts.topPagesTitle} hint={sp.charts.topPagesHint} ariaLabel={sp.charts.topPagesAria} devData={devData}>
-        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        <div className="flex items-center justify-center h-full text-sm text-md-sys-on-surface-variant">
           {strings.common.notEnoughData}
         </div>
       </ChartCard>
@@ -153,7 +153,7 @@ export function PositionDistributionChart({ queries, devData }: PositionDistribu
   if (!chart) {
     return (
       <ChartCard title={sp.charts.positionTitle} hint={sp.charts.positionHint} ariaLabel={sp.charts.positionAria} devData={devData}>
-        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        <div className="flex items-center justify-center h-full text-sm text-md-sys-on-surface-variant">
           {strings.common.notEnoughData}
         </div>
       </ChartCard>
@@ -267,7 +267,7 @@ export function CtrOpportunityScatter({ rows, devData }: CtrOpportunityScatterPr
   if (!chart) {
     return (
       <ChartCard title={sp.charts.scatterTitle} hint={sp.charts.scatterHint} ariaLabel={sp.charts.scatterAria} heightClass="h-64" devData={devData}>
-        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        <div className="flex items-center justify-center h-full text-sm text-md-sys-on-surface-variant">
           {strings.common.notEnoughData}
         </div>
       </ChartCard>

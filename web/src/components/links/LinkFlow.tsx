@@ -37,12 +37,12 @@ function NodeChip({
       <span className="truncate font-mono text-[11px]">{label}</span>
     </>
   );
-  const cls = `flex items-center gap-1.5 rounded-lg border border-default bg-brand-900 px-2 py-1.5 max-w-full ${
+  const cls = `flex items-center gap-1.5 rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-2 py-1.5 max-w-full ${
     align === 'right' ? 'flex-row-reverse text-right' : ''
   }`;
   if (!node.clickable) {
     return (
-      <span className={`${cls} text-muted-foreground/80`} title={node.url}>
+      <span className={`${cls} text-md-sys-on-surface-variant/80`} title={node.url}>
         {inner}
       </span>
     );
@@ -52,7 +52,7 @@ function NodeChip({
       type="button"
       onClick={() => onSelect(node.url)}
       title={node.url}
-      className={`${cls} text-foreground hover-lift press hover:border-blue-500/40 hover:text-bright transition-colors`}
+      className={`${cls} text-md-sys-on-surface hover-lift press hover:border-blue-500/40 hover:text-md-sys-on-surface transition-colors`}
     >
       {inner}
     </button>
@@ -90,7 +90,7 @@ export default function LinkFlow({
   }, [current, reduced]);
 
   if (inbound.length === 0 && outbound.length === 0) {
-    return <p className="text-sm text-muted-foreground py-6 text-center">{lf.empty}</p>;
+    return <p className="text-sm text-md-sys-on-surface-variant py-6 text-center">{lf.empty}</p>;
   }
 
   const connector = (y1: number, y2: number, side: 'in' | 'out', i: number) => {
@@ -103,7 +103,7 @@ export default function LinkFlow({
         key={`${side}-${i}`}
         d={d}
         fill="none"
-        stroke="var(--accent)"
+        stroke="var(--md-sys-color-primary, #3b82f6)"
         strokeWidth={1.2}
         strokeOpacity={0.45}
         vectorEffect="non-scaling-stroke"
@@ -119,12 +119,12 @@ export default function LinkFlow({
 
   return (
     <div className="relative">
-      <div className="mb-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+      <div className="mb-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant">
         <span>{format(lf.inbound)} {inboundTotal > 0 ? `(${inboundTotal})` : ''}</span>
         <span>{lf.title}</span>
         <span>{format(lf.outbound)} {outboundTotal > 0 ? `(${outboundTotal})` : ''}</span>
       </div>
-      <div className="relative min-h-[14rem] rounded-xl border border-default bg-brand-800/40 p-3">
+      <div className="relative min-h-[14rem] rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/40 p-3">
         <svg
           className="pointer-events-none absolute inset-0 h-full w-full"
           viewBox="0 0 100 100"
@@ -138,7 +138,7 @@ export default function LinkFlow({
         <div className="relative z-10 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-2">
           <div className="flex flex-col justify-around gap-2 min-w-0">
             {inbound.length === 0 ? (
-              <span className="py-4 text-center text-[11px] text-muted-foreground/50">{lf.noInbound}</span>
+              <span className="py-4 text-center text-[11px] text-md-sys-on-surface-variant/50">{lf.noInbound}</span>
             ) : (
               inbound.map((n, i) => (
                 <NodeChip key={`${n.url}-${i}`} node={n} align="left" onSelect={onSelect} />
@@ -148,13 +148,13 @@ export default function LinkFlow({
 
           <div className="flex items-center justify-center px-1">
             <div
-              className="flex max-w-[12rem] flex-col items-center gap-1 rounded-xl border-2 px-3 py-2.5 text-center shadow-md"
-              style={{ borderColor: currentColor, background: 'var(--app-bg-elevated)' }}
+              className="flex max-w-[12rem] flex-col items-center gap-1 rounded-2xl border-2 bg-md-sys-surface-container-high px-3 py-2.5 text-center shadow-sm"
+              style={{ borderColor: currentColor }}
             >
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-md-sys-on-surface-variant">
                 {lf.centerHint}
               </span>
-              <span className="truncate font-mono text-xs text-bright max-w-full" title={current}>
+              <span className="truncate font-mono text-xs text-md-sys-on-surface max-w-full" title={current}>
                 {shortPath(current) || current}
               </span>
             </div>
@@ -162,7 +162,7 @@ export default function LinkFlow({
 
           <div className="flex flex-col justify-around gap-2 min-w-0">
             {outbound.length === 0 ? (
-              <span className="py-4 text-center text-[11px] text-muted-foreground/50">{lf.noOutbound}</span>
+              <span className="py-4 text-center text-[11px] text-md-sys-on-surface-variant/50">{lf.noOutbound}</span>
             ) : (
               outbound.map((n, j) => (
                 <NodeChip key={`${n.url}-${j}`} node={n} align="right" onSelect={onSelect} />
@@ -171,7 +171,7 @@ export default function LinkFlow({
           </div>
         </div>
       </div>
-      <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+      <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-md-sys-on-surface-variant">
         <ArrowRight className="h-3 w-3" aria-hidden /> {strings.components.connectionsTab.drillHint}
       </p>
     </div>

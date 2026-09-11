@@ -189,11 +189,11 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
       <PageHeader
         title={vi.title}
         subtitle={vi.subtitle}
-        icon={<ImageIcon className="h-7 w-7 text-link shrink-0" />}
+        icon={<ImageIcon className="h-7 w-7 text-md-sys-primary shrink-0" />}
       />
-      <p className="text-xs text-muted-foreground mb-4 -mt-2">
+      <p className="text-xs text-md-sys-on-surface-variant mb-4 -mt-2">
         {vi.galleryLinkPrefix}{' '}
-        <Link to="/gallery" className="text-link hover:underline">
+        <Link to="/gallery" className="text-md-sys-primary hover:underline">
           {vi.galleryLinkLabel}
         </Link>
       </p>
@@ -221,7 +221,7 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
             <ImageAuditSummaryCards data={summary} />
           </div>
         ) : (
-          <div className="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground">
+          <div className="flex items-center justify-center gap-2 p-12 text-sm text-md-sys-on-surface-variant">
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
             {strings.app.loading}
           </div>
@@ -237,7 +237,7 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
               <p>{vi.inventoryRequiredHint}</p>
             </AlertBanner>
           ) : loading ? (
-            <div className="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-2 p-12 text-sm text-md-sys-on-surface-variant">
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
               {strings.app.loading}
             </div>
@@ -269,13 +269,13 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
                             {url ? <UrlInspectorButton url={url} /> : null}
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{detail || '—'}</TableCell>
+                        <TableCell className="text-xs text-md-sys-on-surface-variant">{detail || '—'}</TableCell>
                       </TableRow>
                     );
                   })}
                 </TableBody>
               </Table>
-              <p className="px-4 py-2 text-xs text-muted-foreground border-t border-default">
+              <p className="px-4 py-2 text-xs text-md-sys-on-surface-variant border-t border-md-sys-outline-variant/40">
                 {vi.pageOf} {pagination.from}–{pagination.to} {vi.of} {listTotal}
               </p>
             </Card>

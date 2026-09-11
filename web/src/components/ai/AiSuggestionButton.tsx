@@ -56,7 +56,7 @@ export default function AiSuggestionButton({ request, initialText = null, classN
           type="button"
           onClick={() => void handleClick()}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-md border border-fuchsia-500/30 bg-fuchsia-500/10 px-2.5 py-1 text-[10px] font-semibold text-fuchsia-800 dark:text-fuchsia-300 hover:bg-fuchsia-500/20 transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-full border border-md-sys-tertiary/30 bg-md-sys-tertiary-container px-3 py-1 text-xs font-medium text-md-sys-on-tertiary-container shadow-elevation-1 hover:shadow-elevation-2 active:scale-[0.98] transition-all disabled:opacity-60"
         >
           {loading ? (
             <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
@@ -66,11 +66,11 @@ export default function AiSuggestionButton({ request, initialText = null, classN
           {loading ? s.loading : text ? s.regenerate : s.button}
         </button>
       ) : null}
-      {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
+      {error ? <p className="text-xs text-md-sys-error">{error}</p> : null}
       {text ? (
         <div className="flex items-start gap-2">
-          <p className="text-xs text-muted-foreground leading-relaxed flex-1 min-w-0">
-            <span className="text-fuchsia-700 dark:text-fuchsia-300 font-semibold">{s.label}: </span>
+          <p className="text-xs text-md-sys-on-surface-variant leading-relaxed flex-1 min-w-0">
+            <span className="text-md-sys-tertiary font-semibold">{s.label}: </span>
             {text}
           </p>
           <CopyBtn text={text} className="shrink-0 mt-0.5" />

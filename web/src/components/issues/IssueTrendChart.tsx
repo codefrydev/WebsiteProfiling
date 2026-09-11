@@ -129,10 +129,10 @@ export default function IssueTrendChart({ domain }: IssueTrendChartProps) {
   return (
     <Card padding="tight" shadow overflowHidden devData={devData} className="min-w-0">
       <div className="flex items-center gap-2 mb-1">
-        <TrendingUp className="h-4 w-4 text-link" />
-        <h2 className="text-sm font-bold text-foreground">Issue trend</h2>
+        <TrendingUp className="h-4 w-4 text-md-sys-primary" />
+        <h2 className="text-sm font-bold text-md-sys-on-surface">Issue trend</h2>
       </div>
-      <p className="text-xs text-muted-foreground mb-3">
+      <p className="text-xs text-md-sys-on-surface-variant mb-3">
         Issue counts by priority across the last {rows.length} audits.
       </p>
       <div className="h-52">

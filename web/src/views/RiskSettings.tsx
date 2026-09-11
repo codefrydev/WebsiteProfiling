@@ -74,14 +74,14 @@ function Toggle({
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50 ${
-        checked ? 'bg-[var(--accent)]' : 'bg-[var(--app-bg-sunken)]'
+      className={`press relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-sys-primary disabled:cursor-not-allowed disabled:opacity-50 ${
+        checked ? 'bg-md-sys-primary border-md-sys-primary' : 'bg-md-sys-surface-container-highest border-md-sys-outline'
       }`}
     >
       <span
         aria-hidden
-        className={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow ring-0 transition-transform ${
-          checked ? 'translate-x-4' : 'translate-x-0'
+        className={`pointer-events-none block h-5 w-5 rounded-full shadow-xs ring-0 transition-transform ${
+          checked ? 'translate-x-5 bg-md-sys-on-primary' : 'translate-x-0 bg-md-sys-outline'
         }`}
       />
     </button>
@@ -108,11 +108,11 @@ function Row({
       <div className="min-w-0 flex-1">
         <label
           htmlFor={htmlFor}
-          className="block cursor-pointer text-sm font-medium text-bright"
+          className="block cursor-pointer text-sm font-medium text-md-sys-on-surface"
         >
           {label}
         </label>
-        {help && <p className="mt-0.5 text-xs text-muted-foreground">{help}</p>}
+        {help && <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">{help}</p>}
       </div>
       <div className="shrink-0 pt-0.5">{children}</div>
     </div>
@@ -124,8 +124,8 @@ function Row({
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div>
-      <h2 className="text-base font-semibold text-foreground">{title}</h2>
-      <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+      <h2 className="text-base font-semibold text-md-sys-on-surface">{title}</h2>
+      <p className="mt-1 text-sm text-md-sys-on-surface-variant">{subtitle}</p>
     </div>
   );
 }
@@ -152,22 +152,22 @@ function DomainSelector({
             type="button"
             disabled={disabled}
             onClick={() => onChange(opt.value)}
-            className={`flex flex-col items-start rounded-xl border px-3.5 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`press flex flex-col items-start rounded-2xl border px-3.5 py-3 text-left transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
               active
                 ? isFull
-                  ? 'border-amber-500/60 bg-amber-500/10'
-                  : 'border-[var(--accent)] bg-[var(--accent-bg)]'
-                : 'border-default hover:border-[var(--accent)] hover:bg-[var(--app-bg-muted)]'
+                  ? 'border-md-sys-tertiary/60 bg-md-sys-tertiary-container/30'
+                  : 'border-md-sys-primary bg-md-sys-primary/10'
+                : 'border-md-sys-outline-variant/40 hover:border-md-sys-primary/50 hover:bg-md-sys-surface-container-high'
             }`}
           >
             <span
               className={`text-xs font-semibold ${
-                active ? (isFull ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--accent)]') : 'text-bright'
+                active ? (isFull ? 'text-md-sys-on-tertiary-container' : 'text-md-sys-primary') : 'text-md-sys-on-surface'
               }`}
             >
               {opt.label}
             </span>
-            <span className="mt-0.5 text-[11px] text-muted-foreground">{opt.description}</span>
+            <span className="mt-0.5 text-[11px] text-md-sys-on-surface-variant">{opt.description}</span>
           </button>
         );
       })}
@@ -195,20 +195,20 @@ function CustomDomainPicker({
         return (
           <label
             key={domain}
-            className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm capitalize ${
+            className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm capitalize transition-all ${
               checked
-                ? 'border-[var(--accent)]/40 bg-[var(--accent-bg)]'
-                : 'border-default bg-[var(--app-bg-sunken)]'
+                ? 'border-md-sys-primary/40 bg-md-sys-primary/10 text-md-sys-primary font-medium'
+                : 'border-md-sys-outline-variant/40 bg-md-sys-surface-container-lowest text-md-sys-on-surface'
             } ${disabled ? 'opacity-50' : ''}`}
           >
             <input
               type="checkbox"
-              className="rounded border-default"
+              className="rounded border-md-sys-outline-variant/40"
               checked={checked}
               disabled={disabled}
               onChange={(e) => onToggle(domain, e.target.checked)}
             />
-            <span className="text-bright">{domain}</span>
+            <span className="text-md-sys-on-surface">{domain}</span>
           </label>
         );
       })}
@@ -248,7 +248,7 @@ function ToolDomainAccordion({
   const enabledCount = tools.filter((t) => !disabledTools.has(t.name)).length;
 
   return (
-    <div className="rounded-xl border border-default">
+    <div className="rounded-xl border border-md-sys-outline-variant/40">
       <button
         type="button"
         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
@@ -256,16 +256,16 @@ function ToolDomainAccordion({
       >
         <div className="flex min-w-0 items-center gap-2">
           {open ? (
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" />
           ) : (
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" />
           )}
-          <span className="font-medium text-sm text-bright capitalize">{domain}</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="font-medium text-sm text-md-sys-on-surface capitalize">{domain}</span>
+          <span className="text-xs text-md-sys-on-surface-variant">
             {enabledCount}/{tools.length} enabled
           </span>
           {bundleTools.length > 0 && (
-            <span className="rounded-full bg-[var(--accent-bg)] px-2 py-0.5 text-[10px] font-medium text-[var(--accent)]">
+            <span className="rounded-full bg-md-sys-primary/10 px-2 py-0.5 text-[10px] font-medium text-md-sys-primary">
               in bundle
             </span>
           )}
@@ -273,7 +273,7 @@ function ToolDomainAccordion({
       </button>
 
       {open && (
-        <div className="divide-y divide-[var(--app-border-muted)] border-t border-default">
+        <div className="divide-y divide-md-sys-outline-variant/40 border-t border-md-sys-outline-variant/40">
           {tools.map((tool) => {
             const isDisabled = disabledTools.has(tool.name);
             const inToolBundle =
@@ -286,14 +286,14 @@ function ToolDomainAccordion({
                 className={`flex items-start justify-between gap-4 px-4 py-3 ${!inToolBundle ? 'opacity-50' : ''}`}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-mono text-xs font-medium text-bright">{tool.name}</p>
+                  <p className="font-mono text-xs font-medium text-md-sys-on-surface">{tool.name}</p>
                   {tool.description && (
-                    <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2">
+                    <p className="mt-0.5 text-[11px] text-md-sys-on-surface-variant line-clamp-2">
                       {tool.description}
                     </p>
                   )}
                   {!inToolBundle && (
-                    <p className="mt-0.5 text-[10px] text-amber-600 dark:text-amber-400">
+                    <p className="mt-0.5 text-[10px] text-md-sys-warning">
                       Not in current bundle — enable the &ldquo;{domain}&rdquo; domain or switch bundle
                     </p>
                   )}
@@ -317,13 +317,13 @@ function ToolDomainAccordion({
 
 function RoleBadge({ role }: { role: string | null }) {
   const colors: Record<string, string> = {
-    admin: 'bg-purple-500/15 text-purple-700 dark:text-purple-300',
-    analyst: 'bg-blue-500/15 text-blue-700 dark:text-blue-300',
-    editor: 'bg-green-500/15 text-green-700 dark:text-green-300',
-    viewer: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-300',
-    'client-readonly': 'bg-orange-500/15 text-orange-700 dark:text-orange-300',
+    admin: 'bg-md-sys-tertiary-container text-md-sys-on-tertiary-container',
+    analyst: 'bg-md-sys-info-container text-md-sys-on-info-container',
+    editor: 'bg-md-sys-success-container text-md-sys-on-success-container',
+    viewer: 'bg-md-sys-warning-container text-md-sys-on-warning-container',
+    'client-readonly': 'bg-md-sys-surface-container-highest text-md-sys-on-surface-variant',
   };
-  const cls = role ? (colors[role] ?? 'bg-muted/30 text-muted-foreground') : 'bg-muted/30 text-muted-foreground';
+  const cls = role ? (colors[role] ?? 'bg-md-sys-surface-container-high/40 text-md-sys-on-surface-variant') : 'bg-md-sys-surface-container-high/40 text-md-sys-on-surface-variant';
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
       {role ?? 'none'}
@@ -400,11 +400,11 @@ export default function RiskSettingsPage() {
     >
       <div className="chat-main-panel">
         {/* Header */}
-        <header className="chat-context-bar flex items-center gap-3 border-b border-muted/30 bg-[var(--chat-bg)] px-4 py-2.5">
-          <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <header className="chat-context-bar flex items-center gap-3 border-b border-md-sys-outline-variant/30 bg-md-sys-surface px-4 py-2.5">
+          <ShieldCheck className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-bright">Risk Settings</p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="truncate text-sm font-medium text-md-sys-on-surface">Risk Settings</p>
+            <p className="truncate text-xs text-md-sys-on-surface-variant">
               Access modes, per-tool controls & feature visibility
             </p>
           </div>
@@ -412,21 +412,21 @@ export default function RiskSettingsPage() {
 
         <div className="chat-messages-scroll min-h-0 flex-1">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-20 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-2 py-20 text-sm text-md-sys-on-surface-variant">
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
               Loading settings…
             </div>
           ) : loadError ? (
-            <div className="mx-auto max-w-3xl px-4 py-10 text-sm text-red-700 dark:text-red-400">
+            <div className="mx-auto max-w-3xl px-4 py-10 text-sm text-md-sys-error">
               {loadError}
             </div>
           ) : (
             <div className="mx-auto max-w-3xl space-y-8 px-4 py-6 sm:px-6">
 
               {/* Warning callout */}
-              <div className="flex gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
-                <p className="text-xs text-amber-700 dark:text-amber-300">
+              <div className="flex gap-3 rounded-2xl border border-md-sys-warning/30 bg-md-sys-warning-container/30 px-4 py-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-md-sys-warning" aria-hidden />
+                <p className="text-xs text-md-sys-on-warning-container">
                   Changes here affect what MCP clients can access, which AI capabilities are active,
                   and which features are visible. Enabling full access exposes all audit tools to
                   connected MCP clients.
@@ -441,10 +441,10 @@ export default function RiskSettingsPage() {
                 />
 
                 {/* Domain bundle */}
-                <div className="space-y-3 rounded-2xl border border-muted/30 bg-[var(--chat-surface)] p-5">
+                <div className="space-y-3 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container p-5">
                   <div>
-                    <p className="text-sm font-medium text-bright">Domain bundle</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="text-sm font-medium text-md-sys-on-surface">Domain bundle</p>
+                    <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">
                       Determines which tool groups are exposed. &ldquo;Full&rdquo; exposes all 340+ tools.
                     </p>
                   </div>
@@ -454,14 +454,14 @@ export default function RiskSettingsPage() {
                     disabled={saving}
                   />
                   {currentDomain === 'full' && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                    <p className="text-xs text-md-sys-warning">
                       ⚠️ Full mode exposes every tool to MCP clients — use a strong bearer token.
                     </p>
                   )}
                   {currentDomain === 'custom' && (
-                    <div className="space-y-2 border-t border-default pt-4">
-                      <p className="text-xs font-medium text-bright">Enabled tool domains</p>
-                      <p className="text-xs text-muted-foreground">
+                    <div className="space-y-2 border-t border-md-sys-outline-variant/40 pt-4">
+                      <p className="text-xs font-medium text-md-sys-on-surface">Enabled tool domains</p>
+                      <p className="text-xs text-md-sys-on-surface-variant">
                         Choose which audit tool groups are active for MCP and in-app chat.
                       </p>
                       <CustomDomainPicker
@@ -475,22 +475,22 @@ export default function RiskSettingsPage() {
                 </div>
 
                 {/* Per-tool toggles */}
-                <div className="space-y-3 rounded-2xl border border-muted/30 bg-[var(--chat-surface)] p-5">
+                <div className="space-y-3 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container p-5">
                   <div>
-                    <p className="text-sm font-medium text-bright">Per-tool control</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="text-sm font-medium text-md-sys-on-surface">Per-tool control</p>
+                    <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">
                       Disable individual tools even within the selected bundle. Tools not in the current
                       bundle are dimmed — switch to &ldquo;full&rdquo; to activate them.
                     </p>
                   </div>
 
                   {catalogLoading ? (
-                    <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 py-4 text-sm text-md-sys-on-surface-variant">
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                       Loading tool catalog…
                     </div>
                   ) : catalogError ? (
-                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
+                    <div className="rounded-2xl border border-md-sys-error/30 bg-md-sys-error-container/30 px-4 py-3 text-xs text-md-sys-on-error-container">
                       Could not load tool catalog: {catalogError}
                       <br />
                       Make sure Python is available and the virtual environment is activated.
@@ -523,18 +523,18 @@ export default function RiskSettingsPage() {
                   subtitle="Control which AI capabilities are active. Changes save immediately."
                 />
 
-                <div className="rounded-2xl border border-muted/30 bg-[var(--chat-surface)] divide-y divide-[var(--app-border-muted)]">
+                <div className="rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container divide-y divide-md-sys-outline-variant/40">
                   <div className="px-5 py-3 flex items-center justify-between">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Setting</p>
+                    <p className="text-xs font-medium text-md-sys-on-surface-variant uppercase tracking-wide">Setting</p>
                     <div className="flex items-center gap-2">
                       {llmSaveStatus === 'saving' && (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-md-sys-on-surface-variant" />
                       )}
                       {llmSaveStatus === 'saved' && (
-                        <span className="text-xs text-[var(--accent)]">Saved</span>
+                        <span className="text-xs text-md-sys-primary">Saved</span>
                       )}
                       {llmSaveStatus === 'error' && (
-                        <span className="text-xs text-red-500">Error saving</span>
+                        <span className="text-xs text-md-sys-error">Error saving</span>
                       )}
                     </div>
                   </div>
@@ -589,7 +589,7 @@ export default function RiskSettingsPage() {
                   subtitle="Show or hide app features in the navigation. Hidden features are not accessible by URL either — this takes effect after the next page load."
                 />
 
-                <div className="rounded-2xl border border-muted/30 bg-[var(--chat-surface)] divide-y divide-[var(--app-border-muted)]">
+                <div className="rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container divide-y divide-md-sys-outline-variant/40">
                   {FEATURE_ITEMS.map((item) => (
                     <Row
                       key={item.id}
@@ -606,7 +606,7 @@ export default function RiskSettingsPage() {
                     </Row>
                   ))}
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[11px] text-md-sys-on-surface-variant">
                   Feature visibility is saved to the database and applies to all browsers accessing this instance.
                 </p>
               </section>
@@ -618,19 +618,19 @@ export default function RiskSettingsPage() {
                   subtitle="Current session information and authentication configuration. Read-only — set via environment variables."
                 />
 
-                <div className="rounded-2xl border border-muted/30 bg-[var(--chat-surface)] divide-y divide-[var(--app-border-muted)]">
+                <div className="rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container divide-y divide-md-sys-outline-variant/40">
                   <div className="flex items-center justify-between px-5 py-4">
                     <div>
-                      <p className="text-sm font-medium text-bright">Auth system</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
+                      <p className="text-sm font-medium text-md-sys-on-surface">Auth system</p>
+                      <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">
                         Controlled by <code className="font-mono">AUTH_SECRET</code> environment variable
                       </p>
                     </div>
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         session.authEnabled
-                          ? 'bg-green-500/15 text-green-700 dark:text-green-300'
-                          : 'bg-muted/30 text-muted-foreground'
+                          ? 'bg-md-sys-success-container text-md-sys-on-success-container'
+                          : 'bg-md-sys-surface-container-high/40 text-md-sys-on-surface-variant'
                       }`}
                     >
                       {session.authEnabled ? 'Enabled' : 'Disabled'}
@@ -639,8 +639,8 @@ export default function RiskSettingsPage() {
 
                   <div className="flex items-center justify-between px-5 py-4">
                     <div>
-                      <p className="text-sm font-medium text-bright">Current role</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
+                      <p className="text-sm font-medium text-md-sys-on-surface">Current role</p>
+                      <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">
                         Set via <code className="font-mono">AUTH_DEFAULT_ROLE</code> or session token
                       </p>
                     </div>
@@ -649,8 +649,8 @@ export default function RiskSettingsPage() {
 
                   <div className="flex items-center justify-between px-5 py-4">
                     <div>
-                      <p className="text-sm font-medium text-bright">Mutation access</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
+                      <p className="text-sm font-medium text-md-sys-on-surface">Mutation access</p>
+                      <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">
                         Roles <code className="font-mono">analyst</code>,{' '}
                         <code className="font-mono">editor</code>,{' '}
                         <code className="font-mono">admin</code> can mutate
@@ -659,8 +659,8 @@ export default function RiskSettingsPage() {
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         session.canMutate
-                          ? 'bg-green-500/15 text-green-700 dark:text-green-300'
-                          : 'bg-red-500/15 text-red-700 dark:text-red-300'
+                          ? 'bg-md-sys-success-container text-md-sys-on-success-container'
+                          : 'bg-md-sys-error-container text-md-sys-on-error-container'
                       }`}
                     >
                       {session.canMutate ? 'Allowed' : 'Read-only'}
@@ -668,14 +668,14 @@ export default function RiskSettingsPage() {
                   </div>
 
                   <div className="px-5 py-4">
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-md-sys-on-surface-variant">
                       To change roles or enable auth, set{' '}
                       <code className="font-mono">AUTH_SECRET</code>,{' '}
                       <code className="font-mono">AUTH_USER</code>,{' '}
                       <code className="font-mono">AUTH_PASSWORD</code>, and{' '}
                       <code className="font-mono">AUTH_DEFAULT_ROLE</code> in your environment.{' '}
                       See the{' '}
-                      <Link to="/docs" className="text-link hover:underline">
+                      <Link to="/docs" className="text-md-sys-primary hover:underline">
                         integration docs
                       </Link>{' '}
                       for details.

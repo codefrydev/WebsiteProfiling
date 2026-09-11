@@ -20,7 +20,7 @@ export default function ReportShellSkeleton({ variant }: ReportShellSkeletonProp
   if (variant === 'home') {
     return (
       <div
-        className="min-h-screen bg-brand-900 text-foreground"
+        className="min-h-screen bg-md-sys-surface-container-low text-md-sys-on-surface"
         role="status"
         aria-busy="true"
         aria-label={loadingLabel}
@@ -51,14 +51,14 @@ export default function ReportShellSkeleton({ variant }: ReportShellSkeletonProp
 
   return (
     <div
-      className="min-h-screen bg-brand-900 text-foreground flex overflow-hidden"
+      className="min-h-screen bg-md-sys-surface-container-low text-md-sys-on-surface flex overflow-hidden"
       role="status"
       aria-busy="true"
       aria-label={loadingLabel}
     >
       <span className="sr-only">{loadingLabel}</span>
-      <aside className="hidden md:flex w-64 bg-brand-800 border-r border-muted flex-col h-screen shrink-0">
-        <div className="h-16 flex items-center gap-3 px-6 border-b border-muted bg-brand-900/30 shrink-0">
+      <aside className="hidden md:flex w-64 bg-md-sys-surface-container border-r border-md-sys-outline-variant/40 flex-col h-screen shrink-0">
+        <div className="h-16 flex items-center gap-3 px-6 border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/30 shrink-0">
           <AppLogo className="opacity-60" />
           <div className="min-w-0 flex-1 space-y-2">
             <Skeleton className="h-4 w-[70%]" />
@@ -75,7 +75,7 @@ export default function ReportShellSkeleton({ variant }: ReportShellSkeletonProp
             </div>
           ))}
         </nav>
-        <div className="p-4 border-t border-muted bg-brand-900/30 space-y-2">
+        <div className="p-4 border-t border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/30 space-y-2">
           <div className="flex items-center gap-3">
             <Skeleton className="h-8 w-8 rounded-full shrink-0" />
             <div className="flex-1 space-y-1.5 min-w-0">
@@ -87,11 +87,11 @@ export default function ReportShellSkeleton({ variant }: ReportShellSkeletonProp
       </aside>
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
-        <header className="h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0">
+        <header className="h-16 border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0">
           <button
             type="button"
             disabled
-            className="md:hidden p-2 -ml-2 text-muted-foreground rounded-lg shrink-0 opacity-50"
+            className="md:hidden p-2 -ml-2 text-md-sys-on-surface-variant rounded-full shrink-0 opacity-50"
             aria-hidden
           >
             <Menu className="h-6 w-6" />
@@ -106,10 +106,10 @@ export default function ReportShellSkeleton({ variant }: ReportShellSkeletonProp
           <Skeleton className="h-8 w-56 max-w-[80%]" />
           <Skeleton className="h-4 w-full max-w-2xl" />
           <Skeleton className="h-4 w-full max-w-xl" />
-          <Skeleton className="h-48 sm:h-64 w-full rounded-xl border border-default" />
+          <Skeleton className="h-48 sm:h-64 w-full rounded-xl border border-md-sys-outline-variant/40" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Skeleton className="h-32 rounded-xl border border-default" />
-            <Skeleton className="h-32 rounded-xl border border-default" />
+            <Skeleton className="h-32 rounded-xl border border-md-sys-outline-variant/40" />
+            <Skeleton className="h-32 rounded-xl border border-md-sys-outline-variant/40" />
           </div>
         </div>
       </main>

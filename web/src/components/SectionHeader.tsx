@@ -30,8 +30,8 @@ export default function SectionHeader({
   return (
     <div className={`${wrapClass} ${className}`.trim()}>
       <div className="flex items-center gap-2">
-        <Icon className={`${iconClass} text-link shrink-0`} aria-hidden />
-        <h2 className={`${titleClass} font-bold text-bright`}>{title}</h2>
+        <Icon className={`${iconClass} text-md-sys-primary shrink-0`} aria-hidden />
+        <h2 className={`${titleClass} font-bold text-md-sys-on-surface`}>{title}</h2>
         {hintContent ? (
           <HelpHint title={hintContent.title} ariaLabel={`About ${title}`}>
             {hintContent.body}
@@ -39,7 +39,7 @@ export default function SectionHeader({
         ) : null}
       </div>
       {description ? (
-        <p className={`mt-1 ${descClass} text-muted-foreground leading-relaxed max-w-3xl`}>{description}</p>
+        <p className={`mt-1 ${descClass} text-md-sys-on-surface-variant leading-relaxed max-w-3xl`}>{description}</p>
       ) : null}
     </div>
   );

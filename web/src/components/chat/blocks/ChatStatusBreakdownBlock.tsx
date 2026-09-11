@@ -22,10 +22,10 @@ export default function ChatStatusBreakdownBlock({ block }: { block: Block }) {
   }, [block.items]);
 
   return (
-    <div className="rounded-xl border border-default bg-[var(--chat-bg)]/60 p-4">
-      <p className="mb-1 text-sm font-medium text-bright">{cb.statusBreakdown}</p>
+    <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface/60 p-4">
+      <p className="mb-1 text-sm font-medium text-md-sys-on-surface">{cb.statusBreakdown}</p>
       {block.successRate != null ? (
-        <p className="mb-3 text-xs text-muted-foreground">
+        <p className="mb-3 text-xs text-md-sys-on-surface-variant">
           {cb.successRate}:{' '}
           {(block.successRate > 1 ? block.successRate : block.successRate * 100).toFixed(1)}%
           {block.totalUrls != null ? ` · ${block.totalUrls} URLs` : ''}

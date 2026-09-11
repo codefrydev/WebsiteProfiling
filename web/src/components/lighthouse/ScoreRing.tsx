@@ -36,10 +36,10 @@ export default function ScoreRing({ label, score, size = 'md' }: ScoreRingProps)
           </g>
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={`font-bold tabular-nums text-bright ${cls.score}`}>{displayScore}</span>
+          <span className={`font-bold tabular-nums text-md-sys-on-surface ${cls.score}`}>{displayScore}</span>
         </div>
       </div>
-      <span className={`font-medium text-center text-muted-foreground ${cls.label}`}>{label}</span>
+      <span className={`font-medium text-center text-md-sys-on-surface-variant ${cls.label}`}>{label}</span>
     </div>
   );
 }

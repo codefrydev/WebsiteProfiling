@@ -31,14 +31,14 @@ export default function CompetitorKeywordGapPanel({ rows, devData }: CompetitorK
   ], [ke]);
 
   if (!rows.length) {
-    return <p className="text-sm text-muted-foreground py-4">{ke.empty}</p>;
+    return <p className="text-sm text-md-sys-on-surface-variant py-4">{ke.empty}</p>;
   }
 
   return (
-    <div className="relative group/dev-card p-4 border-t border-default">
+    <div className="relative group/dev-card p-4 border-t border-md-sys-outline-variant/40">
       {devData != null ? <DevCopyJsonButton data={devData} /> : null}
-      <h3 className="text-sm font-semibold text-foreground mb-1">{ke.title}</h3>
-      <p className="text-xs text-muted-foreground mb-4">{ke.hint}</p>
+      <h3 className="text-sm font-semibold text-md-sys-on-surface mb-1">{ke.title}</h3>
+      <p className="text-xs text-md-sys-on-surface-variant mb-4">{ke.hint}</p>
       <SortablePaginatedTable
         columns={columns}
         rows={rows as unknown as Array<Record<string, unknown>>}

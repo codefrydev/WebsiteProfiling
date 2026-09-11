@@ -75,30 +75,30 @@ function KeywordKpiTile({
       type="button"
       onClick={onClick}
       aria-current={active ? 'true' : undefined}
-      className={`group text-left rounded-xl border p-3 sm:p-4 w-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+      className={`press group text-left rounded-2xl border p-3 sm:p-4 w-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-md-sys-primary active:scale-[0.98] ${
         active
-          ? 'border-accent/50 bg-accent/10 shadow-sm'
-          : 'border-default bg-brand-900/60 hover:border-accent/35 hover:bg-brand-800/80'
+          ? 'border-md-sys-primary/50 bg-md-sys-primary-container/20 shadow-sm'
+          : 'border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/60 hover:border-md-sys-primary/35 hover:bg-md-sys-surface-container/80'
       }`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <span
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${def.accent}`}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${def.accent}`}
         >
           <Icon className="h-4 w-4" aria-hidden />
         </span>
         <ChevronRight
           className={`h-4 w-4 shrink-0 transition-transform ${
-            active ? 'text-accent translate-x-0.5' : 'text-muted-foreground/40 group-hover:text-accent group-hover:translate-x-0.5'
+            active ? 'text-md-sys-primary translate-x-0.5' : 'text-md-sys-on-surface-variant/40 group-hover:text-md-sys-primary group-hover:translate-x-0.5'
           }`}
           aria-hidden
         />
       </div>
-      <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-bold leading-tight">
+      <p className="text-[10px] sm:text-xs text-md-sys-on-surface-variant uppercase tracking-wider font-bold leading-tight">
         <LabelWithHint label={def.label} helpKey={def.helpKey} />
       </p>
-      <p className="text-xl sm:text-2xl font-bold text-bright tabular-nums mt-0.5">{def.value}</p>
-      <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 line-clamp-2">{def.sub}</p>
+      <p className="text-xl sm:text-2xl font-bold text-md-sys-on-surface tabular-nums mt-0.5">{def.value}</p>
+      <p className="text-[11px] sm:text-xs text-md-sys-on-surface-variant mt-1 line-clamp-2">{def.sub}</p>
       <span className="sr-only">{hint}</span>
     </button>
   );
@@ -131,7 +131,7 @@ export default function KeywordExplorerChrome({
       label: k.total,
       value: kpis.totalDisplay,
       sub: format(k.totalSub, { n: kpis.sourceCount }),
-      accent: 'bg-blue-500/15 text-blue-400',
+      accent: 'bg-md-sys-primary-container text-md-sys-on-primary-container',
       helpKey: 'views.keywordsExplorer.totalKeywords',
     },
     {
@@ -141,7 +141,7 @@ export default function KeywordExplorerChrome({
       label: k.gsc,
       value: kpis.gscCount.toLocaleString(),
       sub: k.gscSub,
-      accent: 'bg-emerald-500/15 text-emerald-400',
+      accent: 'bg-md-sys-success-container text-md-sys-on-success-container',
       helpKey: 'views.keywordsExplorer.gscKeywords',
     },
     {
@@ -151,7 +151,7 @@ export default function KeywordExplorerChrome({
       label: k.quickWins,
       value: kpis.quickWins.toLocaleString(),
       sub: k.quickWinsSub,
-      accent: 'bg-amber-500/15 text-amber-400',
+      accent: 'bg-md-sys-warning-container text-md-sys-on-warning-container',
       helpKey: 'views.keywordsExplorer.quickWins',
     },
     {
@@ -161,7 +161,7 @@ export default function KeywordExplorerChrome({
       label: k.cannib,
       value: kpis.cannib.toLocaleString(),
       sub: k.cannibSub,
-      accent: 'bg-red-500/15 text-red-400',
+      accent: 'bg-md-sys-error-container text-md-sys-on-error-container',
       helpKey: 'views.keywordsExplorer.cannibalisation',
     },
   ];
@@ -174,7 +174,7 @@ export default function KeywordExplorerChrome({
       label: k.lostClicks,
       value: kpis.lostClicks.toLocaleString(),
       sub: k.lostClicksSub,
-      accent: 'bg-orange-500/15 text-orange-400',
+      accent: 'bg-md-sys-warning-container text-md-sys-on-warning-container',
       helpKey: 'views.keywordsExplorer.lostClicks',
     },
     {
@@ -184,7 +184,7 @@ export default function KeywordExplorerChrome({
       label: k.questions,
       value: kpis.questions.toLocaleString(),
       sub: k.questionsSub,
-      accent: 'bg-violet-500/15 text-violet-400',
+      accent: 'bg-md-sys-tertiary-container text-md-sys-on-tertiary-container',
       helpKey: 'views.keywordsExplorer.questions',
     },
   ];
@@ -195,20 +195,20 @@ export default function KeywordExplorerChrome({
     <div className="space-y-4 mb-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl sm:text-3xl font-bold text-bright mb-1.5 flex items-center gap-2">
-            <Key className="h-7 w-7 text-link shrink-0" aria-hidden />
+          <h1 className="text-2xl sm:text-3xl font-bold text-md-sys-on-surface mb-1.5 flex items-center gap-2">
+            <Key className="h-7 w-7 text-md-sys-primary shrink-0" aria-hidden />
             {title}
           </h1>
-          <p className="text-sm text-muted-foreground leading-relaxed">{subtitle}</p>
+          <p className="text-sm text-md-sys-on-surface-variant leading-relaxed">{subtitle}</p>
           <div className="flex flex-wrap items-center gap-2 mt-2">
             {enrichedAt && (
-              <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full border border-default bg-brand-800 text-muted-foreground tabular-nums">
+              <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container text-md-sys-on-surface-variant tabular-nums">
                 {format(ke.header.enrichedBadge, { date: enrichedAt })}
               </span>
             )}
             {siteUrl ? (
               <span
-                className="inline-flex max-w-full text-[11px] font-mono px-2 py-0.5 rounded-full border border-emerald-500/25 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300 truncate"
+                className="inline-flex max-w-full text-[11px] font-mono px-2 py-0.5 rounded-full border border-md-sys-success/30 bg-md-sys-success-container/30 text-md-sys-on-success-container truncate"
                 title={siteUrl}
               >
                 {siteUrl}
@@ -225,7 +225,7 @@ export default function KeywordExplorerChrome({
             <button
               type="button"
               onClick={onOpenIntegrations}
-              className="px-3 py-2 text-xs font-medium border border-blue-500/50 text-link rounded-lg hover:bg-blue-500/10 inline-flex items-center gap-1.5"
+              className="press px-4 py-1.5 text-xs font-medium border border-md-sys-primary/40 text-md-sys-primary rounded-full hover:bg-md-sys-primary-container/20 active:scale-[0.98] transition-all inline-flex items-center gap-1.5"
             >
               <Settings2 className="w-3.5 h-3.5" aria-hidden />
               {ke.connectGoogle}
@@ -235,10 +235,10 @@ export default function KeywordExplorerChrome({
             type="button"
             onClick={onToggleSeeds}
             aria-pressed={showSeedExpander}
-            className={`px-3 py-2 text-xs font-medium border rounded-lg inline-flex items-center gap-1.5 transition-colors ${
+            className={`press px-4 py-1.5 text-xs font-medium border rounded-full inline-flex items-center gap-1.5 transition-all active:scale-[0.98] ${
               showSeedExpander
-                ? 'border-accent bg-accent/10 text-accent'
-                : 'border-default text-muted-foreground hover:text-foreground hover:bg-brand-800'
+                ? 'border-md-sys-primary bg-md-sys-primary-container/40 text-md-sys-primary shadow-elevation-1'
+                : 'border-md-sys-outline-variant/40 text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container'
             }`}
           >
             <Search className="w-3.5 h-3.5" aria-hidden />
@@ -247,7 +247,7 @@ export default function KeywordExplorerChrome({
           <button
             type="button"
             onClick={onExportCsv}
-            className="px-3 py-2 text-xs font-medium bg-brand-800 border border-default rounded-lg text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
+            className="press px-4 py-1.5 text-xs font-medium bg-md-sys-surface-container border border-md-sys-outline-variant/50 rounded-full text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all inline-flex items-center gap-1.5"
           >
             <Download className="w-3.5 h-3.5" aria-hidden />
             {ke.exportCsv}
@@ -257,27 +257,27 @@ export default function KeywordExplorerChrome({
 
       <Card padding="none" className="overflow-hidden">
         <div
-          className={`flex gap-3 px-4 py-3 sm:px-5 sm:py-4 border-b border-default ${
-            hasGscConnected ? 'bg-emerald-500/[0.06]' : 'bg-amber-500/[0.08]'
+          className={`flex gap-3 px-4 py-3 sm:px-5 sm:py-4 border-b border-md-sys-outline-variant/40 ${
+            hasGscConnected ? 'bg-md-sys-success-container/20' : 'bg-md-sys-warning-container/20'
           }`}
         >
           {hasGscConnected ? (
-            <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" aria-hidden />
+            <CheckCircle2 className="h-5 w-5 text-md-sys-success shrink-0 mt-0.5" aria-hidden />
           ) : (
-            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" aria-hidden />
+            <Info className="h-5 w-5 text-md-sys-warning shrink-0 mt-0.5" aria-hidden />
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-sm font-semibold text-md-sys-on-surface">
               {hasGscConnected ? ds.gscTitle : ds.noGscTitle}
             </p>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            <p className="text-xs text-md-sys-on-surface-variant mt-1 leading-relaxed">
               {hasGscConnected ? ds.gscDetail : ds.noGscDetail}
             </p>
             {!hasGscConnected && onOpenIntegrations && (
               <button
                 type="button"
                 onClick={onOpenIntegrations}
-                className="mt-3 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent/90 inline-flex items-center gap-1.5"
+                className="press mt-3 px-4 py-2 bg-md-sys-primary text-md-sys-on-primary text-xs font-medium rounded-full hover:brightness-105 active:scale-[0.98] inline-flex items-center gap-1.5 transition-all shadow-sm"
               >
                 <Settings2 className="w-3.5 h-3.5" aria-hidden />
                 {ke.connectGoogle}
@@ -288,7 +288,7 @@ export default function KeywordExplorerChrome({
 
         <div className="relative group/dev-card p-3 sm:p-4">
           {kpiDevData != null ? <DevCopyJsonButton data={kpiDevData} /> : null}
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-0.5 mb-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-md-sys-on-surface-variant px-0.5 mb-3">
             {k.sectionTitle}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">

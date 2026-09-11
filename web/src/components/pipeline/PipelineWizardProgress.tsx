@@ -46,19 +46,19 @@ export default function PipelineWizardProgress({
                 <span
                   className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors ${
                     done
-                      ? 'border-blue-600 bg-blue-600 text-white'
+                      ? 'border-md-sys-primary bg-md-sys-primary text-md-sys-on-primary'
                       : active
-                        ? 'border-blue-500 bg-blue-500/10 text-blue-700 ring-2 ring-blue-500/20 dark:text-blue-300'
+                        ? 'border-md-sys-primary bg-md-sys-primary-container text-md-sys-on-primary-container ring-2 ring-md-sys-primary/20'
                         : reachable
-                          ? 'border-muted-foreground/30 bg-brand-800 text-muted-foreground group-hover:border-muted-foreground/50'
-                          : 'border-muted/60 bg-brand-900/50 text-muted-foreground/60'
+                          ? 'border-md-sys-outline-variant/40 bg-md-sys-surface-container text-md-sys-on-surface-variant group-hover:border-md-sys-outline-variant/60'
+                          : 'border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/50 text-md-sys-on-surface-variant/60'
                   }`}
                 >
                   {done ? <Check className="h-4 w-4" aria-hidden /> : step.id}
                 </span>
                 <span
                   className={`truncate text-center text-xs font-medium sm:text-left sm:text-sm ${
-                    active ? 'text-foreground' : done ? 'text-muted-foreground' : 'text-muted-foreground/70'
+                    active ? 'text-md-sys-on-surface' : done ? 'text-md-sys-on-surface-variant' : 'text-md-sys-on-surface-variant/70'
                   }`}
                 >
                   {step.label}
@@ -67,7 +67,7 @@ export default function PipelineWizardProgress({
               {index < STEPS.length - 1 ? (
                 <div
                   className={`mx-1 hidden h-px flex-1 sm:mx-3 sm:block ${
-                    step.id < currentStep ? 'bg-blue-500/50' : 'bg-muted'
+                    step.id < currentStep ? 'bg-md-sys-primary/50' : 'bg-md-sys-surface-container-highest/60'
                   }`}
                   aria-hidden
                 />

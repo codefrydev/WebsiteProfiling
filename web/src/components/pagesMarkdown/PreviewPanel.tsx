@@ -127,7 +127,7 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
 
   if (!crawlRunId) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground p-8">
+      <div className="flex flex-1 items-center justify-center text-sm text-md-sys-on-surface-variant p-8">
         Select a crawl run and extract markdown from the Builder tab.
       </div>
     );
@@ -138,18 +138,18 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
     <div className="flex min-h-0 w-full flex-1 overflow-hidden">
 
       {/* ── Left: URL list ── */}
-      <aside className="flex w-64 shrink-0 flex-col border-r border-default/60 bg-brand-900/40 xl:w-72">
+      <aside className="flex w-64 shrink-0 flex-col border-r border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 xl:w-72">
 
         {/* Search bar */}
-        <form onSubmit={handleSearch} className="shrink-0 border-b border-default/60 p-3">
+        <form onSubmit={handleSearch} className="shrink-0 border-b border-md-sys-outline-variant/40 p-3">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-md-sys-on-surface-variant pointer-events-none" />
             <input
               type="search"
               placeholder="Filter URLs…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 rounded-md border border-default bg-brand-800 text-xs text-foreground placeholder:text-muted-foreground"
+              className="w-full pl-8 pr-3 py-1.5 rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container text-xs text-md-sys-on-surface placeholder:text-md-sys-on-surface-variant/60 focus:border-md-sys-primary focus:outline-none"
             />
           </div>
         </form>
@@ -157,18 +157,18 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
         {/* URL list — scrolls independently */}
         <div className="flex-1 min-h-0 overflow-y-auto">
           {listError ? (
-            <p className="p-3 text-xs text-red-400">{listError}</p>
+            <p className="p-3 text-xs text-md-sys-error">{listError}</p>
           ) : loadingList ? (
-            <div className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 p-3 text-xs text-md-sys-on-surface-variant">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Loading…
             </div>
           ) : items.length === 0 ? (
-            <p className="p-3 text-xs text-muted-foreground">
+            <p className="p-3 text-xs text-md-sys-on-surface-variant">
               No pages found. Extract markdown from the Builder tab first.
             </p>
           ) : (
-            <ul className="divide-y divide-default/50">
+            <ul className="divide-y divide-md-sys-outline-variant/30/50">
               {items.map((item, idx) => {
                 const isActive = item.url === selectedUrl;
                 return (
@@ -178,20 +178,20 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
                       onClick={() => selectItem(item.url, idx)}
                       className={`w-full text-left px-3 py-2.5 transition-colors ${
                         isActive
-                          ? 'border-l-2 border-link bg-blue-500/10 text-link font-medium'
-                          : 'hover:bg-brand-700/60'
+                          ? 'border-l-2 border-md-sys-primary bg-md-sys-primary-container/40 text-md-sys-on-primary-container font-medium'
+                          : 'hover:bg-md-sys-surface-container-high/60'
                       }`}
                     >
                       <p
-                        className={`text-xs font-medium truncate ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
+                        className={`text-xs font-medium truncate ${isActive ? 'text-md-sys-on-surface' : 'text-md-sys-on-surface-variant'}`}
                         title={item.title ?? item.url}
                       >
                         {item.title ?? '(no title)'}
                       </p>
-                      <p className="mt-0.5 text-[10px] text-muted-foreground truncate" title={item.url}>
+                      <p className="mt-0.5 text-[10px] text-md-sys-on-surface-variant truncate" title={item.url}>
                         {item.url}
                       </p>
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                      <p className="mt-0.5 text-[10px] text-md-sys-on-surface-variant">
                         {(item.word_count ?? 0).toLocaleString()} words
                       </p>
                     </button>
@@ -203,32 +203,32 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
         </div>
 
         {/* Pagination footer */}
-        <div className="shrink-0 border-t border-default/60 p-2 space-y-1">
+        <div className="shrink-0 border-t border-md-sys-outline-variant/40 p-2 space-y-1">
           <div className="flex items-center justify-between gap-1">
             <button
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="flex items-center gap-0.5 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-brand-700/60 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
+              className="press flex items-center gap-0.5 rounded-full px-3 py-1 text-xs text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-high/60 transition-all active:scale-[0.98] disabled:opacity-40 disabled:hover:bg-transparent"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
               Prev
             </button>
-            <span className="text-[10px] text-muted-foreground tabular-nums">
+            <span className="text-[10px] text-md-sys-on-surface-variant tabular-nums">
               {page} / {Math.max(1, totalPages)}
             </span>
             <button
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="flex items-center gap-0.5 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-brand-700/60 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
+              className="press flex items-center gap-0.5 rounded-full px-3 py-1 text-xs text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-high/60 transition-all active:scale-[0.98] disabled:opacity-40 disabled:hover:bg-transparent"
             >
               Next
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
           {total > 0 ? (
-            <p className="text-center text-[10px] text-muted-foreground">
+            <p className="text-center text-[10px] text-md-sys-on-surface-variant">
               {total.toLocaleString()} pages total
             </p>
           ) : null}
@@ -239,13 +239,13 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
 
         {/* Toolbar */}
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-default/60 bg-brand-900/60 px-4 py-2">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/60 px-4 py-2">
           <div className="flex min-w-0 items-center gap-1">
             <button
               type="button"
               disabled={selectedIndex <= 0}
               onClick={() => navUrl(-1)}
-              className="rounded p-1 text-muted-foreground hover:bg-brand-800 hover:text-foreground disabled:opacity-40"
+              className="press rounded-full p-1 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container hover:text-md-sys-on-surface disabled:opacity-40 active:scale-95 transition-all"
               title="Previous page"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -254,12 +254,12 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
               type="button"
               disabled={selectedIndex >= items.length - 1}
               onClick={() => navUrl(1)}
-              className="rounded p-1 text-muted-foreground hover:bg-brand-800 hover:text-foreground disabled:opacity-40"
+              className="press rounded-full p-1 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container hover:text-md-sys-on-surface disabled:opacity-40 active:scale-95 transition-all"
               title="Next page"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
-            <span className="ml-1 min-w-0 truncate text-xs text-muted-foreground" title={selectedUrl ?? ''}>
+            <span className="ml-1 min-w-0 truncate text-xs text-md-sys-on-surface-variant" title={selectedUrl ?? ''}>
               {selectedUrl ?? 'Select a page from the list'}
             </span>
           </div>
@@ -269,10 +269,10 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
               type="button"
               onClick={() => setRawMode((r) => !r)}
               title={rawMode ? 'Rendered preview' : 'Raw markdown'}
-              className={`rounded border p-1.5 text-xs ${
+              className={`press rounded-full border p-1.5 text-xs active:scale-95 transition-all ${
                 rawMode
-                  ? 'border-accent-warm text-accent-warm'
-                  : 'border-default text-muted-foreground hover:text-foreground'
+                  ? 'border-md-sys-tertiary text-md-sys-tertiary bg-md-sys-tertiary/10'
+                  : 'border-md-sys-outline-variant/40 text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
               }`}
             >
               {rawMode ? <Eye className="h-3.5 w-3.5" /> : <Code className="h-3.5 w-3.5" />}
@@ -282,27 +282,27 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
               onClick={handleCopy}
               disabled={!content}
               title="Copy markdown"
-              className="rounded border border-default p-1.5 text-muted-foreground hover:text-foreground disabled:opacity-40"
+              className="press rounded-full border border-md-sys-outline-variant/40 p-1.5 text-md-sys-on-surface-variant hover:text-md-sys-on-surface disabled:opacity-40 active:scale-95 transition-all"
             >
               <Copy className="h-3.5 w-3.5" />
             </button>
-            {copied ? <span className="text-xs text-green-400">Copied!</span> : null}
+            {copied ? <span className="text-xs text-md-sys-success font-medium">Copied!</span> : null}
           </div>
         </div>
 
         {/* Scrollable markdown content */}
         <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6">
           {loadingContent ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-md-sys-on-surface-variant">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading…
             </div>
           ) : contentError ? (
-            <p className="text-sm text-red-400">{contentError}</p>
+            <p className="text-sm text-md-sys-error">{contentError}</p>
           ) : !selectedUrl ? (
-            <p className="text-sm text-muted-foreground">Select a page from the list.</p>
+            <p className="text-sm text-md-sys-on-surface-variant">Select a page from the list.</p>
           ) : !content ? (
-            <p className="text-sm text-muted-foreground">No content.</p>
+            <p className="text-sm text-md-sys-on-surface-variant">No content.</p>
           ) : (
             <MarkdownPreview content={content.markdown ?? ''} raw={rawMode} />
           )}

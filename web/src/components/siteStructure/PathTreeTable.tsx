@@ -17,16 +17,16 @@ function ComparePairBar({ current, baseline, title }: ComparePairBarProps) {
   const b = Math.max(0, Number(baseline) || 0);
   const t = c + b;
   if (t <= 0) {
-    return <span className="text-xs text-muted-foreground tabular-nums">—</span>;
+    return <span className="text-xs text-md-sys-on-surface-variant tabular-nums">—</span>;
   }
   const pctB = (b / t) * 100;
   const pctC = (c / t) * 100;
   return (
     <div
-      className="flex h-1.5 rounded overflow-hidden bg-track min-w-[40px] max-w-[64px] shrink-0 mx-auto"
+      className="flex h-1.5 rounded overflow-hidden bg-md-sys-surface-container-highest/40 min-w-[40px] max-w-[64px] shrink-0 mx-auto"
       title={title}
     >
-      <div className="bg-muted-foreground/45" style={{ width: `${pctB}%` }} />
+      <div className="bg-md-sys-on-surface-variant/45" style={{ width: `${pctB}%` }} />
       <div className="bg-blue-500" style={{ width: `${pctC}%` }} />
     </div>
   );
@@ -48,7 +48,7 @@ function fmtScore(n: unknown): string {
 }
 
 function scoreTextClass(score: unknown): string {
-  if (score == null || !Number.isFinite(Number(score))) return 'text-muted-foreground';
+  if (score == null || !Number.isFinite(Number(score))) return 'text-md-sys-on-surface-variant';
   const s = Number(score);
   if (s >= 90) return 'text-green-700 dark:text-green-400 font-semibold';
   if (s >= 50) return 'text-yellow-800 dark:text-yellow-400 font-semibold';
@@ -89,7 +89,7 @@ function TreeGuides({ depth }: { depth: number }) {
       {Array.from({ length: depth }, (_, i) => (
         <span
           key={i}
-          className="border-l border-muted-foreground/30"
+          className="border-l border-md-sys-outline-variant/40"
           style={{ width: GUIDE_W, marginLeft: i === 0 ? 4 : 0 }}
         />
       ))}
@@ -117,7 +117,7 @@ function PathTreeLabel({
       {hasKids ? (
         <button
           type="button"
-          className="p-0.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-brand-700 shrink-0 transition-colors"
+          className="press p-1 rounded-full text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-high shrink-0 active:scale-[0.98] transition-all"
           aria-expanded={isOpen}
           aria-label={isOpen ? `Collapse ${row.pathKey}` : `Expand ${row.pathKey}`}
           onClick={() => onToggle(row.pathKey)}
@@ -128,33 +128,33 @@ function PathTreeLabel({
         <span className="w-5 shrink-0" aria-hidden />
       )}
       {isRoot ? (
-        <Home className="h-3.5 w-3.5 text-link shrink-0" aria-hidden />
+        <Home className="h-3.5 w-3.5 text-md-sys-primary shrink-0" aria-hidden />
       ) : isLeaf ? (
-        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+        <FileText className="h-3.5 w-3.5 text-md-sys-on-surface-variant shrink-0" aria-hidden />
       ) : (
         <Folder className={`h-3.5 w-3.5 shrink-0 ${isOpen ? 'text-amber-500' : 'text-amber-600/70'}`} aria-hidden />
       )}
       {hasKids ? (
         <button
           type="button"
-          className="truncate font-mono text-sm text-left min-w-0 flex-1 font-medium text-foreground hover:text-link transition-colors"
+          className="truncate font-mono text-sm text-left min-w-0 flex-1 font-medium text-md-sys-on-surface hover:text-md-sys-primary transition-colors"
           title={row.pathKey}
           onClick={() => onToggle(row.pathKey)}
         >
           {label}
         </button>
       ) : (
-        <span className="truncate font-mono text-sm text-foreground/90 min-w-0 flex-1" title={row.pathKey}>
+        <span className="truncate font-mono text-sm text-md-sys-on-surface/90 min-w-0 flex-1" title={row.pathKey}>
           {label}
         </span>
       )}
       {!isRoot ? (
-        <span className="hidden xl:inline truncate font-mono text-[10px] text-muted-foreground max-w-[12rem]" title={row.pathKey}>
+        <span className="hidden xl:inline truncate font-mono text-[10px] text-md-sys-on-surface-variant max-w-[12rem]" title={row.pathKey}>
           {row.pathKey}
         </span>
       ) : null}
       {hasKids && row.current.pages > 0 ? (
-        <span className="shrink-0 rounded-md bg-brand-700/80 border border-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+        <span className="shrink-0 rounded-md bg-md-sys-surface-container-high/80 border border-md-sys-outline-variant/40 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-md-sys-on-surface-variant">
           {fmtInt(row.current.pages)}
         </span>
       ) : null}
@@ -182,11 +182,11 @@ export default function PathTreeTable({
   function renderPathCell(row: PathTreeTableRow, rowIndex: number) {
     const hasKids = row.children?.length > 0;
     const isOpen = expanded.has(row.pathKey);
-    const rowBg = rowIndex % 2 === 1 ? 'bg-brand-900/40' : 'bg-brand-800';
+    const rowBg = rowIndex % 2 === 1 ? 'bg-md-sys-surface-container-low/40' : 'bg-md-sys-surface-container';
 
     return (
       <TableCell
-        className={`min-w-[200px] max-w-[min(52vw,28rem)] sticky left-0 z-[1] ${rowBg} border-r border-muted/60 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.35)] py-2.5`}
+        className={`min-w-[200px] max-w-[min(52vw,28rem)] sticky left-0 z-[1] ${rowBg} border-r border-md-sys-outline-variant/50 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.35)] py-2.5`}
       >
         <div className="flex items-stretch min-w-0">
           <TreeGuides depth={row.depth} />
@@ -214,7 +214,7 @@ export default function PathTreeTable({
                 title={formatCompareTitle(s.changeTooltipPages, base.pages, cur.pages)}
               />
             ) : (
-              <span className="text-xs text-muted-foreground">—</span>
+              <span className="text-xs text-md-sys-on-surface-variant">—</span>
             )}
           </TableCell>
         ) : null}
@@ -234,7 +234,7 @@ export default function PathTreeTable({
                 title={formatCompareTitle(s.changeTooltipInlinks, base.inlinks, cur.inlinks)}
               />
             ) : (
-              <span className="text-xs text-muted-foreground">—</span>
+              <span className="text-xs text-md-sys-on-surface-variant">—</span>
             )}
           </TableCell>
         ) : null}
@@ -257,7 +257,7 @@ export default function PathTreeTable({
     <Table wrapperClassName={tableWrapperClassName}>
       <TableHead sticky>
         <TableRow>
-          <TableHeadCell className="min-w-[200px] sticky left-0 z-20 bg-brand-900 border-r border-muted/60 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.35)]" hint={metricHelpHint('views.siteStructure.colPath')}>
+          <TableHeadCell className="min-w-[200px] sticky left-0 z-20 bg-md-sys-surface-container-low border-r border-md-sys-outline-variant/50 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.35)]" hint={metricHelpHint('views.siteStructure.colPath')}>
             {s.colPath}
           </TableHeadCell>
           <TableHeadCell className="text-right whitespace-nowrap" hint={metricHelpHint('views.siteStructure.colPages')}>
@@ -295,7 +295,7 @@ export default function PathTreeTable({
       </TableHead>
       <TableBody>
         {rows.map((row, rowIndex) => (
-          <TableRow key={row.pathKey} className={rowIndex % 2 === 1 ? 'bg-brand-900/30' : undefined}>
+          <TableRow key={row.pathKey} className={rowIndex % 2 === 1 ? 'bg-md-sys-surface-container-low/30' : undefined}>
             {renderPathCell(row, rowIndex)}
             {renderMetricCells(row)}
           </TableRow>

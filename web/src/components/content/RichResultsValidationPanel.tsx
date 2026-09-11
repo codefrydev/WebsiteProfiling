@@ -64,11 +64,11 @@ export default function RichResultsValidationPanel({ rows, meta, devData }: Rich
     <Card padding="tight" shadow devData={devData}>
       <div className="flex items-center gap-2 mb-2">
         <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-400" />
-        <h3 className="text-sm font-bold text-foreground">{vca.richResultsTitle}</h3>
+        <h3 className="text-sm font-bold text-md-sys-on-surface">{vca.richResultsTitle}</h3>
       </div>
-      <p className="text-xs text-muted-foreground mb-2">{vca.richResultsHint}</p>
+      <p className="text-xs text-md-sys-on-surface-variant mb-2">{vca.richResultsHint}</p>
       {meta && (meta.checked ?? 0) > 0 ? (
-        <p className="text-xs text-muted-foreground mb-2">
+        <p className="text-xs text-md-sys-on-surface-variant mb-2">
           {format(vca.richResultsMeta, {
             gsc: meta.gsc_count ?? 0,
             api: meta.api_count ?? 0,

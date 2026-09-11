@@ -496,7 +496,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
     return (
       <PageLayout className="space-y-6">
         <PageHeader
-          icon={<Key className="h-7 w-7 text-link shrink-0" />}
+          icon={<Key className="h-7 w-7 text-md-sys-primary shrink-0" />}
           title={ke.title}
           subtitle={ke.subtitle}
         />
@@ -506,7 +506,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
           description={
             <span className="space-y-2 block">
               <span className="block whitespace-pre-line">{ke.emptyBody}</span>
-              <span className="block text-xs text-muted-foreground">{ke.emptyHint}</span>
+              <span className="block text-xs text-md-sys-on-surface-variant">{ke.emptyHint}</span>
             </span>
           }
           primaryAction={{
@@ -517,7 +517,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
         />
         {!hasGscConnected && onOpenIntegrations && (
           <Card className="max-w-lg mx-auto mt-6 text-center border-blue-500/30">
-            <p className="text-sm text-muted-foreground mb-3">{ke.connectBanner}</p>
+            <p className="text-sm text-md-sys-on-surface-variant mb-3">{ke.connectBanner}</p>
             <Button
               variant="primary"
               onClick={onOpenIntegrations}
@@ -570,7 +570,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
       {showSeedExpander && <BulkSeedPanel brandQuery={brandQuery} />}
 
       {showBrandScopeUi && (
-        <p className="text-xs rounded-lg px-3 py-2 mb-4 border border-accent/30 bg-accent/5 text-muted-foreground">
+        <p className="text-xs rounded-lg px-3 py-2 mb-4 border border-accent/30 bg-accent/5 text-md-sys-on-surface-variant">
           {format(ke.brandScopeBanner, { brand: brandName })}
         </p>
       )}
@@ -676,7 +676,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
       )}
 
       {kwData.fetched_at && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-md-sys-on-surface-variant">
           {format(ke.footer.lastEnrichment, { date: new Date(String(kwData.fetched_at)).toLocaleString() })}
           {(kwData.suggest_count ?? 0) > 0 && format(ke.footer.suggestCount, { n: kwData.suggest_count })}
           {(kwData.cannibalisation_count ?? 0) > 0 && format(ke.footer.cannibCount, { n: kwData.cannibalisation_count })}

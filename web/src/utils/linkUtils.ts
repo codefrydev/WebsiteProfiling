@@ -48,11 +48,11 @@ export interface LabelColor {
 }
 
 export function rtColor(ms: unknown): string {
-  if (ms == null || ms === 0) return 'text-muted-foreground';
+  if (ms == null || ms === 0) return 'text-md-sys-on-surface-variant';
   const n = Number(ms);
-  if (n < 500) return 'text-green-700 dark:text-green-400';
-  if (n <= 2000) return 'text-yellow-800 dark:text-yellow-400';
-  return 'text-red-600 dark:text-red-400';
+  if (n < 500) return 'text-md-sys-success';
+  if (n <= 2000) return 'text-md-sys-warning';
+  return 'text-md-sys-error';
 }
 
 /** Relative bar width for inlinks vs max in current result set (0–100). */
@@ -63,50 +63,50 @@ export function inlinksBarWidthPct(count: number, maxInSection: number): number 
   return Math.min(100, (n / max) * 100);
 }
 
-/** Text emphasis for inlinks count — muted at zero, sky accent when strong. */
+/** Text emphasis for inlinks count — muted at zero, primary accent when strong. */
 export function inlinksTextClass(count: number, maxInSection: number): string {
   const n = Math.max(0, Number(count) || 0);
-  if (n === 0) return 'text-muted-foreground font-normal';
+  if (n === 0) return 'text-md-sys-on-surface-variant font-normal';
   const ratio = maxInSection > 0 ? n / maxInSection : 0;
-  if (ratio >= 0.66) return 'text-sky-800 dark:text-sky-300 font-semibold';
-  if (ratio >= 0.33) return 'text-sky-900/90 dark:text-sky-400 font-medium';
-  return 'text-foreground font-medium';
+  if (ratio >= 0.66) return 'text-md-sys-primary font-semibold';
+  if (ratio >= 0.33) return 'text-md-sys-primary/80 font-medium';
+  return 'text-md-sys-on-surface font-medium';
 }
 
 export function wcLabel(wc: number): LabelColor {
-  if (wc < 300) return { label: strings.common.wcThin, color: 'text-red-600 dark:text-red-400' };
-  if (wc < 1000) return { label: strings.common.wcMedium, color: 'text-yellow-800 dark:text-yellow-400' };
-  return { label: strings.common.wcLong, color: 'text-green-700 dark:text-green-400' };
+  if (wc < 300) return { label: strings.common.wcThin, color: 'text-md-sys-error' };
+  if (wc < 1000) return { label: strings.common.wcMedium, color: 'text-md-sys-warning' };
+  return { label: strings.common.wcLong, color: 'text-md-sys-success' };
 }
 
 export function readingLabel(rl: number): LabelColor {
-  if (rl <= 5) return { label: strings.common.rlElementary, color: 'text-green-700 dark:text-green-400' };
-  if (rl <= 8) return { label: strings.common.rlMiddle, color: 'text-link' };
-  if (rl <= 12) return { label: strings.common.rlHighSchool, color: 'text-yellow-800 dark:text-yellow-400' };
-  return { label: strings.common.rlCollege, color: 'text-red-600 dark:text-red-400' };
+  if (rl <= 5) return { label: strings.common.rlElementary, color: 'text-md-sys-success' };
+  if (rl <= 8) return { label: strings.common.rlMiddle, color: 'text-md-sys-primary' };
+  if (rl <= 12) return { label: strings.common.rlHighSchool, color: 'text-md-sys-warning' };
+  return { label: strings.common.rlCollege, color: 'text-md-sys-error' };
 }
 
 export function titleCharColor(len: number): string {
-  if (len === 0) return 'bg-red-500';
-  if (len < 30) return 'bg-yellow-500';
-  if (len <= 60) return 'bg-green-500';
-  return 'bg-red-500';
+  if (len === 0) return 'bg-md-sys-error';
+  if (len < 30) return 'bg-md-sys-warning';
+  if (len <= 60) return 'bg-md-sys-success';
+  return 'bg-md-sys-error';
 }
 
 export function metaCharColor(len: number): string {
-  if (len === 0) return 'bg-red-500';
-  if (len >= 70 && len <= 160) return 'bg-green-500';
-  if (len > 160) return 'bg-red-500';
-  return 'bg-yellow-500';
+  if (len === 0) return 'bg-md-sys-error';
+  if (len >= 70 && len <= 160) return 'bg-md-sys-success';
+  if (len > 160) return 'bg-md-sys-error';
+  return 'bg-md-sys-warning';
 }
 
 export function severityBg(s: string | null | undefined): string {
-  if (!s) return 'bg-brand-700 text-foreground';
+  if (!s) return 'bg-md-sys-surface-container-high text-md-sys-on-surface';
   const sl = s.toLowerCase();
-  if (sl === 'critical') return 'bg-red-500/20 text-red-800 dark:text-red-300';
-  if (sl === 'high') return 'bg-orange-500/20 text-orange-800 dark:text-orange-300';
-  if (sl === 'medium') return 'bg-yellow-500/20 text-yellow-900 dark:text-yellow-300';
-  return 'bg-brand-700/60 text-muted-foreground';
+  if (sl === 'critical') return 'bg-md-sys-error-container text-md-sys-on-error-container border border-md-sys-error/30';
+  if (sl === 'high') return 'bg-md-sys-error-container/60 text-md-sys-on-error-container border border-md-sys-error/20';
+  if (sl === 'medium') return 'bg-md-sys-tertiary-container text-md-sys-on-tertiary-container border border-md-sys-tertiary/30';
+  return 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface-variant';
 }
 
 // ─── JSON parsers ─────────────────────────────────────────────────────────────

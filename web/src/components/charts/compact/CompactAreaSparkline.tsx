@@ -15,7 +15,7 @@ export function CompactAreaSparkline({
   points,
   className = '',
   heightClass = 'h-8',
-  strokeClassName = 'text-link/70',
+  strokeClassName = 'text-md-sys-primary/70',
 }: CompactAreaSparklineProps) {
   const fillId = useId();
   if (points.length < 2) return null;

@@ -132,22 +132,22 @@ export default function AuditPromptGenerator({
           onClick={closeModal}
         >
           <div
-            className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl border border-default bg-brand-800 shadow-2xl"
+            className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby={modalTitleId}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-muted px-6 py-4">
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-md-sys-outline-variant/40 px-6 py-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 shrink-0 text-link" aria-hidden />
-                  <h2 id={modalTitleId} className="font-semibold text-foreground">
+                  <FileText className="h-5 w-5 shrink-0 text-md-sys-primary" aria-hidden />
+                  <h2 id={modalTitleId} className="font-semibold text-md-sys-on-surface">
                     {vp.promptModalTitle}
                   </h2>
                 </div>
-                <p className="mt-1 pl-7 text-xs text-muted-foreground">{vp.promptModalHint}</p>
-                <p className="mt-1 pl-7 text-xs font-medium text-foreground">
+                <p className="mt-1 pl-7 text-xs text-md-sys-on-surface-variant">{vp.promptModalHint}</p>
+                <p className="mt-1 pl-7 text-xs font-medium text-md-sys-on-surface">
                   {format(vp.promptDedupeSummary, {
                     unique: built.uniqueCount,
                     total: built.rawCount,
@@ -158,7 +158,7 @@ export default function AuditPromptGenerator({
                 type="button"
                 aria-label="Close"
                 onClick={closeModal}
-                className="rounded-lg p-1.5 text-muted-foreground hover:bg-brand-700 hover:text-foreground"
+                className="press rounded-full p-2 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98] transition-all"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -168,13 +168,13 @@ export default function AuditPromptGenerator({
               <textarea
                 readOnly
                 value={fullText}
-                className="w-full min-h-[320px] resize-y rounded-lg border border-default bg-brand-900 p-3 font-mono text-xs leading-relaxed text-foreground"
+                className="w-full min-h-[320px] resize-y rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low p-3 font-mono text-xs leading-relaxed text-md-sys-on-surface"
                 aria-label={vp.promptModalTitle}
               />
               {aiError ? <p className="mt-2 text-xs text-red-700 dark:text-red-400">{aiError}</p> : null}
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-muted px-6 py-4">
+            <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-md-sys-outline-variant/40 px-6 py-4">
               <Button type="button" variant="secondary" className="!text-xs" onClick={() => void handleCopy()}>
                 {copied ? <Check className="h-3.5 w-3.5 text-green-600" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
                 {copied ? vp.copiedPrompt : aiPlan ? vp.copyFullPrompt : vp.copyPrompt}

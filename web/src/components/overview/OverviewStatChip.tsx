@@ -15,20 +15,20 @@ export function OverviewStatChip({
   iconWrapClassName,
   label,
   value,
-  valueClassName = 'text-bright',
+  valueClassName = 'text-md-sys-on-surface',
   className = '',
 }: OverviewStatChipProps) {
   return (
     <div
-      className={`flex flex-1 items-center justify-between gap-3 rounded-[1.75rem] border border-default/60 bg-brand-900/40 p-5 shadow-sm ${className}`.trim()}
+      className={`flex flex-1 items-center justify-between gap-3 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5 transition-all duration-200 ${className}`.trim()}
     >
       <div className="flex min-w-0 items-center gap-3">
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${iconWrapClassName}`}>
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconWrapClassName}`}>
           {icon}
         </div>
-        <span className="min-w-0 truncate text-sm font-medium text-muted-foreground">{label}</span>
+        <span className="min-w-0 truncate text-sm font-medium text-md-sys-on-surface-variant">{label}</span>
       </div>
-      <span className={`shrink-0 text-3xl font-extrabold tabular-nums ${valueClassName}`}>{value}</span>
+      <span className={`shrink-0 text-3xl font-bold tabular-nums ${valueClassName}`}>{value}</span>
     </div>
   );
 }

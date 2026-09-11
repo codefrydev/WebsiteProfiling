@@ -53,17 +53,17 @@ function ModelRow({
     <button
       type="button"
       onClick={onSelect}
-      className={`flex w-full items-start gap-2 rounded-xl px-3 py-2 text-left transition-colors hover:bg-[var(--chat-surface-hover)] ${
-        active ? 'bg-[var(--chat-surface-hover)]' : ''
+      className={`press flex w-full items-start gap-2 rounded-full px-3 py-2 text-left transition-colors hover:bg-md-sys-surface-container-high active:scale-[0.98] ${
+        active ? 'bg-md-sys-surface-container-high' : ''
       }`}
     >
       <span className="mt-0.5 w-4 shrink-0">
-        {active ? <Check className="h-4 w-4 text-foreground" /> : null}
+        {active ? <Check className="h-4 w-4 text-md-sys-on-surface" /> : null}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm text-bright">{label}</span>
+        <span className="block truncate text-sm text-md-sys-on-surface">{label}</span>
         {hint ? (
-          <span className="block truncate text-xs text-muted-foreground">{hint}</span>
+          <span className="block truncate text-xs text-md-sys-on-surface-variant">{hint}</span>
         ) : null}
       </span>
     </button>
@@ -142,7 +142,7 @@ export default function ChatModelPicker({
         onClick={() => setOpen((v) => !v)}
         className={
           triggerClassName ??
-          'flex max-w-[7rem] items-center gap-1 rounded-full px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground disabled:opacity-50 sm:max-w-[9rem]'
+          'flex max-w-[7rem] items-center gap-1 rounded-full px-2 py-1.5 text-xs text-md-sys-on-surface-variant transition-colors hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface disabled:opacity-50 sm:max-w-[9rem]'
         }
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -155,7 +155,7 @@ export default function ChatModelPicker({
           />
         ) : null}
         <span
-          className={`truncate font-medium ${triggerClassName ? 'text-inherit' : 'text-foreground'}`}
+          className={`truncate font-medium ${triggerClassName ? 'text-inherit' : 'text-md-sys-on-surface'}`}
         >
           {triggerLabel}
         </span>
@@ -164,14 +164,14 @@ export default function ChatModelPicker({
 
       {open ? (
         <div
-          className={`absolute right-0 z-50 flex max-h-[min(24rem,60vh)] w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-default bg-[var(--chat-surface)] shadow-2xl ${
+          className={`absolute right-0 z-50 flex max-h-[min(24rem,60vh)] w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container shadow-2xl ${
             menuPlacement === 'below' ? 'top-full mt-2' : 'bottom-full mb-2'
           }`}
           role="listbox"
         >
           {isOllama && catalogUsable && models.length ? (
             <>
-              <div className="border-b border-muted/50 p-2">
+              <div className="border-b border-md-sys-outline-variant/40 p-2">
                 <input
                   type="search"
                   value={query}
@@ -179,13 +179,13 @@ export default function ChatModelPicker({
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={s.searchPlaceholder}
                   aria-label={c.findModel}
-                  className="w-full rounded-xl border border-default bg-[var(--chat-bg)] px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-violet-500/50 focus:outline-none"
+                  className="w-full rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface px-3 py-2 text-xs text-md-sys-on-surface placeholder:text-md-sys-on-surface-variant/60 focus:border-md-sys-primary focus:outline-none"
                 />
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto p-1">
                 {installed.length ? (
                   <div className="mb-1">
-                    <p className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <p className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-md-sys-on-surface-variant">
                       {s.groupInstalled}
                     </p>
                     {installed.map((m) => (
@@ -201,7 +201,7 @@ export default function ChatModelPicker({
                 ) : null}
                 {cloud.length ? (
                   <div className="mb-1">
-                    <p className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <p className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-md-sys-on-surface-variant">
                       {s.groupCloud}
                     </p>
                     {cloud.map((m) => (
@@ -217,7 +217,7 @@ export default function ChatModelPicker({
                 ) : null}
                 {local.length ? (
                   <div>
-                    <p className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <p className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-md-sys-on-surface-variant">
                       {s.groupLocal}
                     </p>
                     {local.map((m) => (
@@ -245,12 +245,12 @@ export default function ChatModelPicker({
               ))}
             </div>
           ) : (
-            <div className="p-3 text-xs text-muted-foreground">
+            <div className="p-3 text-xs text-md-sys-on-surface-variant">
               {isOllama ? (
                 catalogUsable ? (
                   <p>{model || c.ollamaNoModel}</p>
                 ) : (
-                  <p className="text-red-400">{c.ollamaUnreachable}</p>
+                  <p className="text-md-sys-error">{c.ollamaUnreachable}</p>
                 )
               ) : (
                 <p>{effectiveModel || c.cloudNoModel}</p>
@@ -258,16 +258,16 @@ export default function ChatModelPicker({
             </div>
           )}
 
-          <div className="space-y-1 border-t border-muted/50 p-2 text-xs">
+          <div className="space-y-1 border-t border-md-sys-outline-variant/40 p-2 text-xs">
             {isOllama && catalogUsable ? (
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-md-sys-on-surface-variant">
                 {health === 'degraded' ? (
-                  <span className="w-full text-amber-300/90">{c.ollamaDegraded}</span>
+                  <span className="w-full text-md-sys-warning">{c.ollamaDegraded}</span>
                 ) : null}
                 {status?.supportsTools ? (
-                  <span className="text-emerald-300/90">{c.ollamaToolsMode}</span>
+                  <span className="text-md-sys-success">{c.ollamaToolsMode}</span>
                 ) : (
-                  <span className="text-amber-300/90">{c.ollamaReactMode}</span>
+                  <span className="text-md-sys-warning">{c.ollamaReactMode}</span>
                 )}
                 {status?.cloudCatalogOk ? (
                   <span>{format(c.ollamaCloudCount, { count: status.cloudModelCount ?? 0 })}</span>
@@ -279,14 +279,14 @@ export default function ChatModelPicker({
                 ) : null}
               </div>
             ) : null}
-            {saveError ? <p className="px-1 text-red-400">{saveError}</p> : null}
+            {saveError ? <p className="px-1 text-md-sys-error">{saveError}</p> : null}
             <div className="flex items-center justify-between gap-2 px-1">
               {isOllama ? (
                 <button
                   type="button"
                   onClick={() => void refresh()}
                   disabled={busy}
-                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                  className="press flex items-center gap-1 rounded-full px-2 py-0.5 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface disabled:opacity-50 active:scale-[0.98]"
                   aria-label={c.ollamaRefresh}
                 >
                   {(saving || loading) ? (
@@ -301,7 +301,7 @@ export default function ChatModelPicker({
               )}
               <Link
                 to="/pipeline?group=content-ai"
-                className="text-link hover:underline"
+                className="text-md-sys-primary hover:underline"
                 onClick={() => setOpen(false)}
               >
                 {c.aiSettingsLink}

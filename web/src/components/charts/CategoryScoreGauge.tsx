@@ -23,12 +23,12 @@ export function CategoryScoreGauge({ name, score, size = 'md', onClick }: Catego
     score == null ? sj.na : score >= 80 ? vo.scoreGood : score >= 50 ? vo.scoreNeeds : vo.scoreCritical;
   const labelCls =
     score == null
-      ? 'text-muted-foreground'
+      ? 'text-md-sys-on-surface-variant'
       : score >= 80
-        ? 'text-green-700 dark:text-green-400'
+        ? 'text-md-sys-success'
         : score >= 50
-          ? 'text-yellow-700 dark:text-yellow-400'
-          : 'text-red-600 dark:text-red-500';
+          ? 'text-md-sys-warning'
+          : 'text-md-sys-error';
   const color = scoreBandColor(score);
   const isCritical = score != null && score < 50;
   const dim =
@@ -50,7 +50,7 @@ export function CategoryScoreGauge({ name, score, size = 'md', onClick }: Catego
       >
         <svg viewBox="0 0 36 36" className={dim} aria-hidden="true">
           <g transform={`translate(${CX},${CY})`}>
-            <path d={background} fill="#1F2937" />
+            <path d={background} fill="var(--md-sys-color-surface-container-high, #1F2937)" />
             {foreground ? <path d={foreground} fill={color} /> : null}
             {criticalOverlay ? (
               <path
@@ -64,12 +64,12 @@ export function CategoryScoreGauge({ name, score, size = 'md', onClick }: Catego
             ) : null}
           </g>
         </svg>
-        <div className={`absolute inset-0 flex items-center justify-center font-bold text-bright ${textSize}`}>
+        <div className={`absolute inset-0 flex items-center justify-center font-bold text-md-sys-on-surface ${textSize}`}>
           {score != null ? score : sj.na}
         </div>
       </div>
       <div className="min-w-0 flex-1">
-        <h3 className={`font-bold text-foreground ${size === 'lg' ? 'text-lg' : size === 'sm' ? 'text-sm' : 'text-base'}`}>{name}</h3>
+        <h3 className={`font-bold text-md-sys-on-surface ${size === 'lg' ? 'text-lg' : size === 'sm' ? 'text-sm' : 'text-base'}`}>{name}</h3>
         <p className={`mt-0.5 text-xs ${labelCls}`}>{label}</p>
       </div>
     </>
@@ -80,7 +80,7 @@ export function CategoryScoreGauge({ name, score, size = 'md', onClick }: Catego
       <button
         type="button"
         onClick={onClick}
-        className="flex w-full items-center gap-4 rounded-lg border border-transparent p-2 text-left transition-colors hover:border-default hover:bg-brand-800/30"
+        className="press flex w-full items-center gap-4 rounded-2xl border border-transparent p-3 text-left transition-all hover:border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container/40 active:scale-[0.99]"
       >
         {inner}
       </button>

@@ -30,7 +30,7 @@ export default function PortfolioResumeSection({
 
   return (
     <section className="animate-in mt-7">
-      <h2 className="mb-2.5 text-sm font-semibold text-foreground">{vh.resumeHeading}</h2>
+      <h2 className="mb-2.5 text-sm font-semibold text-md-sys-on-surface">{vh.resumeHeading}</h2>
       <div className="stagger grid grid-cols-2 gap-3 lg:grid-cols-4">
         {recentAudits.map((group, i) => {
           const opening = openingCrawlId != null && openingCrawlId === group.crawlRunId;
@@ -41,17 +41,17 @@ export default function PortfolioResumeSection({
               onClick={() => { onOpen(group); }}
               disabled={opening}
               style={{ '--i': i } as CSSProperties}
-              className="press hover-lift group min-w-0 rounded-xl border border-default bg-brand-800/60 p-3 text-left transition-colors hover:border-blue-500/30 disabled:opacity-60"
+              className="press hover-lift group min-w-0 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60 p-3 text-left transition-colors hover:border-blue-500/30 disabled:opacity-60"
             >
               <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-link">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-md-sys-primary">
                   <Building2 className="h-3.5 w-3.5" aria-hidden />
                 </span>
-                <span className="truncate text-sm font-semibold text-foreground">
+                <span className="truncate text-sm font-semibold text-md-sys-on-surface">
                   {group.domainName}
                 </span>
               </div>
-              <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+              <div className="mt-2 flex items-center justify-between text-xs text-md-sys-on-surface-variant">
                 <span className="tabular-nums">{format(vh.viewUrlsCta, { count: group.urlCount })}</span>
                 {!group.crawlOnly ? (
                   <span className={`font-bold tabular-nums ${healthScoreClass(group.healthScore)}`}>

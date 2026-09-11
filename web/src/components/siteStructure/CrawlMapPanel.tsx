@@ -60,7 +60,7 @@ function TreeNodeRow({
       <button
         type="button"
         onClick={() => onSelect(key)}
-        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-brand-800/80 ${
+        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-md-sys-surface-container/80 ${
           isSelected ? 'bg-blue-500/15 ring-1 ring-blue-500/30' : ''
         }`}
         style={{ paddingLeft: `${8 + depth * 16}px` }}
@@ -68,7 +68,7 @@ function TreeNodeRow({
         {hasChildren ? (
           <span
             role="presentation"
-            className="shrink-0 text-muted-foreground"
+            className="shrink-0 text-md-sys-on-surface-variant"
             onClick={(e) => {
               e.stopPropagation();
               onToggle(key);
@@ -79,8 +79,8 @@ function TreeNodeRow({
         ) : (
           <span className="w-3.5 shrink-0" />
         )}
-        <span className="font-mono text-foreground truncate flex-1">{node.segment || key}</span>
-        <span className="tabular-nums text-muted-foreground shrink-0">{pages}</span>
+        <span className="font-mono text-md-sys-on-surface truncate flex-1">{node.segment || key}</span>
+        <span className="tabular-nums text-md-sys-on-surface-variant shrink-0">{pages}</span>
         <span
           className={`h-2 rounded-sm shrink-0 ${healthBarClass(healthByPrefix.get(key))}`}
           style={{ width: `${barWidth(pages, maxPages)}px` }}
@@ -162,8 +162,8 @@ export default function CrawlMapPanel({
   const counter = { n: 0 };
 
   return (
-    <div className="rounded-xl border border-default bg-brand-900/40 p-4">
-      <p className="text-xs text-muted-foreground mb-3">
+    <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 p-4">
+      <p className="text-xs text-md-sys-on-surface-variant mb-3">
         Click a path segment to filter the structure tree. Expand nodes to explore depth.
       </p>
       <div className="max-h-[min(520px,60vh)] overflow-y-auto">

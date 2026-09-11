@@ -23,17 +23,17 @@ export function FilterEditor({ filter, field, options, onChange, onRemove }: Fil
   const tuple = Array.isArray(filter.value) ? filter.value : [];
 
   return (
-    <div className="w-full rounded-md border border-default bg-brand-800/60 p-1.5 space-y-1">
+    <div className="w-full rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60 p-2 space-y-1.5">
       <div className="flex items-center gap-1">
-        <span className="text-xs font-medium text-bright truncate flex-1" title={field?.key}>{field?.label ?? filter.field}</span>
+        <span className="text-xs font-medium text-md-sys-on-surface truncate flex-1" title={field?.key}>{field?.label ?? filter.field}</span>
         <select
           value={filter.op}
           onChange={(e) => onChange({ op: e.target.value as FilterOp })}
-          className="text-[11px] bg-brand-900 border border-default rounded px-1 py-0.5 text-muted-foreground focus:outline-none"
+          className="text-[11px] bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg px-1.5 py-0.5 text-md-sys-on-surface-variant focus:outline-none"
         >
           {ops.map((op) => <option key={op} value={op}>{OP_LABELS[op]}</option>)}
         </select>
-        <button onClick={onRemove} title="Remove filter" className="p-0.5 rounded hover:bg-red-500/20 hover:text-red-400 text-muted-foreground">
+        <button onClick={onRemove} title="Remove filter" className="press p-1 rounded-full hover:bg-md-sys-error-container hover:text-md-sys-on-error-container text-md-sys-on-surface-variant active:scale-95">
           <X className="h-3 w-3" />
         </button>
       </div>
@@ -43,7 +43,7 @@ export function FilterEditor({ filter, field, options, onChange, onRemove }: Fil
           multiple
           value={(Array.isArray(filter.value) ? filter.value : []).map(String)}
           onChange={(e) => onChange({ value: Array.from(e.target.selectedOptions).map((o) => o.value) })}
-          className="w-full text-xs bg-brand-900 border border-default rounded px-1 py-0.5 text-bright focus:outline-none h-20"
+          className="w-full text-xs bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded px-1 py-0.5 text-md-sys-on-surface focus:outline-none h-20"
         >
           {options.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
@@ -54,7 +54,7 @@ export function FilterEditor({ filter, field, options, onChange, onRemove }: Fil
           <select
             value={String(filter.value ?? '')}
             onChange={(e) => onChange({ value: e.target.value })}
-            className="w-full text-xs bg-brand-900 border border-default rounded px-1 py-0.5 text-bright focus:outline-none"
+            className="w-full text-xs bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded px-1 py-0.5 text-md-sys-on-surface focus:outline-none"
           >
             <option value="">—</option>
             {options.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -64,7 +64,7 @@ export function FilterEditor({ filter, field, options, onChange, onRemove }: Fil
             type="text"
             value={String(filter.value ?? '')}
             onChange={(e) => onChange({ value: e.target.value })}
-            className="w-full text-xs bg-brand-900 border border-default rounded px-1 py-0.5 text-bright focus:outline-none"
+            className="w-full text-xs bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded px-1 py-0.5 text-md-sys-on-surface focus:outline-none"
           />
         ))}
 
@@ -74,7 +74,7 @@ export function FilterEditor({ filter, field, options, onChange, onRemove }: Fil
           value={String(filter.value ?? '')}
           onChange={(e) => onChange({ value: e.target.value })}
           placeholder="substring…"
-          className="w-full text-xs bg-brand-900 border border-default rounded px-1 py-0.5 text-bright focus:outline-none"
+          className="w-full text-xs bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded px-1 py-0.5 text-md-sys-on-surface focus:outline-none"
         />
       )}
 
@@ -83,7 +83,7 @@ export function FilterEditor({ filter, field, options, onChange, onRemove }: Fil
           type="number"
           value={typeof filter.value === 'number' ? filter.value : ''}
           onChange={(e) => onChange({ value: Number(e.target.value) })}
-          className="w-full text-xs bg-brand-900 border border-default rounded px-1 py-0.5 text-bright focus:outline-none"
+          className="w-full text-xs bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded px-1 py-0.5 text-md-sys-on-surface focus:outline-none"
         />
       )}
 
@@ -93,14 +93,14 @@ export function FilterEditor({ filter, field, options, onChange, onRemove }: Fil
             type="number"
             value={typeof tuple[0] === 'number' ? (tuple[0] as number) : ''}
             onChange={(e) => onChange({ value: [Number(e.target.value), Number(tuple[1] ?? 0)] })}
-            className="w-full text-xs bg-brand-900 border border-default rounded px-1 py-0.5 text-bright focus:outline-none"
+            className="w-full text-xs bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded px-1 py-0.5 text-md-sys-on-surface focus:outline-none"
           />
-          <span className="text-muted-foreground text-xs">–</span>
+          <span className="text-md-sys-on-surface-variant text-xs">–</span>
           <input
             type="number"
             value={typeof tuple[1] === 'number' ? (tuple[1] as number) : ''}
             onChange={(e) => onChange({ value: [Number(tuple[0] ?? 0), Number(e.target.value)] })}
-            className="w-full text-xs bg-brand-900 border border-default rounded px-1 py-0.5 text-bright focus:outline-none"
+            className="w-full text-xs bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded px-1 py-0.5 text-md-sys-on-surface focus:outline-none"
           />
         </div>
       )}

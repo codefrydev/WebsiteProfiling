@@ -33,10 +33,10 @@ function RailButton({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+      className={`press flex h-10 w-10 items-center justify-center rounded-full transition-colors active:scale-95 ${
         active
-          ? 'bg-brand-700/80 text-foreground'
-          : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+          ? 'bg-md-sys-surface-container-high/80 text-md-sys-on-surface'
+          : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
       }`}
     >
       {children}
@@ -46,22 +46,22 @@ function RailButton({
 
 function QuickMenu({ onClose }: { onClose: () => void }) {
   return (
-    <div className="w-56 rounded-2xl border border-default bg-[var(--chat-surface)] p-3 shadow-xl">
-      <p className="mb-2 text-xs font-medium text-bright">{c.settingsTitle}</p>
+    <div className="w-56 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-3 shadow-xl">
+      <p className="mb-2 text-xs font-medium text-md-sys-on-surface">{c.settingsTitle}</p>
       <div className="flex items-center justify-between gap-2 py-1.5">
-        <span className="text-xs text-muted-foreground">Theme</span>
+        <span className="text-xs text-md-sys-on-surface-variant">Theme</span>
         <ThemeToggle />
       </div>
       <Link
         to="/settings"
-        className="mt-1 block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
+        className="press mt-1 block rounded-full px-3 py-1.5 text-xs font-medium text-md-sys-primary hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all"
         onClick={onClose}
       >
         {strings.settings.settingsLink}
       </Link>
       <Link
         to="/secrets"
-        className="block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
+        className="press block rounded-full px-3 py-1.5 text-xs font-medium text-md-sys-primary hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all"
         onClick={onClose}
       >
         API keys &amp; secrets
@@ -153,12 +153,12 @@ export default function ToolPageSidebar({
         <div className="flex items-center justify-between gap-2 px-3 py-3">
           <Link to="/home" className="flex min-w-0 items-center gap-2">
             <AppLogo size={20} />
-            <span className="truncate text-sm font-medium text-bright">{title}</span>
+            <span className="truncate text-sm font-medium text-md-sys-on-surface">{title}</span>
           </Link>
           <button
             type="button"
             onClick={toggle}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground"
+            className="press rounded-full p-1.5 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98] transition-all"
             aria-label="Collapse sidebar"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -173,10 +173,10 @@ export default function ToolPageSidebar({
                 <li key={href}>
                   <Link
                     to={href}
-                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
+                    className={`press flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors active:scale-[0.98] ${
                       isActive
-                        ? 'bg-brand-700/60 text-foreground'
-                        : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+                        ? 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface'
+                        : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
                     }`}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
@@ -188,11 +188,11 @@ export default function ToolPageSidebar({
           </ul>
         </nav>
 
-        <div className="relative border-t border-muted/30 p-2" ref={quickRef}>
+        <div className="relative border-t border-md-sys-outline-variant/30 p-2" ref={quickRef}>
           <button
             type="button"
             onClick={() => setQuickOpen((v) => !v)}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground"
+            className="press flex w-full items-center gap-2 rounded-full px-3 py-2 text-xs text-md-sys-on-surface-variant transition-colors hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98]"
             aria-expanded={quickOpen}
           >
             <Settings className="h-4 w-4" />

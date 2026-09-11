@@ -204,10 +204,10 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
           <button
             type="button"
             onClick={() => setScope('homepage')}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`press rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.98] ${
               scope === 'homepage'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:text-foreground'
+                ? 'bg-md-sys-primary text-md-sys-on-primary shadow-sm'
+                : 'bg-md-sys-surface-container-high text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-highest'
             }`}
           >
             {vr.scopeHomepage}
@@ -215,10 +215,10 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
           <button
             type="button"
             onClick={() => setScope('sitewide')}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`press rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.98] ${
               scope === 'sitewide'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:text-foreground'
+                ? 'bg-md-sys-primary text-md-sys-on-primary shadow-sm'
+                : 'bg-md-sys-surface-container-high text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-highest'
             }`}
           >
             {vr.scopeSitewide}
@@ -227,7 +227,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
       )}
 
       {showStaticHint && (
-        <Card className="border-amber-500/30 bg-amber-500/5 p-4 text-sm text-muted-foreground">
+        <Card className="border-amber-500/30 bg-amber-500/5 p-4 text-sm text-md-sys-on-surface-variant">
           {vr.staticCrawlHint}
         </Card>
       )}
@@ -285,9 +285,9 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : sourceTechs.length > 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noSearchMatch}</div>
+                <div className="flex items-center justify-center h-full text-md-sys-on-surface-variant text-sm">{vr.noSearchMatch}</div>
               ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{emptyMessage}</div>
+                <div className="flex items-center justify-center h-full text-md-sys-on-surface-variant text-sm">{emptyMessage}</div>
               )}
             </div>
           </Card>
@@ -310,12 +310,12 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
                 <TableBody>
                   {techs.map((t, i) => (
                     <TableRow key={i}>
-                      <TableCell className="text-foreground font-medium">{t.name}</TableCell>
-                      <TableCell className="text-muted-foreground text-xs">{categorizeTech(t.name || '')}</TableCell>
-                      <TableCell className="text-right font-mono text-muted-foreground">{(t.count ?? 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-md-sys-on-surface font-medium">{t.name}</TableCell>
+                      <TableCell className="text-md-sys-on-surface-variant text-xs">{categorizeTech(t.name || '')}</TableCell>
+                      <TableCell className="text-right font-mono text-md-sys-on-surface-variant">{(t.count ?? 0).toLocaleString()}</TableCell>
                       <TableCell className="text-xs max-w-md">
                         {(t.sample_urls || []).map((u, j) => (
-                          <a key={j} href={u} target="_blank" rel="noreferrer" className="text-link hover:underline block truncate">
+                          <a key={j} href={u} target="_blank" rel="noreferrer" className="text-md-sys-primary hover:underline block truncate">
                             {u.replace(/^https?:\/\//, '').slice(0, 60)}
                           </a>
                         ))}
@@ -326,7 +326,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
               </Table>
             </Card>
           ) : (
-            <Card className="p-8 text-center text-muted-foreground text-sm">
+            <Card className="p-8 text-center text-md-sys-on-surface-variant text-sm">
               {techs.length === 0 ? emptyMessage : vr.noSearchMatch}
             </Card>
           )}

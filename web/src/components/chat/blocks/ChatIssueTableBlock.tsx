@@ -16,11 +16,11 @@ export default function ChatIssueTableBlock({ block }: { block: Block }) {
   const remaining = (block.total ?? block.issues.length) - shown.length;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-default bg-[var(--chat-bg)]/60">
+    <div className="overflow-hidden rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface/60">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[32rem] text-left text-xs">
           <thead>
-            <tr className="border-b border-muted/50 text-muted-foreground">
+            <tr className="border-b border-md-sys-outline-variant/40 text-md-sys-on-surface-variant">
               <th className="px-3 py-2 font-medium">Priority</th>
               <th className="px-3 py-2 font-medium">Category</th>
               <th className="px-3 py-2 font-medium">URL</th>
@@ -29,18 +29,18 @@ export default function ChatIssueTableBlock({ block }: { block: Block }) {
           </thead>
           <tbody>
             {shown.map((issue, i) => (
-              <tr key={`${issue.url}-${i}`} className="border-b border-muted/30 align-top">
+              <tr key={`${issue.url}-${i}`} className="border-b border-md-sys-outline-variant/30 align-top">
                 <td className="px-3 py-2 whitespace-nowrap">
                   <Badge value={issue.priority} />
                 </td>
-                <td className="px-3 py-2 text-muted-foreground">{issue.category || '—'}</td>
+                <td className="px-3 py-2 text-md-sys-on-surface-variant">{issue.category || '—'}</td>
                 <td className="max-w-[12rem] px-3 py-2 font-mono text-xs">
                   {issue.url ? (
                     <a
                       href={issue.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="break-all text-link hover:underline"
+                      className="break-all text-md-sys-primary hover:underline"
                       title={issue.url}
                     >
                       {formatChatUrlDisplay(issue.url)}
@@ -49,7 +49,7 @@ export default function ChatIssueTableBlock({ block }: { block: Block }) {
                     '—'
                   )}
                 </td>
-                <td className="max-w-[16rem] break-words px-3 py-2 text-foreground">
+                <td className="max-w-[16rem] break-words px-3 py-2 text-md-sys-on-surface">
                   {issue.message || '—'}
                 </td>
               </tr>
@@ -58,13 +58,13 @@ export default function ChatIssueTableBlock({ block }: { block: Block }) {
         </table>
       </div>
       {remaining > 0 || block.truncated ? (
-        <div className="flex items-center justify-between gap-2 border-t border-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 border-t border-md-sys-outline-variant/30 px-3 py-2 text-xs text-md-sys-on-surface-variant">
           <span>
             {remaining > 0 ? `${remaining} more issues not shown` : 'Results truncated'}
           </span>
           <button
             type="button"
-            className="shrink-0 text-link hover:underline"
+            className="shrink-0 text-md-sys-primary hover:underline"
             onClick={() => suggestFollowUp(cb.showAllIssues)}
           >
             {cb.showAll}

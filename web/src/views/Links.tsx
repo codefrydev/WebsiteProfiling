@@ -592,7 +592,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
             subtitle={
               <>
                 {vl.showingResults}{' '}
-                <span className="font-bold text-bright">{filtered.length.toLocaleString()}</span> {vl.resultsSuffix}
+                <span className="font-bold text-md-sys-on-surface">{filtered.length.toLocaleString()}</span> {vl.resultsSuffix}
                 <span className="block text-sm mt-2 max-w-3xl leading-relaxed">{vl.explorerHint}</span>
               </>
             }
@@ -623,13 +623,13 @@ export default function Links({ searchQuery = '' }: ViewProps) {
 
           {siteTechnicalIssues.length > 0 ? (
             <Card devData={siteTechnicalDevData} className="p-4 space-y-3">
-              <h2 className="text-sm font-bold text-foreground">{vl.siteTechnicalIssuesTitle}</h2>
-              <p className="text-xs text-muted-foreground">{vl.siteTechnicalIssuesHint}</p>
+              <h2 className="text-sm font-bold text-md-sys-on-surface">{vl.siteTechnicalIssuesTitle}</h2>
+              <p className="text-xs text-md-sys-on-surface-variant">{vl.siteTechnicalIssuesHint}</p>
               <ul className="space-y-3 max-h-64 overflow-y-auto">
                 {siteTechnicalIssues.map((row, i) => (
-                  <li key={`${row.url}-${row.kind}-${i}`} className="border border-default rounded-lg px-3 py-2 space-y-2">
-                    <div className="text-xs font-mono text-link break-all">{row.url}</div>
-                    <div className="text-xs text-muted-foreground">{row.message}</div>
+                  <li key={`${row.url}-${row.kind}-${i}`} className="border border-md-sys-outline-variant/30 rounded-xl px-3 py-2 space-y-2 bg-md-sys-surface-container-low">
+                    <div className="text-xs font-mono text-md-sys-primary break-all">{row.url}</div>
+                    <div className="text-xs text-md-sys-on-surface-variant">{row.message}</div>
                     <AiSuggestionButton request={buildTechnicalLinkIssueContext(row.message, row.url, row.kind)} />
                   </li>
                 ))}
@@ -682,17 +682,17 @@ export default function Links({ searchQuery = '' }: ViewProps) {
       ) : (
         <>
           <div className="flex justify-between items-center flex-wrap gap-4">
-            <Button variant="secondary" onClick={closeInspector} className="inline-flex items-center gap-2 text-foreground">
+            <Button variant="secondary" onClick={closeInspector} className="inline-flex items-center gap-2 text-md-sys-on-surface">
               <ArrowLeft className="h-4 w-4" /> {vl.backToExplorer}
             </Button>
-            <h1 className="text-2xl font-bold text-bright flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-md-sys-on-surface flex items-center gap-2">
               <LinkIcon className="h-6 w-6 text-blue-500 shrink-0" /> {vl.urlInspector}
             </h1>
           </div>
-          <div className="flex items-center gap-2 bg-brand-900 border border-default p-3 rounded-xl">
-            <span className="font-mono text-link text-sm break-all flex-1">{matchedInspectUrl}</span>
+          <div className="flex items-center gap-2 bg-md-sys-surface-container border border-md-sys-outline-variant/40 p-3 rounded-2xl">
+            <span className="font-mono text-md-sys-primary text-sm break-all flex-1">{matchedInspectUrl}</span>
             <CopyBtn text={matchedInspectUrl} className="shrink-0" />
-            <a href={matchedInspectUrl} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-bright transition-colors shrink-0">
+            <a href={matchedInspectUrl} target="_blank" rel="noreferrer" className="text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-colors shrink-0">
               <LinkIcon className="h-4 w-4" />
             </a>
           </div>
@@ -706,7 +706,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
                 onTabChange={setInspectorTab}
               />
             ) : (
-              <div className="p-8 text-center text-muted-foreground">{vl.noUrlData}</div>
+              <div className="p-8 text-center text-md-sys-on-surface-variant">{vl.noUrlData}</div>
             )}
           </Card>
         </>

@@ -12,14 +12,14 @@ export default function ChatCompareCategoryBlock({ block }: { block: Block }) {
   const maxAbs = Math.max(...block.rows.map((r) => Math.abs(r.delta ?? 0)), 0);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-default bg-[var(--chat-bg)]/60">
-      <p className="border-b border-muted/30 px-3 py-2 text-sm font-medium text-bright">
+    <div className="overflow-hidden rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface/60">
+      <p className="border-b border-md-sys-outline-variant/30 px-3 py-2 text-sm font-medium text-md-sys-on-surface">
         {cb.categoryCompare}
       </p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[24rem] text-left text-xs">
           <thead>
-            <tr className="border-b border-muted/50 text-muted-foreground">
+            <tr className="border-b border-md-sys-outline-variant/40 text-md-sys-on-surface-variant">
               <th className="px-3 py-2 font-medium">Category</th>
               <th className="px-3 py-2 font-medium">Current</th>
               <th className="px-3 py-2 font-medium">Baseline</th>
@@ -32,12 +32,12 @@ export default function ChatCompareCategoryBlock({ block }: { block: Block }) {
               return (
                 <tr
                   key={row.id}
-                  className={`border-b border-muted/30 align-top ${highlight ? 'bg-brand-800/30' : ''}`}
+                  className={`border-b border-md-sys-outline-variant/30 align-top ${highlight ? 'bg-md-sys-surface-container/30' : ''}`}
                 >
                   <td className="px-3 py-2">
                     <button
                       type="button"
-                      className="text-left text-link hover:underline"
+                      className="text-left text-md-sys-primary hover:underline"
                       onClick={() =>
                         suggestFollowUp(format(cb.askCategoryDrop, { category: row.name }))
                       }
@@ -46,7 +46,7 @@ export default function ChatCompareCategoryBlock({ block }: { block: Block }) {
                     </button>
                   </td>
                   <td className="px-3 py-2 tabular-nums">{row.current ?? '—'}</td>
-                  <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                  <td className="px-3 py-2 tabular-nums text-md-sys-on-surface-variant">
                     {row.baseline ?? '—'}
                   </td>
                   <td className="px-3 py-2">

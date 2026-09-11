@@ -150,12 +150,12 @@ export function LinksExplorerTableTab({
             ) : null;
           })()}
 
-          <p className="sm:hidden text-xs text-muted-foreground px-3 py-2 border-b border-muted bg-brand-900/40">
+          <p className="sm:hidden text-xs text-md-sys-on-surface-variant px-3 py-2 border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40">
             {sj.tableSwipeHint}
           </p>
 
           <table className="w-full min-w-[54rem] text-left text-sm border-collapse">
-            <thead className="bg-brand-900 text-xs font-semibold sticky top-0 z-20 shadow-sm border-b border-default">
+            <thead className="bg-md-sys-surface-container-low text-xs font-semibold sticky top-0 z-20 shadow-sm border-b border-md-sys-outline-variant/40">
               <tr>
                 <SortTh
                   label={vl.thPage}
@@ -163,7 +163,7 @@ export function LinksExplorerTableTab({
                   sortBy={sortBy}
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
-                  className="px-3 sm:px-6 sticky left-0 z-30 bg-brand-900 border-r border-default shadow-[4px_0_16px_-8px_rgba(0,0,0,0.55)] min-w-[12rem] sm:min-w-[14rem]"
+                  className="px-3 sm:px-6 sticky left-0 z-30 bg-md-sys-surface-container-low border-r border-md-sys-outline-variant/40 shadow-[4px_0_16px_-8px_rgba(0,0,0,0.55)] min-w-[12rem] sm:min-w-[14rem]"
                 />
                 <SortTh
                   label={vl.thStatus}
@@ -211,7 +211,7 @@ export function LinksExplorerTableTab({
                   className={visibleCols.has('word_count') ? 'hidden xl:table-cell w-24 text-right' : 'hidden'}
                 />
                 {hasCustomExtract ? (
-                  <th className={visibleCols.has('custom_extract') ? 'px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap' : 'hidden'}>
+                  <th className={visibleCols.has('custom_extract') ? 'px-4 py-4 text-md-sys-on-surface-variant uppercase text-xs whitespace-nowrap' : 'hidden'}>
                     <span className="inline-flex items-center gap-1 normal-case">
                       {vl.thCustomExtract}
                       {customExtractHint ? (
@@ -225,12 +225,12 @@ export function LinksExplorerTableTab({
                 {customFieldKeys.map((key) => (
                   <th
                     key={key}
-                    className="hidden xl:table-cell px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap"
+                    className="hidden xl:table-cell px-4 py-4 text-md-sys-on-surface-variant uppercase text-xs whitespace-nowrap"
                   >
                     {key}
                   </th>
                 ))}
-                <th className={visibleCols.has('js_errors') ? 'px-3 sm:px-4 py-3.5 text-muted-foreground uppercase text-xs whitespace-nowrap w-36' : 'hidden'}>
+                <th className={visibleCols.has('js_errors') ? 'px-3 sm:px-4 py-3.5 text-md-sys-on-surface-variant uppercase text-xs whitespace-nowrap w-36' : 'hidden'}>
                   <span className="inline-flex items-center gap-1 normal-case">
                     {vl.thJsErrors}
                     {jsErrorsHint ? (
@@ -240,15 +240,15 @@ export function LinksExplorerTableTab({
                     ) : null}
                   </span>
                 </th>
-                <th className="px-3 sm:px-4 py-3.5 text-center text-muted-foreground uppercase text-xs whitespace-nowrap w-28">
+                <th className="px-3 sm:px-4 py-3.5 text-center text-md-sys-on-surface-variant uppercase text-xs whitespace-nowrap w-28">
                   {vl.thActions}
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-muted [&>tr:nth-child(even)]:bg-brand-900/30">
+            <tbody className="divide-y divide-md-sys-outline-variant/40 [&>tr:nth-child(even)]:bg-md-sys-surface-container-low/30">
               {pageLinks.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-6 py-14 text-center text-sm text-muted-foreground">
+                  <td colSpan={12} className="px-6 py-14 text-center text-sm text-md-sys-on-surface-variant">
                     {searchQuery || filterValues.statusFilter !== sj.all || filterValues.inlinksFilter !== sj.all
                       || filterValues.rtFilter !== sj.all || filterValues.wcFilter !== sj.all
                       || filterValues.jsErrorFilter !== sj.all || advConditions.length > 0
@@ -259,66 +259,66 @@ export function LinksExplorerTableTab({
               ) : null}
               {pageLinks.map((link, i) => {
                 const hrefLines = formatPageHrefLines(link.url);
-                const stickyBg = i % 2 === 1 ? 'bg-brand-900/40' : 'bg-brand-800';
+                const stickyBg = i % 2 === 1 ? 'bg-md-sys-surface-container-low/40' : 'bg-md-sys-surface-container';
                 return (
                   <tr
                     key={link.url}
-                    className="hover:bg-brand-800/80 transition-colors cursor-default"
+                    className="hover:bg-md-sys-surface-container/80 transition-colors cursor-default"
                     onMouseEnter={(e) => onRowMouseEnter(e, link)}
                     onMouseLeave={onRowMouseLeave}
                   >
                     <td
-                      className={`px-3 sm:px-6 py-3 align-top min-w-0 sticky left-0 z-10 border-r border-default shadow-[4px_0_16px_-8px_rgba(0,0,0,0.5)] max-w-[min(280px,85vw)] ${stickyBg}`}
+                      className={`px-3 sm:px-6 py-3 align-top min-w-0 sticky left-0 z-10 border-r border-md-sys-outline-variant/40 shadow-[4px_0_16px_-8px_rgba(0,0,0,0.5)] max-w-[min(280px,85vw)] ${stickyBg}`}
                     >
                       <div className="min-w-0 flex flex-col gap-0.5">
                         <div
-                          className="text-bright font-medium text-sm leading-snug line-clamp-2"
+                          className="text-md-sys-on-surface font-medium text-sm leading-snug line-clamp-2"
                           title={link.title || undefined}
                         >
                           {link.title ? (
                             link.title
                           ) : (
-                            <span className="text-muted-foreground italic font-normal">{vl.noTitle}</span>
+                            <span className="text-md-sys-on-surface-variant italic font-normal">{vl.noTitle}</span>
                           )}
                         </div>
                         <a
                           href={link.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-link group min-w-0"
+                          className="flex items-center gap-1.5 text-xs text-md-sys-on-surface-variant hover:text-md-sys-primary group min-w-0"
                           title={link.url}
                         >
                           <span className="truncate font-mono">{hrefLines.label}</span>
                           <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
                         </a>
                         {link.depth != null && !visibleCols.has('depth') ? (
-                          <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                          <p className="mt-1 text-[11px] text-md-sys-on-surface-variant leading-snug">
                             {vl.thCrawlDepth}: {String(link.depth)}
                             {!visibleCols.has('word_count') && (link.word_count ?? 0) > 0 ? (
                               <>
-                                <span className="mx-1.5 text-muted-foreground">·</span>
+                                <span className="mx-1.5 text-md-sys-on-surface-variant">·</span>
                                 {vl.thWords}: {(link.word_count ?? 0).toLocaleString()}
                               </>
                             ) : null}
                           </p>
                         ) : null}
                         {!visibleCols.has('word_count') && visibleCols.has('depth') && (link.word_count ?? 0) > 0 ? (
-                          <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                          <p className="mt-1 text-[11px] text-md-sys-on-surface-variant leading-snug">
                             {vl.thWords}: {(link.word_count ?? 0).toLocaleString()}
                           </p>
                         ) : null}
                         {visibleCols.has('depth') && link.depth != null ? (
-                          <p className="mt-1 text-[11px] text-muted-foreground leading-snug xl:hidden">
+                          <p className="mt-1 text-[11px] text-md-sys-on-surface-variant leading-snug xl:hidden">
                             {vl.thCrawlDepth}: {String(link.depth)}
                             {visibleCols.has('word_count') && (link.word_count ?? 0) > 0 ? (
                               <>
-                                <span className="mx-1.5 text-muted-foreground">·</span>
+                                <span className="mx-1.5 text-md-sys-on-surface-variant">·</span>
                                 {vl.thWords}: {(link.word_count ?? 0).toLocaleString()}
                               </>
                             ) : null}
                           </p>
                         ) : visibleCols.has('word_count') && (link.word_count ?? 0) > 0 ? (
-                          <p className="mt-1 text-[11px] text-muted-foreground leading-snug xl:hidden">
+                          <p className="mt-1 text-[11px] text-md-sys-on-surface-variant leading-snug xl:hidden">
                             {vl.thWords}: {(link.word_count ?? 0).toLocaleString()}
                           </p>
                         ) : null}
@@ -330,7 +330,7 @@ export function LinksExplorerTableTab({
                     <td className={visibleCols.has('inlinks') ? 'px-3 sm:px-4 py-3 text-right align-middle min-w-0' : 'hidden'}>
                       <InlinksMetricCell count={link.inlinks ?? 0} maxInSection={maxInlinksInResults} />
                     </td>
-                    <td className={visibleCols.has('depth') ? 'hidden xl:table-cell px-4 py-3 text-foreground text-sm tabular-nums whitespace-nowrap align-middle text-right' : 'hidden'}>
+                    <td className={visibleCols.has('depth') ? 'hidden xl:table-cell px-4 py-3 text-md-sys-on-surface text-sm tabular-nums whitespace-nowrap align-middle text-right' : 'hidden'}>
                       {link.depth != null ? link.depth : sj.emDash}
                     </td>
                     <td
@@ -342,12 +342,12 @@ export function LinksExplorerTableTab({
                     >
                       {formatMs(link.response_time_ms)}
                     </td>
-                    <td className={visibleCols.has('word_count') ? 'hidden xl:table-cell px-4 py-3 text-sm text-foreground tabular-nums whitespace-nowrap align-middle text-right' : 'hidden'}>
+                    <td className={visibleCols.has('word_count') ? 'hidden xl:table-cell px-4 py-3 text-sm text-md-sys-on-surface tabular-nums whitespace-nowrap align-middle text-right' : 'hidden'}>
                       {(link.word_count ?? 0) > 0 ? (link.word_count ?? 0).toLocaleString() : sj.emDash}
                     </td>
                     {hasCustomExtract ? (
                       <td
-                        className={visibleCols.has('custom_extract') ? 'px-4 py-3 text-xs text-foreground align-middle max-w-[12rem] truncate' : 'hidden'}
+                        className={visibleCols.has('custom_extract') ? 'px-4 py-3 text-xs text-md-sys-on-surface align-middle max-w-[12rem] truncate' : 'hidden'}
                         title={link.custom_extract}
                       >
                         {link.custom_extract || sj.emDash}
@@ -358,7 +358,7 @@ export function LinksExplorerTableTab({
                       return (
                         <td
                           key={key}
-                          className="hidden xl:table-cell px-4 py-3 text-xs text-foreground align-middle max-w-[10rem] truncate"
+                          className="hidden xl:table-cell px-4 py-3 text-xs text-md-sys-on-surface align-middle max-w-[10rem] truncate"
                           title={value}
                         >
                           {value || sj.emDash}
@@ -367,14 +367,14 @@ export function LinksExplorerTableTab({
                     })}
                     <td className={visibleCols.has('js_errors') ? 'px-4 py-3 text-xs align-middle whitespace-nowrap' : 'hidden'}>
                       {linkHasBrowserErrors(link) ? (
-                        <span className="inline-flex items-center rounded-md bg-red-500/10 border border-red-500/25 px-2 py-0.5 font-mono text-red-700 dark:text-red-300">
+                        <span className="inline-flex items-center rounded-full bg-red-500/10 border border-red-500/25 px-2.5 py-0.5 font-mono text-red-700 dark:text-red-300">
                           {format(vl.jsErrorBadge, {
                             console: link.console_error_count ?? 0,
                             page: link.page_error_count ?? 0,
                           })}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground">{sj.emDash}</span>
+                        <span className="text-md-sys-on-surface-variant">{sj.emDash}</span>
                       )}
                     </td>
                     <td className="px-3 sm:px-4 py-3 text-center whitespace-nowrap align-middle">
@@ -383,7 +383,7 @@ export function LinksExplorerTableTab({
                         onClick={() =>
                           onInspect(link.url, linkHasBrowserErrors(link) ? 'analysis' : 'overview')
                         }
-                        className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-[2.75rem] sm:min-h-0 sm:min-w-0 text-muted-foreground hover:text-bright bg-brand-800 hover:bg-brand-700 px-3 py-2.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-md text-xs font-medium transition-colors touch-manipulation"
+                        className="press inline-flex items-center justify-center gap-1.5 min-h-11 min-w-[2.75rem] sm:min-h-0 sm:min-w-0 text-md-sys-on-surface-variant hover:text-md-sys-on-surface bg-md-sys-surface-container hover:bg-md-sys-surface-container-high px-3.5 py-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-medium active:scale-[0.98] transition-all duration-200 touch-manipulation"
                         title={vl.inspect}
                       >
                         <Search className="h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0" aria-hidden />
@@ -397,20 +397,20 @@ export function LinksExplorerTableTab({
           </table>
         </div>
 
-        <div className="p-4 border-t border-muted bg-brand-900 flex justify-between items-center shrink-0">
-          <div className="text-sm text-muted-foreground">
-            {vl.pageOf} <span className="font-bold text-bright">{page}</span> {vl.of}{' '}
-            <span className="font-bold text-bright">{totalPages}</span>
-            <span className="hidden sm:inline text-muted-foreground">
+        <div className="p-4 border-t border-md-sys-outline-variant/40 bg-md-sys-surface-container-low flex justify-between items-center shrink-0">
+          <div className="text-sm text-md-sys-on-surface-variant">
+            {vl.pageOf} <span className="font-bold text-md-sys-on-surface">{page}</span> {vl.of}{' '}
+            <span className="font-bold text-md-sys-on-surface">{totalPages}</span>
+            <span className="hidden sm:inline text-md-sys-on-surface-variant">
               {' '}
               · {filtered.length.toLocaleString()} {vl.resultsSuffix.trim()}
             </span>
           </div>
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={onPagePrev} disabled={page <= 1} className="px-3 py-1 text-foreground">
+            <Button variant="secondary" onClick={onPagePrev} disabled={page <= 1} className="px-3 py-1 text-md-sys-on-surface">
               {vl.previous}
             </Button>
-            <Button variant="secondary" onClick={onPageNext} disabled={page >= totalPages} className="px-3 py-1 text-foreground">
+            <Button variant="secondary" onClick={onPageNext} disabled={page >= totalPages} className="px-3 py-1 text-md-sys-on-surface">
               {vl.next}
             </Button>
           </div>

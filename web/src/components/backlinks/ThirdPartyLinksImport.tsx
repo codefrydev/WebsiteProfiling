@@ -75,7 +75,7 @@ export default function ThirdPartyLinksImport({ gscLinks, onImported }: ThirdPar
 
   if (!propertyId) {
     return (
-      <p className="text-xs text-muted-foreground mb-6">{s.noProperty}</p>
+      <p className="text-xs text-md-sys-on-surface-variant mb-6">{s.noProperty}</p>
     );
   }
 
@@ -84,9 +84,9 @@ export default function ThirdPartyLinksImport({ gscLinks, onImported }: ThirdPar
     : savedOverlays;
 
   return (
-    <div className="mb-6 p-4 rounded-xl border border-default bg-brand-800/50 space-y-3">
-      <h3 className="text-sm font-bold text-foreground">{s.title}</h3>
-      <p className="text-xs text-muted-foreground">{s.hint}</p>
+    <div className="mb-6 p-4 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/50 space-y-3">
+      <h3 className="text-sm font-bold text-md-sys-on-surface">{s.title}</h3>
+      <p className="text-xs text-md-sys-on-surface-variant">{s.hint}</p>
       <div className="flex flex-wrap gap-2">
         {(['moz', 'majestic'] as const).map((id) => (
           <button
@@ -96,8 +96,8 @@ export default function ThirdPartyLinksImport({ gscLinks, onImported }: ThirdPar
             onClick={() => setProvider(id)}
             className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
               provider === id
-                ? 'border-accent bg-accent/15 text-foreground'
-                : 'border-default text-muted-foreground hover:text-foreground'
+                ? 'border-accent bg-accent/15 text-md-sys-on-surface'
+                : 'border-md-sys-outline-variant/40 text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
             }`}
           >
             {id === 'moz' ? s.mozLabel : s.majesticLabel}
@@ -125,13 +125,13 @@ export default function ThirdPartyLinksImport({ gscLinks, onImported }: ThirdPar
       </Button>
       {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
       {displayOverlays.length > 0 ? (
-        <div className="space-y-3 pt-2 border-t border-muted">
+        <div className="space-y-3 pt-2 border-t border-md-sys-outline-variant/40">
           {displayOverlays.map((overlay) => (
             <div key={overlay.provider || overlay.imported_at} className="text-xs space-y-1">
-              <p className="font-semibold text-foreground">
+              <p className="font-semibold text-md-sys-on-surface">
                 {(overlay.provider || 'unknown').toUpperCase()} — {overlay.provenance || s.estimated}
               </p>
-              <p className="text-muted-foreground">
+              <p className="text-md-sys-on-surface-variant">
                 {format(s.summary, {
                   count: overlay.referring_domain_count ?? 0,
                   gaps: overlay.domains_not_in_gsc_count ?? 0,

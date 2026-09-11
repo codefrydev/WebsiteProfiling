@@ -309,15 +309,15 @@ export default function WriteStudio() {
 
       {emptyState ? (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8 text-center">
-          <p className="max-w-md text-sm text-muted-foreground">{vs.noProperty}</p>
+          <p className="max-w-md text-sm text-md-sys-on-surface-variant">{vs.noProperty}</p>
         </div>
       ) : isHero ? (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-[10vh] pt-4">
           <div className="flex w-full max-w-3xl flex-col items-center">
-            <h1 className="text-center text-[2rem] font-normal tracking-tight text-bright sm:text-5xl sm:font-light">
+            <h1 className="text-center text-[2rem] font-normal tracking-tight text-md-sys-on-surface sm:text-5xl sm:font-light">
               {vs.welcomeHeadline}
             </h1>
-            <p className="mt-3 max-w-md text-center text-sm text-muted-foreground">
+            <p className="mt-3 max-w-md text-center text-sm text-md-sys-on-surface-variant">
               {vs.welcomeSubline}
             </p>
             {!readOnly && propertyId ? (
@@ -326,7 +326,7 @@ export default function WriteStudio() {
                   type="button"
                   onClick={() => openWizard()}
                   title={vs.wizard.launchHint}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-blue-600 px-4 py-3 text-sm font-medium text-white shadow-lg transition-colors hover:bg-blue-500 min-h-[3.25rem]"
+                  className="press flex flex-1 items-center justify-center gap-2 rounded-full bg-md-sys-primary px-5 py-3 text-sm font-medium text-md-sys-on-primary shadow-lg transition-all duration-200 hover:brightness-105 active:scale-[0.98] min-h-[3.25rem]"
                 >
                   <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
                   {vs.wizard.launchButton}
@@ -334,9 +334,9 @@ export default function WriteStudio() {
                 <button
                   type="button"
                   onClick={() => openNewDraft()}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full border border-default bg-[var(--chat-surface)] px-4 py-3 text-sm text-foreground shadow-lg ring-1 ring-white/[0.06] transition-shadow hover:bg-[var(--chat-surface-hover)] chat-hero-input min-h-[3.25rem]"
+                  className="press flex flex-1 items-center justify-center gap-2 rounded-full border border-md-sys-outline-variant/50 bg-md-sys-surface-container px-5 py-3 text-sm text-md-sys-on-surface shadow-lg transition-all duration-200 hover:bg-md-sys-surface-container-high active:scale-[0.98] min-h-[3.25rem]"
                 >
-                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <FileText className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />
                   {vs.newDraftButton}
                 </button>
               </div>
@@ -349,7 +349,7 @@ export default function WriteStudio() {
           </div>
         </div>
       ) : draftId && loadingDraft ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+        <div className="flex min-h-0 flex-1 items-center justify-center gap-2 text-sm text-md-sys-on-surface-variant">
           <RefreshCw className="h-4 w-4 animate-spin" aria-hidden />
           {vs.loadingDraft}
         </div>

@@ -35,8 +35,8 @@ function NarrativeList({
   const visible = showAll ? items : items.slice(0, 5);
   const Tag = ordered ? 'ol' : 'ul';
   const listClass = ordered
-    ? 'list-decimal space-y-1.5 pl-5 text-muted-foreground'
-    : 'list-disc space-y-1.5 pl-5 text-muted-foreground';
+    ? 'list-decimal space-y-1.5 pl-5 text-md-sys-on-surface-variant'
+    : 'list-disc space-y-1.5 pl-5 text-md-sys-on-surface-variant';
 
   return (
     <div className={streaming ? 'animate-pulse' : undefined}>
@@ -49,7 +49,7 @@ function NarrativeList({
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="mt-2 text-xs text-link hover:underline"
+          className="mt-2 text-xs text-md-sys-primary hover:underline"
         >
           {format(c.showAllItems, { count: items.length })}
         </button>
@@ -84,24 +84,24 @@ export default function ChatNarrativeSections({
         return (
           <section
             key={section.key}
-            className="chat-insight-section overflow-hidden rounded-lg border border-default/60 bg-[var(--chat-bg)]/30"
+            className="chat-insight-section overflow-hidden rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface/30"
           >
             <button
               type="button"
               onClick={() => toggle(section.title)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-bright hover:bg-[var(--chat-surface-hover)]"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-md-sys-on-surface hover:bg-md-sys-surface-container-high"
               aria-expanded={expanded}
             >
               {expanded ? (
-                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <ChevronDown className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" />
               ) : (
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" />
               )}
-              <Icon className="h-3.5 w-3.5 shrink-0 text-amber-400/80" aria-hidden />
+              <Icon className="h-3.5 w-3.5 shrink-0 text-md-sys-warning" aria-hidden />
               <span>{section.title}</span>
             </button>
             {expanded ? (
-              <div className="border-t border-default/40 px-3 py-2">
+              <div className="border-t border-md-sys-outline-variant/30 px-3 py-2">
                 <NarrativeList
                   items={narrative[section.key]}
                   ordered={section.ordered}

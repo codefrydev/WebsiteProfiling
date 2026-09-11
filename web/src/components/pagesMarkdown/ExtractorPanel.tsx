@@ -163,14 +163,14 @@ export default function ExtractorPanel({
   return (
     <div className="space-y-6">
       {/* Run selector */}
-      <div className="rounded-xl border border-default bg-brand-900/40 p-5 space-y-4">
+      <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Crawl run</h3>
+          <h3 className="text-sm font-semibold text-md-sys-on-surface">Crawl run</h3>
           <button
             type="button"
             onClick={() => void loadRuns()}
             disabled={loadingRuns}
-            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+            className="text-xs text-md-sys-on-surface-variant hover:text-md-sys-on-surface flex items-center gap-1"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loadingRuns ? 'animate-spin' : ''}`} />
             Refresh
@@ -180,15 +180,15 @@ export default function ExtractorPanel({
         {runsError ? (
           <p className="text-xs text-red-400">{runsError}</p>
         ) : loadingRuns ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-md-sys-on-surface-variant">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             Loading runs…
           </div>
         ) : runs.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No crawl runs found. Run a crawl first.</p>
+          <p className="text-xs text-md-sys-on-surface-variant">No crawl runs found. Run a crawl first.</p>
         ) : (
           <select
-            className="w-full rounded-md border border-default bg-brand-800 px-3 py-2 text-sm text-foreground"
+            className="w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-3 py-2 text-sm text-md-sys-on-surface"
             value={selectedRunId ?? ''}
             onChange={(e) => onRunSelect(Number(e.target.value))}
           >
@@ -237,22 +237,22 @@ export default function ExtractorPanel({
       />
 
       {/* Extract options */}
-      <div className="rounded-xl border border-default bg-brand-900/40 p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Extract markdown</h3>
+      <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 p-5 space-y-4">
+        <h3 className="text-sm font-semibold text-md-sys-on-surface">Extract markdown</h3>
 
         {!selectedRun || htmlCount === 0 ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-md-sys-on-surface-variant">
             Select a run with stored HTML to enable extraction.
           </p>
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                <label className="block text-xs font-medium text-md-sys-on-surface-variant mb-1">
                   Strategy
                 </label>
                 <select
-                  className="w-full rounded-md border border-default bg-brand-800 px-3 py-2 text-sm text-foreground"
+                  className="w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-3 py-2 text-sm text-md-sys-on-surface"
                   value={strategy}
                   onChange={(e) => setStrategy(e.target.value as 'main_only' | 'full_body')}
                 >
@@ -266,9 +266,9 @@ export default function ExtractorPanel({
                   id="overwrite-cb"
                   checked={overwrite}
                   onChange={(e) => setOverwrite(e.target.checked)}
-                  className="rounded border-default"
+                  className="rounded border-md-sys-outline-variant/40"
                 />
-                <label htmlFor="overwrite-cb" className="text-sm text-foreground">
+                <label htmlFor="overwrite-cb" className="text-sm text-md-sys-on-surface">
                   Overwrite existing markdown
                 </label>
               </div>
@@ -303,7 +303,7 @@ export default function ExtractorPanel({
             ) : null}
 
             {extractLog ? (
-              <pre className="max-h-48 overflow-y-auto text-[11px] text-muted-foreground bg-brand-950/60 rounded-lg p-3 font-mono whitespace-pre-wrap">
+              <pre className="max-h-48 overflow-y-auto text-[11px] text-md-sys-on-surface-variant bg-md-sys-surface-container-lowest/60 rounded-lg p-3 font-mono whitespace-pre-wrap">
                 {extractLog}
               </pre>
             ) : null}
@@ -362,8 +362,8 @@ function CaptureSection({ selectedRun, captureStatus, captureLog, onCaptureStart
       <div className="flex items-start gap-2">
         <AlertCircle className="h-4 w-4 text-yellow-400 mt-0.5 shrink-0" />
         <div>
-          <p className="text-sm font-medium text-foreground">No stored HTML for this run</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-sm font-medium text-md-sys-on-surface">No stored HTML for this run</p>
+          <p className="text-xs text-md-sys-on-surface-variant mt-0.5">
             Capture HTML by re-crawling with <code className="text-yellow-300/80">store_page_html=true</code>.
             This will start a new crawl job for the same site.
           </p>
@@ -394,7 +394,7 @@ function CaptureSection({ selectedRun, captureStatus, captureLog, onCaptureStart
       {error ? <p className="text-xs text-red-400">{error}</p> : null}
 
       {captureLog ? (
-        <pre className="max-h-48 overflow-y-auto text-[11px] text-muted-foreground bg-brand-950/60 rounded-lg p-3 font-mono whitespace-pre-wrap">
+        <pre className="max-h-48 overflow-y-auto text-[11px] text-md-sys-on-surface-variant bg-md-sys-surface-container-lowest/60 rounded-lg p-3 font-mono whitespace-pre-wrap">
           {captureLog}
         </pre>
       ) : null}

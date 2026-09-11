@@ -50,7 +50,7 @@ export default function ChatMarkdown({ content, streaming, nested }: ChatMarkdow
           {children}
         </a>
       ),
-      strong: ({ children }) => <strong className="font-semibold text-bright">{children}</strong>,
+      strong: ({ children }) => <strong className="font-semibold text-md-sys-on-surface">{children}</strong>,
       em: ({ children }) => <em>{children}</em>,
       blockquote: ({ children }) => {
         const text = String(children ?? '');

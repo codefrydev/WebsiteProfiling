@@ -16,7 +16,7 @@ function KwBadge({ label, colorClass }: { label: string; colorClass: string }) {
 }
 
 function PositionBadge({ pos }: { pos: number | string | null | undefined }) {
-  if (pos == null) return <span className="text-muted-foreground">—</span>;
+  if (pos == null) return <span className="text-md-sys-on-surface-variant">—</span>;
   const numPos = typeof pos === 'number' ? pos : parseFloat(String(pos));
   const p = numPos.toFixed(1);
   const color =
@@ -31,10 +31,10 @@ function PositionBadge({ pos }: { pos: number | string | null | undefined }) {
 }
 
 function TrendIcon({ trend }: { trend: string | null | undefined }) {
-  if (!trend) return <span className="text-muted-foreground">—</span>;
+  if (!trend) return <span className="text-md-sys-on-surface-variant">—</span>;
   if (trend === 'up') return <TrendingUp className="w-4 h-4 text-green-700 dark:text-green-400 inline" />;
   if (trend === 'down') return <TrendingDown className="w-4 h-4 text-red-700 dark:text-red-400 inline" />;
-  return <Minus className="w-4 h-4 text-muted-foreground inline" />;
+  return <Minus className="w-4 h-4 text-md-sys-on-surface-variant inline" />;
 }
 
 export function MiniSparkline({ history }: { history: KeywordHistoryRow[] }) {
@@ -75,7 +75,7 @@ export function buildKeywordColumns(
         const r = row as KeywordRow | undefined;
         return (
           <div className="min-w-[140px]">
-            <span className="font-medium text-foreground">{String(v ?? '')}</span>
+            <span className="font-medium text-md-sys-on-surface">{String(v ?? '')}</span>
             {r?.is_branded && (
               <span className="ml-1.5 text-[10px] bg-orange-500/20 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded-full font-semibold">
                 {ke.table.brand}
@@ -123,7 +123,7 @@ export function buildKeywordColumns(
       label: ke.table.parentTopic,
       render: (v) =>
         v ? (
-          <span className="text-xs text-muted-foreground truncate block max-w-xs lg:max-w-md">
+          <span className="text-xs text-md-sys-on-surface-variant truncate block max-w-xs lg:max-w-md">
             {String(v)}
           </span>
         ) : (
@@ -184,7 +184,7 @@ export function buildKeywordColumns(
       label: ke.table.plannerCompetition ?? 'Comp. (Planner)',
       hint: 'views.keywords.plannerCompetition',
       render: (v) => {
-        if (!v || typeof v !== 'string') return <span className="text-muted-foreground">—</span>;
+        if (!v || typeof v !== 'string') return <span className="text-md-sys-on-surface-variant">—</span>;
         const color =
           v === 'HIGH'
             ? 'text-red-700 dark:text-red-400'
@@ -192,7 +192,7 @@ export function buildKeywordColumns(
               ? 'text-yellow-700 dark:text-yellow-400'
               : v === 'LOW'
                 ? 'text-green-700 dark:text-green-400'
-                : 'text-muted-foreground';
+                : 'text-md-sys-on-surface-variant';
         return <span className={`font-semibold text-xs ${color}`}>{v}</span>;
       },
     });
@@ -286,7 +286,7 @@ export function buildKeywordColumns(
     key: 'recommended_action',
     label: ke.table.action,
     render: (v) => (
-      <span className="text-xs text-muted-foreground block min-w-[12rem]">{String(v || '—')}</span>
+      <span className="text-xs text-md-sys-on-surface-variant block min-w-[12rem]">{String(v || '—')}</span>
     ),
   });
 

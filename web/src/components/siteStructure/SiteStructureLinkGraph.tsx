@@ -140,19 +140,19 @@ export default function SiteStructureLinkGraph() {
   }, [graphData]);
 
   if (!graphData) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">No link graph data in this report.</p>;
+    return <p className="text-sm text-md-sys-on-surface-variant py-8 text-center">No link graph data in this report.</p>;
   }
 
   return (
     <div className="relative group/dev-card space-y-3">
       <DevCopyJsonButton data={graphDevData} />
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-md-sys-on-surface-variant">
         Showing up to {MAX_NODES} of {graphData.total} nodes. Click a node to open the URL.{' '}
-        <Link to="/network" className="text-link hover:underline">
+        <Link to="/network" className="text-md-sys-primary hover:underline">
           Open full Network view
         </Link>
       </p>
-      <div ref={containerRef} className="h-[360px] w-full rounded-xl border border-default overflow-hidden" />
+      <div ref={containerRef} className="h-[360px] w-full rounded-xl border border-md-sys-outline-variant/40 overflow-hidden" />
     </div>
   );
 }

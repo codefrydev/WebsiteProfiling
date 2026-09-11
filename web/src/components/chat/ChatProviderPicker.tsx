@@ -77,14 +77,14 @@ export default function ChatProviderPicker({
         onClick={() => setOpen((v) => !v)}
         className={
           triggerClassName ??
-          'flex max-w-[6.5rem] items-center gap-1 rounded-full px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground disabled:opacity-50 sm:max-w-[8.5rem]'
+          'flex max-w-[6.5rem] items-center gap-1 rounded-full px-2 py-1.5 text-xs text-md-sys-on-surface-variant transition-colors hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface disabled:opacity-50 sm:max-w-[8.5rem]'
         }
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={c.chooseProvider}
       >
         <span
-          className={`truncate font-medium ${triggerClassName ? 'text-inherit' : 'text-foreground'}`}
+          className={`truncate font-medium ${triggerClassName ? 'text-inherit' : 'text-md-sys-on-surface'}`}
         >
           {providerLabel(provider)}
         </span>
@@ -93,7 +93,7 @@ export default function ChatProviderPicker({
 
       {open ? (
         <div
-          className={`absolute right-0 z-50 w-[min(14rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-default bg-[var(--chat-surface)] shadow-2xl ${
+          className={`absolute right-0 z-50 w-[min(14rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container shadow-2xl ${
             menuPlacement === 'below' ? 'top-full mt-2' : 'bottom-full mb-2'
           }`}
           role="listbox"
@@ -106,26 +106,26 @@ export default function ChatProviderPicker({
                   <button
                     type="button"
                     onClick={() => void handleProviderChange(opt.value)}
-                    className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--chat-surface-hover)] ${
-                      active ? 'bg-[var(--chat-surface-hover)]' : ''
+                    className={`press flex w-full items-center gap-2 rounded-full px-3 py-2 text-left text-sm transition-colors hover:bg-md-sys-surface-container-high active:scale-[0.98] ${
+                      active ? 'bg-md-sys-surface-container-high' : ''
                     }`}
                   >
                     <span className="w-4 shrink-0">
-                      {active ? <Check className="h-4 w-4 text-foreground" /> : null}
+                      {active ? <Check className="h-4 w-4 text-md-sys-on-surface" /> : null}
                     </span>
-                    <span className="truncate text-bright">{opt.label}</span>
+                    <span className="truncate text-md-sys-on-surface">{opt.label}</span>
                   </button>
                 </li>
               );
             })}
           </ul>
 
-          <div className="space-y-1 border-t border-muted/50 p-2 text-xs">
-            {saveError ? <p className="px-1 text-red-400">{saveError}</p> : null}
+          <div className="space-y-1 border-t border-md-sys-outline-variant/40 p-2 text-xs">
+            {saveError ? <p className="px-1 text-md-sys-error">{saveError}</p> : null}
             <div className="flex justify-end px-1">
               <Link
                 to="/secrets"
-                className="text-link hover:underline"
+                className="press text-md-sys-primary hover:underline active:scale-[0.98]"
                 onClick={() => setOpen(false)}
               >
                 {c.aiSettingsLink}

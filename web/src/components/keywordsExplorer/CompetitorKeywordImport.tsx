@@ -47,20 +47,20 @@ export default function CompetitorKeywordImport({ propertyId, onImported }: Comp
         placeholder="Competitor domain"
         value={competitor}
         onChange={(e) => setCompetitor(e.target.value)}
-        className="w-full rounded-lg border border-default bg-background px-3 py-2 text-sm"
+        className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-background px-3 py-2 text-sm"
       />
       <textarea
         placeholder="Paste CSV export…"
         value={csvText}
         onChange={(e) => setCsvText(e.target.value)}
         rows={6}
-        className="w-full rounded-lg border border-default bg-background px-3 py-2 text-sm font-mono"
+        className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-background px-3 py-2 text-sm font-mono"
       />
       <div className="flex items-center gap-3">
         <Button type="button" onClick={() => void handleImport()} disabled={busy}>
           Import
         </Button>
-        {status ? <span className="text-xs text-muted-foreground">{status}</span> : null}
+        {status ? <span className="text-xs text-md-sys-on-surface-variant">{status}</span> : null}
       </div>
     </Card>
   );

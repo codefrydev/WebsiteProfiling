@@ -31,13 +31,13 @@ export default function BingWebmasterSection() {
   }, [readOnly, s.failed]);
 
   return (
-    <div className="rounded-xl border border-default bg-brand-800/40 p-4 sm:p-5 space-y-3">
+    <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/40 p-4 sm:p-5 space-y-3">
       <div>
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-md-sys-on-surface flex items-center gap-2">
           <Globe className="h-4 w-4 text-accent shrink-0" aria-hidden />
           {s.title}
         </h3>
-        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{s.hint}</p>
+        <p className="text-xs text-md-sys-on-surface-variant mt-1 leading-relaxed">{s.hint}</p>
       </div>
       <Button variant="secondary" onClick={() => void handleSync()} disabled={loading || readOnly}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
@@ -45,7 +45,7 @@ export default function BingWebmasterSection() {
       </Button>
       {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
       {result?.ok ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-md-sys-on-surface-variant">
           {s.success}
           {result.note ? ` ${String(result.note)}` : ''}
         </p>

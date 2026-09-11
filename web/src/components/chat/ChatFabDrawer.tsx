@@ -63,7 +63,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
       aria-modal="true"
       aria-label="AI Chat"
       aria-hidden={!open}
-      className="print:hidden fixed bottom-6 right-4 z-[99] flex w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/[0.08] transition-all duration-300 ease-out origin-bottom-right"
+      className="print:hidden fixed bottom-6 right-4 z-[99] flex w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container-highest shadow-elevation-3 transition-all duration-300 ease-out origin-bottom-right"
       style={{
         height: 'min(580px, 80dvh)',
         transform: open ? 'scale(1)' : 'scale(0)',
@@ -152,14 +152,14 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
       </div>
 
       {/* ── Body ───────────────────────────────────────────── */}
-      <div className="flex min-h-0 flex-1 flex-col bg-[var(--app-bg-elevated)]">
+      <div className="flex min-h-0 flex-1 flex-col bg-md-sys-surface-container">
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
 
           {/* Empty state */}
           {isEmpty && (
             <div className="flex flex-col gap-4">
               {needsApiKey ? <ChatApiKeyBanner provider={llmProvider} compact /> : null}
-              <p className="text-center text-[12px] text-muted-foreground pt-2">
+              <p className="text-center text-[12px] text-md-sys-on-surface-variant pt-2">
                 {domain ? `Ask anything about ${domain}` : c.emptyHint}
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -169,7 +169,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
                     type="button"
                     onClick={() => sendMessage(prompt)}
                     disabled={busy || needsApiKey}
-                    className="rounded-xl border border-default/60 bg-[var(--chat-surface)]/30 px-3 py-2.5 text-left text-[12px] text-muted-foreground transition-all hover:border-[var(--accent-border)] hover:bg-[var(--chat-surface)]/70 hover:text-foreground disabled:opacity-40"
+                    className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-3.5 py-2.5 text-left text-[12px] text-md-sys-on-surface-variant transition-all duration-200 hover:border-md-sys-primary hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98] disabled:opacity-40"
                   >
                     {prompt}
                   </button>
@@ -195,11 +195,11 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
                   className={`max-w-[82%] rounded-2xl rounded-bl-none px-4 py-3 shadow-sm ${
                     msg.error
                       ? 'border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[13px] text-[var(--color-danger)]'
-                      : 'bg-[var(--chat-assistant-bubble)] text-foreground'
+                      : 'bg-[var(--chat-assistant-bubble)] text-md-sys-on-surface'
                   }`}
                 >
                   {msg.toolStatus && (
-                    <div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <div className="mb-2 flex items-center gap-2 text-[11px] text-md-sys-on-surface-variant">
                       <Loader2 className="h-3 w-3 animate-spin" />
                       {msg.toolStatus}
                     </div>
@@ -208,13 +208,13 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
                   {msg.narrative && (
                     <div className="mb-3 space-y-2">
                       {msg.narrative.power_insights.map((insight, i) => (
-                        <p key={i} className="text-[13px] text-foreground/90">{insight}</p>
+                        <p key={i} className="text-[13px] text-md-sys-on-surface/90">{insight}</p>
                       ))}
                       {msg.narrative.recommended_actions.length > 0 && (
                         <ul className="mt-2 space-y-1">
                           {msg.narrative.recommended_actions.map((action, i) => (
-                            <li key={i} className="flex items-start gap-2 text-[12px] text-muted-foreground">
-                              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]" />
+                            <li key={i} className="flex items-start gap-2 text-[12px] text-md-sys-on-surface-variant">
+                              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-md-sys-primary" />
                               {action}
                             </li>
                           ))}
@@ -237,7 +237,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
                     <Link
                       to={openFullChat()}
                       onClick={onClose}
-                      className="mt-2 flex items-center gap-1 text-[11px] text-link hover:text-link-soft"
+                      className="mt-2 flex items-center gap-1 text-[11px] text-md-sys-primary hover:text-md-sys-primary-soft"
                     >
                       See full results in chat
                       <ArrowUpRight className="h-3 w-3" />
@@ -252,7 +252,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
         </div>
 
         {/* ── Composer ─────────────────────────────────────── */}
-        <div className="shrink-0 border-t border-default/50">
+        <div className="shrink-0 border-t border-md-sys-outline-variant/30">
           {needsApiKey && !isEmpty ? (
             <div className="px-4 pt-3">
               <ChatApiKeyBanner provider={llmProvider} compact />

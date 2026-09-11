@@ -12,11 +12,11 @@ export default function ChatCodeArtifactBlock({ block }: { block: Block }) {
   const href = resolveHref(block.downloadUrl);
 
   return (
-    <div className="rounded-lg border border-default bg-surface-muted/60 p-3">
+    <div className="rounded-lg border border-md-sys-outline-variant/40 bg-surface-muted/60 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <Code2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-          <span className="truncate text-sm text-foreground" title={block.filename}>
+          <Code2 className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />
+          <span className="truncate text-sm text-md-sys-on-surface" title={block.filename}>
             {block.filename}
           </span>
         </div>
@@ -24,14 +24,14 @@ export default function ChatCodeArtifactBlock({ block }: { block: Block }) {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-brand-700/80"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-md-sys-outline-variant/40 px-3 py-1.5 text-sm font-medium text-md-sys-on-surface transition-colors hover:bg-md-sys-surface-container-high/80"
           >
             {block.previewable ? 'Preview' : 'View'}
           </button>
           <a
             href={href}
             download={block.filename}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="press inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-md-sys-on-surface-variant transition-all hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98]"
             aria-label={`Download ${block.filename}`}
           >
             <Download className="h-4 w-4" />

@@ -3,9 +3,9 @@ import { usePipelineGraph } from '@/context/PipelineGraphContext';
 import type { PipelinePreviewStepStatus } from '@/types/pipelineGraph';
 
 function StepStatusIcon({ status }: { status: PipelinePreviewStepStatus }) {
-  if (status === 'success') return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" aria-hidden />;
-  if (status === 'error') return <XCircle className="h-4 w-4 shrink-0 text-red-500" aria-hidden />;
-  return <MinusCircle className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />;
+  if (status === 'success') return <CheckCircle2 className="h-4 w-4 shrink-0 text-md-sys-success" aria-hidden />;
+  if (status === 'error') return <XCircle className="h-4 w-4 shrink-0 text-md-sys-error" aria-hidden />;
+  return <MinusCircle className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />;
 }
 
 /** Renders extract_structured_data's {field: value} output as rows; ignores non-object shapes defensively. */
@@ -14,11 +14,11 @@ function StepOutput({ output }: { output: unknown }) {
   const entries = Object.entries(output as Record<string, unknown>);
   if (entries.length === 0) return null;
   return (
-    <dl className="mt-2 space-y-1 border-t border-default/60 pt-2">
+    <dl className="mt-2 space-y-1 border-t border-md-sys-outline-variant/40 pt-2">
       {entries.map(([key, value]) => (
         <div key={key} className="flex items-baseline gap-2 text-xs">
-          <dt className="shrink-0 font-mono text-muted-foreground">{key}:</dt>
-          <dd className="min-w-0 truncate font-mono text-foreground">{String(value)}</dd>
+          <dt className="shrink-0 font-mono text-md-sys-on-surface-variant">{key}:</dt>
+          <dd className="min-w-0 truncate font-mono text-md-sys-on-surface">{String(value)}</dd>
         </div>
       ))}
     </dl>
@@ -31,7 +31,7 @@ export default function PipelinePreviewPanel() {
 
   if (previewing) {
     return (
-      <div className="flex h-full items-center justify-center p-6 text-sm text-muted-foreground">
+      <div className="flex h-full items-center justify-center p-6 text-sm text-md-sys-on-surface-variant">
         Running preview…
       </div>
     );
@@ -39,7 +39,7 @@ export default function PipelinePreviewPanel() {
 
   if (!previewResult && !previewError) {
     return (
-      <div className="flex h-full items-center justify-center p-6 text-center text-xs text-muted-foreground">
+      <div className="flex h-full items-center justify-center p-6 text-center text-xs text-md-sys-on-surface-variant">
         Enter a URL above and click Run Preview to see per-step results here.
       </div>
     );
@@ -48,7 +48,7 @@ export default function PipelinePreviewPanel() {
   return (
     <div className="h-full overflow-y-auto p-4">
       {previewError ? (
-        <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+        <div className="mb-4 rounded-xl border border-md-sys-error/40 bg-md-sys-error-container/20 px-3 py-2 text-xs text-md-sys-on-error-container">
           {previewError}
         </div>
       ) : null}
@@ -57,14 +57,14 @@ export default function PipelinePreviewPanel() {
         <>
           <ul className="mb-4 space-y-1.5">
             {previewResult.steps.map((step) => (
-              <li key={step.name} className="rounded-lg border border-default bg-brand-900/40 px-3 py-2">
+              <li key={step.name} className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 px-3 py-2">
                 <div className="flex items-center gap-2">
                   <StepStatusIcon status={step.status} />
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{step.name}</span>
-                  <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">{step.timingMs}ms</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-md-sys-on-surface">{step.name}</span>
+                  <span className="shrink-0 text-[11px] tabular-nums text-md-sys-on-surface-variant">{step.timingMs}ms</span>
                 </div>
-                {step.summary ? <p className="mt-1 text-xs text-muted-foreground">{step.summary}</p> : null}
-                {step.error ? <p className="mt-1 text-xs text-red-400">{step.error}</p> : null}
+                {step.summary ? <p className="mt-1 text-xs text-md-sys-on-surface-variant">{step.summary}</p> : null}
+                {step.error ? <p className="mt-1 text-xs text-md-sys-error">{step.error}</p> : null}
                 <StepOutput output={step.output} />
               </li>
             ))}
@@ -72,31 +72,31 @@ export default function PipelinePreviewPanel() {
 
           {previewResult.finalMetrics ? (
             <div className="mb-4 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-lg border border-default bg-brand-900/40 px-2 py-2">
-                <p className="text-sm font-semibold text-foreground">{previewResult.finalMetrics.wordCount}</p>
-                <p className="text-[10px] text-muted-foreground">Words</p>
+              <div className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 px-2 py-2">
+                <p className="text-sm font-semibold text-md-sys-on-surface">{previewResult.finalMetrics.wordCount}</p>
+                <p className="text-[10px] text-md-sys-on-surface-variant">Words</p>
               </div>
-              <div className="rounded-lg border border-default bg-brand-900/40 px-2 py-2">
-                <p className="text-sm font-semibold text-foreground">
+              <div className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 px-2 py-2">
+                <p className="text-sm font-semibold text-md-sys-on-surface">
                   {previewResult.finalMetrics.readingLevel.toFixed(1)}
                 </p>
-                <p className="text-[10px] text-muted-foreground">Reading level</p>
+                <p className="text-[10px] text-md-sys-on-surface-variant">Reading level</p>
               </div>
-              <div className="rounded-lg border border-default bg-brand-900/40 px-2 py-2">
-                <p className="text-sm font-semibold text-foreground">
+              <div className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 px-2 py-2">
+                <p className="text-sm font-semibold text-md-sys-on-surface">
                   {previewResult.finalMetrics.topKeywords.length}
                 </p>
-                <p className="text-[10px] text-muted-foreground">Keywords</p>
+                <p className="text-[10px] text-md-sys-on-surface-variant">Keywords</p>
               </div>
             </div>
           ) : null}
 
           {previewResult.finalMarkdown ? (
             <div>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-md-sys-on-surface-variant">
                 Final Markdown
               </p>
-              <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-default bg-brand-900/60 p-3 font-mono text-xs text-foreground">
+              <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/60 p-3 font-mono text-xs text-md-sys-on-surface">
                 {previewResult.finalMarkdown}
               </pre>
             </div>

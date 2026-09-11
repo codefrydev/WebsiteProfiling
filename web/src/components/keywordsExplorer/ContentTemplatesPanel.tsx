@@ -107,7 +107,7 @@ export default function ContentTemplatesPanel({
           {TEMPLATES.map((t) => (
             <Card key={t.id} className="p-4 flex flex-col">
               <h3 className="text-sm font-semibold">{t.title}</h3>
-              <ul className="mt-2 text-xs text-muted-foreground space-y-1 flex-1 list-disc pl-4">
+              <ul className="mt-2 text-xs text-md-sys-on-surface-variant space-y-1 flex-1 list-disc pl-4">
                 {t.outline.map((line) => (
                   <li key={line}>{line}</li>
                 ))}
@@ -134,30 +134,30 @@ export default function ContentTemplatesPanel({
           onClick={closeModal}
         >
           <div
-            className="w-full max-w-lg rounded-xl border border-default bg-brand-800 shadow-xl"
+            className="w-full max-w-lg rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-default px-4 py-3">
-              <h3 id="content-template-title" className="text-sm font-semibold text-bright">
+            <div className="flex items-center justify-between border-b border-md-sys-outline-variant/40 px-4 py-3">
+              <h3 id="content-template-title" className="text-sm font-semibold text-md-sys-on-surface">
                 {activeTemplate.title}
               </h3>
               <button
                 type="button"
                 onClick={() => setActiveTemplate(null)}
-                className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+                className="press rounded-full p-1.5 text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all"
                 aria-label={s.close}
               >
                 <X className="h-4 w-4" aria-hidden />
               </button>
             </div>
             <div className="px-4 py-4 space-y-3 text-sm">
-              <label className="block text-xs text-muted-foreground">
+              <label className="block text-xs text-md-sys-on-surface-variant">
                 Target keyword
                 <input
                   type="text"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-default bg-brand-900 px-3 py-2 text-sm text-foreground"
+                  className="mt-1 w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface"
                   placeholder="primary keyword"
                 />
               </label>
@@ -168,11 +168,11 @@ export default function ContentTemplatesPanel({
               {error ? <p className="text-red-700 dark:text-red-400 text-xs">{error}</p> : null}
               {brief?.summary ? (
                 <>
-                  <pre className="whitespace-pre-wrap text-xs text-muted-foreground leading-relaxed font-sans">
+                  <pre className="whitespace-pre-wrap text-xs text-md-sys-on-surface-variant leading-relaxed font-sans">
                     {brief.summary}
                   </pre>
                   {brief.provenance ? (
-                    <p className="text-[10px] text-muted-foreground">{s.provenance}: {brief.provenance}</p>
+                    <p className="text-[10px] text-md-sys-on-surface-variant">{s.provenance}: {brief.provenance}</p>
                   ) : null}
                 </>
               ) : null}

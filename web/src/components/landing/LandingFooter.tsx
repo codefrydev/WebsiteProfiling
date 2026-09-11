@@ -23,7 +23,7 @@ function FooterLink({
   children: ReactNode;
   external?: boolean;
 }) {
-  const className = 'text-sm text-muted-foreground transition-colors hover:text-link';
+  const className = 'text-sm text-md-sys-on-surface-variant transition-colors hover:text-md-sys-primary';
   if (external) {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-1 ${className}`}>
@@ -81,7 +81,7 @@ const FOOTER_COLUMNS: readonly FooterGroup[][] = [
 function FooterGroupSection({ title, links }: FooterGroup) {
   return (
     <section className="px-4 py-4 @sm:px-5 @sm:py-5">
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <h3 className="text-sm font-semibold text-md-sys-on-surface">{title}</h3>
       <ul className="mt-3 space-y-2">
         {links.map(({ href, label, external }) => (
           <li key={href}>
@@ -102,18 +102,18 @@ export default function LandingFooter() {
         <div className={`${landingSplitCopyClass} max-w-sm @md:pr-8 @lg:pr-10`}>
           <div className="flex items-center gap-2.5">
             <AppLogo size={26} />
-            <p className="text-lg font-semibold text-foreground">{app.productName}</p>
+            <p className="text-lg font-semibold text-md-sys-on-surface">{app.productName}</p>
           </div>
-          <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{vl.footerCopyright}</p>
-          <p className="mt-6 text-xs text-muted-foreground">
+          <p className="mt-4 text-sm leading-relaxed text-md-sys-on-surface-variant">{vl.footerCopyright}</p>
+          <p className="mt-6 text-xs text-md-sys-on-surface-variant">
             © {new Date().getFullYear()} {app.productName} · {vl.footerLicense}
           </p>
         </div>
 
         <div className="flex min-h-0 flex-col justify-center @md:pl-2 @lg:pl-4">
-          <div className="overflow-hidden rounded-xl border border-default/60 @md:grid @md:grid-cols-2 @md:divide-x divide-default/60">
+          <div className="overflow-hidden rounded-xl border border-md-sys-outline-variant/40 @md:grid @md:grid-cols-2 @md:divide-x divide-md-sys-outline-variant/30/60">
             {FOOTER_COLUMNS.map((column, columnIndex) => (
-              <div key={columnIndex} className="divide-y divide-default/60">
+              <div key={columnIndex} className="divide-y divide-md-sys-outline-variant/30/60">
                 {column.map((group) => (
                   <FooterGroupSection key={group.title} {...group} />
                 ))}

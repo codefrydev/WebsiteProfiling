@@ -8,7 +8,7 @@ import { strings } from '@/lib/strings';
 
 const statSkeleton = (
   <span
-    className="shimmer inline-block h-6 w-14 rounded-md bg-brand-800/90 align-middle dark:bg-white/[0.07]"
+    className="shimmer inline-block h-6 w-14 rounded-md bg-md-sys-surface-container/90 align-middle dark:bg-white/[0.07]"
     aria-hidden
   />
 );
@@ -42,7 +42,7 @@ export default function PortfolioStatsRow() {
         label={<LabelWithHint label={vh.avgHealthLabel} helpKey="views.home.avgHealth" />}
         value={loading ? statSkeleton : (totals.avgHealth ?? sj.emDash)}
         valueClassName={
-          totals.avgHealth != null ? healthScoreClass(totals.avgHealth) : 'text-bright'
+          totals.avgHealth != null ? healthScoreClass(totals.avgHealth) : 'text-md-sys-on-surface'
         }
         icon={<Sparkles className="h-3.5 w-3.5" aria-hidden />}
         size="lg"

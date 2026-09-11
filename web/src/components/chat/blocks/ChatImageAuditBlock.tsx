@@ -7,7 +7,7 @@ type Block = Extract<ChatBlock, { type: 'image_audit_summary' }>;
 export default function ChatImageAuditBlock({ block }: { block: Block }) {
   return (
     <ImageAuditSummaryCards
-      className="bg-[var(--chat-bg)]/60"
+      className="bg-md-sys-surface/60"
       data={{
         pagesMissingAlt: block.pagesMissingAlt,
         pagesWithoutLazy: block.pagesWithoutLazy,

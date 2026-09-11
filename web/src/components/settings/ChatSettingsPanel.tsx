@@ -38,14 +38,14 @@ function Toggle({
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50 ${
-        checked ? 'bg-[var(--accent)]' : 'bg-[var(--app-bg-sunken)]'
+      className={`press relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-sys-primary disabled:cursor-not-allowed disabled:opacity-50 ${
+        checked ? 'bg-md-sys-primary border-md-sys-primary' : 'bg-md-sys-surface-container-highest border-md-sys-outline'
       }`}
     >
       <span
         aria-hidden
-        className={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow ring-0 transition-transform ${
-          checked ? 'translate-x-4' : 'translate-x-0'
+        className={`pointer-events-none block h-5 w-5 rounded-full shadow-xs ring-0 transition-transform ${
+          checked ? 'translate-x-5 bg-md-sys-on-primary' : 'translate-x-0 bg-md-sys-outline'
         }`}
       />
     </button>
@@ -68,10 +68,10 @@ function Row({
   return (
     <div className="flex items-start justify-between gap-6 px-5 py-4">
       <div className="min-w-0 flex-1">
-        <label htmlFor={htmlFor} className="block text-sm font-medium text-bright cursor-pointer">
+        <label htmlFor={htmlFor} className="block text-sm font-medium text-md-sys-on-surface cursor-pointer">
           {label}
         </label>
-        {help && <p className="mt-0.5 text-xs text-muted-foreground">{help}</p>}
+        {help && <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">{help}</p>}
       </div>
       <div className="flex-shrink-0 pt-0.5">{children}</div>
     </div>
@@ -185,33 +185,33 @@ export default function ChatSettingsPanel() {
       {/* Header */}
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-bright">{s.chatSection}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{s.chatSubtitle}</p>
+          <h1 className="text-xl font-semibold text-md-sys-on-surface">{s.chatSection}</h1>
+          <p className="mt-1 text-sm text-md-sys-on-surface-variant">{s.chatSubtitle}</p>
         </div>
         {saveStatus === 'saving' && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs text-md-sys-on-surface-variant">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             {s.chatSaving}
           </div>
         )}
         {saveStatus === 'saved' && (
-          <span className="text-xs text-[var(--accent)]">{s.chatSaved}</span>
+          <span className="text-xs text-md-sys-primary font-medium">{s.chatSaved}</span>
         )}
         {saveStatus === 'error' && (
-          <span className="text-xs text-red-500 dark:text-red-400">{s.chatSaveError}</span>
+          <span className="text-xs text-md-sys-error font-medium">{s.chatSaveError}</span>
         )}
       </div>
 
       {loadError && (
-        <p className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
+        <p className="mb-6 rounded-2xl border border-md-sys-error/30 bg-md-sys-error-container/30 px-4 py-3 text-sm text-md-sys-on-error-container">
           {loadError}
         </p>
       )}
 
       {/* FAB position (synced via client_preferences) */}
-      <section className="mb-6 rounded-2xl border border-default bg-[var(--app-bg-elevated)] p-5">
-        <p className="mb-3 text-sm font-medium text-bright">{s.fabCornerLabel}</p>
-        <p className="mb-3 text-xs text-muted-foreground">{s.fabCornerHelp}</p>
+      <section className="mb-6 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5">
+        <p className="mb-3 text-sm font-medium text-md-sys-on-surface">{s.fabCornerLabel}</p>
+        <p className="mb-3 text-xs text-md-sys-on-surface-variant">{s.fabCornerHelp}</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {CORNER_OPTIONS.map(({ value, label }) => (
             <button
@@ -219,10 +219,10 @@ export default function ChatSettingsPanel() {
               type="button"
               onClick={() => handleFabCorner(value)}
               aria-pressed={fabCorner === value}
-              className={`rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${
+              className={`rounded-full border px-3 py-2 text-xs font-medium transition-all duration-200 active:scale-95 ${
                 fabCorner === value
-                  ? 'border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--accent)]'
-                  : 'border-default text-muted-foreground hover:border-[var(--accent)] hover:text-foreground'
+                  ? 'border-md-sys-primary bg-md-sys-primary/10 text-md-sys-primary font-semibold'
+                  : 'border-md-sys-outline-variant/40 text-md-sys-on-surface-variant hover:border-md-sys-primary/50 hover:text-md-sys-on-surface'
               }`}
             >
               {label}
@@ -232,12 +232,12 @@ export default function ChatSettingsPanel() {
       </section>
 
       {/* DB-backed settings */}
-      <section className="rounded-2xl border border-default bg-[var(--app-bg-elevated)] divide-y divide-[var(--app-border-muted)]">
+      <section className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container divide-y divide-md-sys-outline-variant/40">
         {/* Assistant name */}
         <div className="px-5 py-4">
           <label
             htmlFor="assistant-name"
-            className="block text-sm font-medium text-bright"
+            className="block text-sm font-medium text-md-sys-on-surface"
           >
             {s.assistantNameLabel}
           </label>
@@ -247,7 +247,7 @@ export default function ChatSettingsPanel() {
             value={assistantName}
             placeholder={DEFAULT_CHAT_ASSISTANT_NAME}
             onCommit={commitAssistantName}
-            className="mt-2 w-full rounded-lg border border-default bg-[var(--app-bg-muted)] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-[var(--accent)] focus:outline-none transition-colors"
+            className="mt-2 w-full rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high px-3 py-2 text-sm text-md-sys-on-surface placeholder:text-md-sys-on-surface-variant/60 focus:border-md-sys-primary focus:ring-2 focus:ring-md-sys-primary/20 focus:outline-none transition-all"
           />
         </div>
 
@@ -255,18 +255,18 @@ export default function ChatSettingsPanel() {
         <div className="px-5 py-4">
           <label
             htmlFor="assistant-avatar"
-            className="block text-sm font-medium text-bright"
+            className="block text-sm font-medium text-md-sys-on-surface"
           >
             {s.assistantAvatarLabel}
           </label>
-          <p className="mt-0.5 text-xs text-muted-foreground">{s.assistantAvatarHelp}</p>
+          <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">{s.assistantAvatarHelp}</p>
           <DraftInput
             id="assistant-avatar"
             type="text"
             value={avatarUrl}
             placeholder={DEFAULT_CHAT_ASSISTANT_AVATAR}
             onCommit={commitAvatarUrl}
-            className="mt-2 w-full rounded-lg border border-default bg-[var(--app-bg-muted)] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground font-mono focus:border-[var(--accent)] focus:outline-none transition-colors"
+            className="mt-2 w-full rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high px-3 py-2 text-sm text-md-sys-on-surface placeholder:text-md-sys-on-surface-variant/60 font-mono focus:border-md-sys-primary focus:ring-2 focus:ring-md-sys-primary/20 focus:outline-none transition-all"
           />
         </div>
 
@@ -285,7 +285,7 @@ export default function ChatSettingsPanel() {
         </Row>
       </section>
 
-      <p className="mt-4 text-[11px] text-muted-foreground">
+      <p className="mt-4 text-[11px] text-md-sys-on-surface-variant">
         FAB position is saved to this browser. Assistant name, avatar, and tool rounds are saved to the database.
       </p>
     </div>

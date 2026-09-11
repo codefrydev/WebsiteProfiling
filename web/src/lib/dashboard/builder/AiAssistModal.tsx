@@ -147,22 +147,22 @@ export default function AiAssistModal(props: AiAssistModalProps) {
       onClick={onClose}
     >
       <div
-        className="bg-brand-800 border border-default rounded-xl shadow-2xl w-full max-w-lg flex flex-col max-h-[85vh]"
+        className="bg-md-sys-surface-container-highest border border-md-sys-outline-variant/40 rounded-3xl shadow-elevation-3 w-full max-w-lg flex flex-col max-h-[85vh] overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-assist-title"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-default shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-md-sys-outline-variant/30 shrink-0">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-link" />
-            <h2 id="ai-assist-title" className="font-bold text-foreground text-sm">{MODE_LABELS[mode]}</h2>
+            <Sparkles className="h-4 w-4 text-md-sys-primary" />
+            <h2 id="ai-assist-title" className="font-bold text-md-sys-on-surface text-sm">{MODE_LABELS[mode]}</h2>
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-1 rounded hover:bg-brand-700/80 text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1.5 rounded-full hover:bg-md-sys-surface-container-high text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-all active:scale-95"
           >
             <X className="h-4 w-4" />
           </button>
@@ -171,7 +171,7 @@ export default function AiAssistModal(props: AiAssistModalProps) {
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">
+            <label className="block text-xs font-semibold text-md-sys-on-surface-variant mb-1">
               What do you want?
             </label>
             <textarea
@@ -179,12 +179,12 @@ export default function AiAssistModal(props: AiAssistModalProps) {
               onChange={(e) => setPrompt(e.target.value)}
               rows={3}
               placeholder={PLACEHOLDERS[mode]}
-              className="w-full px-3 py-2 text-sm bg-brand-800 border border-default rounded-lg text-bright placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y"
+              className="w-full px-3 py-2 text-sm bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg text-md-sys-on-surface placeholder:text-md-sys-on-surface-variant/60 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) void handleGenerate();
               }}
             />
-            <p className="text-[10px] text-muted-foreground mt-1">⌘↵ to generate</p>
+            <p className="text-[10px] text-md-sys-on-surface-variant mt-1">⌘↵ to generate</p>
           </div>
 
           {error && (
@@ -205,7 +205,7 @@ export default function AiAssistModal(props: AiAssistModalProps) {
                 {showExplanation ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </button>
               {showExplanation && (
-                <p className="px-3 pb-3 text-xs text-muted-foreground leading-relaxed">{explanation}</p>
+                <p className="px-3 pb-3 text-xs text-md-sys-on-surface-variant leading-relaxed">{explanation}</p>
               )}
             </div>
           )}
@@ -224,11 +224,11 @@ export default function AiAssistModal(props: AiAssistModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-default shrink-0 flex gap-2">
+        <div className="px-5 py-3.5 border-t border-md-sys-outline-variant/30 shrink-0 flex gap-2">
           <button
             onClick={() => void handleGenerate()}
             disabled={loading || !prompt.trim()}
-            className="flex items-center justify-center gap-2 flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+            className="flex items-center justify-center gap-2 flex-1 py-2 rounded-full bg-md-sys-primary hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed text-md-sys-on-primary text-sm font-medium transition-all shadow-elevation-1 active:scale-[0.98]"
           >
             {loading ? (
               <><span className="animate-spin">⟳</span> Generating…</>
@@ -239,14 +239,14 @@ export default function AiAssistModal(props: AiAssistModalProps) {
           {pending && (
             <button
               onClick={handleApply}
-              className="flex-1 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition-colors"
+              className="flex-1 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition-all shadow-elevation-1 active:scale-[0.98]"
             >
               Apply
             </button>
           )}
           <button
             onClick={onClose}
-            className="flex-1 py-2 rounded-lg border border-default hover:bg-brand-700/80 text-sm text-foreground transition-colors"
+            className="flex-1 py-2 rounded-full border border-md-sys-outline-variant/50 hover:bg-md-sys-surface-container-high text-sm text-md-sys-on-surface transition-all active:scale-[0.98]"
           >
             Cancel
           </button>
@@ -265,20 +265,20 @@ function ScriptPreview({ result }: { result: AiScriptResult }) {
     <div className="space-y-2">
       {result.measure && (
         <div>
-          <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">Measure</p>
-          <pre className="text-xs font-mono bg-brand-950/80 rounded px-2 py-1.5 text-blue-300 whitespace-pre-wrap overflow-x-auto">{result.measure}</pre>
+          <p className="text-[10px] font-semibold text-md-sys-on-surface-variant mb-0.5">Measure</p>
+          <pre className="text-xs font-mono bg-md-sys-surface-container-lowest/80 rounded px-2 py-1.5 text-blue-300 whitespace-pre-wrap overflow-x-auto">{result.measure}</pre>
         </div>
       )}
       {result.transform && (
         <div>
-          <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">Transform</p>
-          <pre className="text-xs font-mono bg-brand-950/80 rounded px-2 py-1.5 text-blue-300 whitespace-pre-wrap overflow-x-auto">{result.transform}</pre>
+          <p className="text-[10px] font-semibold text-md-sys-on-surface-variant mb-0.5">Transform</p>
+          <pre className="text-xs font-mono bg-md-sys-surface-container-lowest/80 rounded px-2 py-1.5 text-blue-300 whitespace-pre-wrap overflow-x-auto">{result.transform}</pre>
         </div>
       )}
       {result.chartSpec && (
         <div>
-          <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">Chart spec (type: {result.chartSpec.type})</p>
-          <pre className="text-[10px] font-mono bg-brand-950/80 rounded px-2 py-1.5 text-muted-foreground whitespace-pre-wrap overflow-x-auto max-h-32">{JSON.stringify(result.chartSpec, null, 2)}</pre>
+          <p className="text-[10px] font-semibold text-md-sys-on-surface-variant mb-0.5">Chart spec (type: {result.chartSpec.type})</p>
+          <pre className="text-[10px] font-mono bg-md-sys-surface-container-lowest/80 rounded px-2 py-1.5 text-md-sys-on-surface-variant whitespace-pre-wrap overflow-x-auto max-h-32">{JSON.stringify(result.chartSpec, null, 2)}</pre>
         </div>
       )}
     </div>
@@ -287,13 +287,13 @@ function ScriptPreview({ result }: { result: AiScriptResult }) {
 
 function WidgetPreview({ widget }: { widget: Widget }) {
   return (
-    <div className="rounded-lg border border-default bg-brand-800/40 px-3 py-2 space-y-1">
-      <p className="text-xs font-semibold text-bright">{widget.title}</p>
-      <p className="text-[10px] text-muted-foreground">
+    <div className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/40 px-4 py-3 space-y-1">
+      <p className="text-xs font-semibold text-md-sys-on-surface">{widget.title}</p>
+      <p className="text-[10px] text-md-sys-on-surface-variant">
         <span className="text-blue-400">{widget.viz}</span> · {widget.binding.toolName}
       </p>
       {widget.binding.valueField && (
-        <p className="text-[10px] text-muted-foreground">Value: {widget.binding.valueField}</p>
+        <p className="text-[10px] text-md-sys-on-surface-variant">Value: {widget.binding.valueField}</p>
       )}
     </div>
   );
@@ -301,12 +301,12 @@ function WidgetPreview({ widget }: { widget: Widget }) {
 
 function DashboardPreview({ name, doc }: { name: string; doc: DashboardDoc }) {
   return (
-    <div className="rounded-lg border border-default bg-brand-800/40 px-3 py-2 space-y-2">
-      <p className="text-xs font-semibold text-bright">{name}</p>
-      <p className="text-[10px] text-muted-foreground">{doc.widgets.length} widget{doc.widgets.length !== 1 ? 's' : ''}</p>
+    <div className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/40 px-4 py-3 space-y-2">
+      <p className="text-xs font-semibold text-md-sys-on-surface">{name}</p>
+      <p className="text-[10px] text-md-sys-on-surface-variant">{doc.widgets.length} widget{doc.widgets.length !== 1 ? 's' : ''}</p>
       <div className="space-y-1 max-h-48 overflow-y-auto">
         {doc.widgets.map((w) => (
-          <div key={w.id} className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <div key={w.id} className="flex items-center gap-2 text-[10px] text-md-sys-on-surface-variant">
             <span className="text-blue-400 shrink-0">{w.viz}</span>
             <span className="truncate">{w.title}</span>
           </div>

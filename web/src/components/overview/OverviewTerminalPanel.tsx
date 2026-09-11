@@ -16,7 +16,7 @@ export interface OverviewTerminalPanelProps {
 /** Diagnostic-panel shell: a "screen" nested in a bezel, theme-aware (light/dark follow the app toggle). */
 export function OverviewTerminalPanel({
   icon,
-  iconBadgeClassName = 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  iconBadgeClassName = 'border-md-sys-primary/30 bg-md-sys-primary-container/30 text-md-sys-primary',
   title,
   subtitle,
   liveLabel,
@@ -25,24 +25,24 @@ export function OverviewTerminalPanel({
   className = '',
 }: OverviewTerminalPanelProps) {
   return (
-    <div className={`w-full rounded-xl border border-default bg-brand-950 p-1 shadow-elevation-2 ${className}`.trim()}>
-      <div className="overflow-hidden rounded-lg border border-default bg-brand-800">
-        <div className="flex flex-col gap-4 border-b border-default bg-brand-950/40 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className={`w-full rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-1 shadow-elevation-1 ${className}`.trim()}>
+      <div className="overflow-hidden rounded-xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container-low">
+        <div className="flex flex-col gap-4 border-b border-md-sys-outline-variant/30 bg-md-sys-surface-container-high/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <span
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${iconBadgeClassName}`}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${iconBadgeClassName}`}
             >
               {icon}
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-bold tracking-tight text-bright">{title}</h2>
-                <span className="flex items-center gap-1.5 rounded border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                <h2 className="text-lg font-bold tracking-tight text-md-sys-on-surface">{title}</h2>
+                <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" aria-hidden />
                   {liveLabel}
                 </span>
               </div>
-              {subtitle ? <p className="mt-0.5 font-mono text-xs text-muted-foreground">{subtitle}</p> : null}
+              {subtitle ? <p className="mt-0.5 font-mono text-xs text-md-sys-on-surface-variant">{subtitle}</p> : null}
             </div>
           </div>
           {actions ? (
@@ -71,8 +71,8 @@ export function OverviewTerminalActionLink({
       to={to}
       className={
         primary
-          ? 'group flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-blue-500'
-          : 'group flex items-center gap-2 rounded-lg border border-default bg-brand-900/60 px-3 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-brand-700/60'
+          ? 'group flex items-center gap-2 rounded-full bg-md-sys-primary px-4 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-md-sys-on-primary shadow-elevation-1 transition-all hover:shadow-elevation-2 active:scale-[0.98]'
+          : 'group flex items-center gap-2 rounded-full border border-md-sys-outline-variant/50 bg-md-sys-surface-container-high px-4 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-md-sys-on-surface transition-all hover:bg-md-sys-surface-container-highest active:scale-[0.98]'
       }
     >
       {icon}
@@ -86,8 +86,8 @@ export type OverviewTerminalBand = 'good' | 'fair' | 'critical' | 'neutral';
 const BAND_TILE_CLASSES: Record<OverviewTerminalBand, string> = {
   good: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
   fair: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
-  critical: 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400',
-  neutral: 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  critical: 'border-md-sys-error/30 bg-md-sys-error-container/30 text-md-sys-error',
+  neutral: 'border-md-sys-primary/30 bg-md-sys-primary-container/20 text-md-sys-primary',
 };
 
 export interface OverviewTerminalMetricTileProps {
@@ -112,7 +112,7 @@ export function OverviewTerminalMetricTile({
 }: OverviewTerminalMetricTileProps) {
   const content = (
     <div
-      className={`flex h-full flex-col justify-between rounded-lg border p-4 transition-colors ${BAND_TILE_CLASSES[band]}`}
+      className={`flex h-full flex-col justify-between rounded-2xl border p-4 transition-all duration-200 active:scale-[0.99] ${BAND_TILE_CLASSES[band]}`}
     >
       <div className="mb-2 opacity-70">{icon}</div>
       <div>
@@ -140,10 +140,10 @@ export function OverviewSeverityBar({ score }: { score: number }) {
   const normalized = Math.max(0, Math.min(100, score));
   const activeSegments = Math.ceil(normalized / 10);
   const fillClass =
-    normalized >= 80 ? 'bg-rose-500' : normalized >= 60 ? 'bg-amber-500' : 'bg-emerald-500';
+    normalized >= 80 ? 'bg-md-sys-error' : normalized >= 60 ? 'bg-amber-500' : 'bg-emerald-500';
   const textClass =
     normalized >= 80
-      ? 'text-rose-700 dark:text-rose-400'
+      ? 'text-md-sys-error'
       : normalized >= 60
         ? 'text-amber-700 dark:text-amber-400'
         : 'text-emerald-700 dark:text-emerald-400';
@@ -152,7 +152,7 @@ export function OverviewSeverityBar({ score }: { score: number }) {
       {Array.from({ length: 10 }, (_, i) => (
         <div
           key={i}
-          className={`h-2.5 w-1.5 rounded-[1px] transition-all duration-300 ${i < activeSegments ? fillClass : 'bg-track'}`}
+          className={`h-2.5 w-1.5 rounded-full transition-all duration-300 ${i < activeSegments ? fillClass : 'bg-md-sys-surface-container-highest/40'}`}
         />
       ))}
       <span className={`ml-2 font-mono text-xs font-bold ${textClass}`}>{Math.round(normalized)}</span>
@@ -172,21 +172,21 @@ export function OverviewTerminalLogRow({ href, label, severityScore, severityLab
   return (
     <Link
       to={href}
-      className="group flex flex-col gap-3 rounded-lg border border-transparent p-3 transition-colors hover:border-default hover:bg-brand-900/40 sm:flex-row sm:items-center sm:justify-between"
+      className="group flex flex-col gap-3 rounded-xl border border-transparent p-3 transition-colors hover:border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/60 sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="flex items-start gap-3">
-        <span className="pt-0.5 font-mono text-xs text-muted-foreground">{'>_'}</span>
-        <p className="text-sm font-medium text-foreground transition-colors group-hover:text-link">{label}</p>
+        <span className="pt-0.5 font-mono text-xs text-md-sys-on-surface-variant">{'>_'}</span>
+        <p className="text-sm font-medium text-md-sys-on-surface transition-colors group-hover:text-md-sys-primary">{label}</p>
       </div>
-      <div className="ml-6 flex items-center justify-between gap-6 border-t border-default/50 pt-2 sm:ml-0 sm:justify-end sm:border-t-0 sm:pt-0">
+      <div className="ml-6 flex items-center justify-between gap-6 border-t border-md-sys-outline-variant/30 pt-2 sm:ml-0 sm:justify-end sm:border-t-0 sm:pt-0">
         <div className="flex flex-col gap-1">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-md-sys-on-surface-variant">
             {severityLabel}
           </span>
           <OverviewSeverityBar score={severityScore} />
         </div>
         <ChevronRight
-          className="hidden h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-link sm:block"
+          className="hidden h-4 w-4 shrink-0 text-md-sys-on-surface-variant transition-colors group-hover:text-md-sys-primary sm:block"
           aria-hidden
         />
       </div>

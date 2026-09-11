@@ -109,7 +109,7 @@ export default function GoogleDataRefreshButton({ variant = 'gsc' }: Props) {
           {toast.message}
         </p>
       ) : stale && propertyId != null ? (
-        <p className="max-w-xs text-right text-xs text-muted-foreground">{copy.label} — data may be outdated</p>
+        <p className="max-w-xs text-right text-xs text-md-sys-on-surface-variant">{copy.label} — data may be outdated</p>
       ) : null}
     </div>
   );

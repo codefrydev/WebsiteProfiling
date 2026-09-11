@@ -13,29 +13,29 @@ export default function ChatGoogleSummaryBlock({ block }: { block: Block }) {
     block.clicks != null || block.impressions != null || block.ctr != null;
 
   return (
-    <div className="rounded-xl border border-default bg-[var(--chat-bg)]/60 p-4">
-      <p className="mb-3 text-sm font-medium text-bright">{cb.googleSummary}</p>
+    <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface/60 p-4">
+      <p className="mb-3 text-sm font-medium text-md-sys-on-surface">{cb.googleSummary}</p>
 
       {hasKpis ? (
         <div className="mb-4 flex flex-wrap gap-4 text-xs">
           {block.clicks != null ? (
             <div>
-              <span className="text-muted-foreground">{cb.clicks}</span>{' '}
-              <span className="font-semibold text-foreground">{block.clicks.toLocaleString()}</span>
+              <span className="text-md-sys-on-surface-variant">{cb.clicks}</span>{' '}
+              <span className="font-semibold text-md-sys-on-surface">{block.clicks.toLocaleString()}</span>
             </div>
           ) : null}
           {block.impressions != null ? (
             <div>
-              <span className="text-muted-foreground">{cb.impressions}</span>{' '}
-              <span className="font-semibold text-foreground">
+              <span className="text-md-sys-on-surface-variant">{cb.impressions}</span>{' '}
+              <span className="font-semibold text-md-sys-on-surface">
                 {block.impressions.toLocaleString()}
               </span>
             </div>
           ) : null}
           {block.ctr != null ? (
             <div>
-              <span className="text-muted-foreground">{cb.ctr}</span>{' '}
-              <span className="font-semibold text-foreground">
+              <span className="text-md-sys-on-surface-variant">{cb.ctr}</span>{' '}
+              <span className="font-semibold text-md-sys-on-surface">
                 {(block.ctr * 100).toFixed(2)}%
               </span>
             </div>
@@ -45,7 +45,7 @@ export default function ChatGoogleSummaryBlock({ block }: { block: Block }) {
 
       {block.queries.length > 0 ? (
         <div className="mb-4">
-          <p className="mb-2 text-xs text-muted-foreground">{cb.topQueries}</p>
+          <p className="mb-2 text-xs text-md-sys-on-surface-variant">{cb.topQueries}</p>
           <SimpleBarChart
             labels={block.queries.map((q) =>
               q.query.length > 28 ? `${q.query.slice(0, 28)}…` : q.query,
@@ -58,12 +58,12 @@ export default function ChatGoogleSummaryBlock({ block }: { block: Block }) {
               <li key={q.query} className="flex items-center justify-between gap-2 text-xs">
                 <button
                   type="button"
-                  className="truncate text-left text-link hover:underline"
+                  className="truncate text-left text-md-sys-primary hover:underline"
                   onClick={() => suggestFollowUp(format(cb.askTopQuery, { query: q.query }))}
                 >
                   {q.query}
                 </button>
-                <span className="shrink-0 tabular-nums text-muted-foreground">
+                <span className="shrink-0 tabular-nums text-md-sys-on-surface-variant">
                   {q.clicks ?? 0} clicks
                 </span>
               </li>
@@ -74,14 +74,14 @@ export default function ChatGoogleSummaryBlock({ block }: { block: Block }) {
 
       {block.pages.length > 0 ? (
         <div>
-          <p className="mb-2 text-xs text-muted-foreground">{cb.topPages}</p>
+          <p className="mb-2 text-xs text-md-sys-on-surface-variant">{cb.topPages}</p>
           <ul className="space-y-1 text-xs">
             {block.pages.map((p) => (
               <li key={p.page} className="flex justify-between gap-2">
-                <span className="truncate font-mono text-foreground" title={p.page}>
+                <span className="truncate font-mono text-md-sys-on-surface" title={p.page}>
                   {p.page}
                 </span>
-                <span className="shrink-0 tabular-nums text-muted-foreground">
+                <span className="shrink-0 tabular-nums text-md-sys-on-surface-variant">
                   {p.clicks ?? 0}
                 </span>
               </li>

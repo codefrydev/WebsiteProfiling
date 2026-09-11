@@ -26,24 +26,24 @@ export default function McpCopyBlock({ label, description, value, language = 'js
   }, [value]);
 
   return (
-    <div className="group rounded-2xl border border-muted/30 bg-[var(--chat-surface)] p-4">
+    <div className="group rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container p-4">
       <div className="mb-2 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p className="text-sm font-medium text-md-sys-on-surface">{label}</p>
           {description ? (
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
+            <p className="mt-1 text-xs leading-relaxed text-md-sys-on-surface-variant">{description}</p>
           ) : null}
         </div>
         <button
           type="button"
           onClick={() => { void handleCopy(); }}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-default/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-blue-500/25 hover:text-foreground"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-md-sys-outline-variant/40 px-3 py-1.5 text-xs font-medium text-md-sys-on-surface-variant transition-colors hover:border-blue-500/25 hover:text-md-sys-on-surface"
         >
           {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
           {copied ? s.copied : s.copy}
         </button>
       </div>
-      <pre className="max-h-72 overflow-auto rounded-xl border border-default/40 bg-[var(--chat-bg)] p-3 text-xs leading-relaxed text-foreground">
+      <pre className="max-h-72 overflow-auto rounded-xl border border-md-sys-outline-variant/30 bg-md-sys-surface p-3 text-xs leading-relaxed text-md-sys-on-surface">
         <code>{language === 'shell' ? `$ ${value}` : value}</code>
       </pre>
     </div>

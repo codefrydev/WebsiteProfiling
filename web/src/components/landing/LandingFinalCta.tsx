@@ -29,8 +29,8 @@ export default function LandingFinalCta() {
           />
           <ul className="mt-5 space-y-2">
             {vl.finalCtaBullets.map((bullet) => (
-              <li key={bullet} className="flex items-start gap-2 text-sm text-muted-foreground @sm:text-base">
-                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-link" aria-hidden />
+              <li key={bullet} className="flex items-start gap-2 text-sm text-md-sys-on-surface-variant @sm:text-base">
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-md-sys-primary" aria-hidden />
                 <span>{bullet}</span>
               </li>
             ))}
@@ -38,20 +38,20 @@ export default function LandingFinalCta() {
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               to="/pipeline"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 @sm:text-base"
+              className="press inline-flex items-center gap-1.5 rounded-full bg-md-sys-primary px-5 py-2.5 text-sm font-semibold text-md-sys-on-primary transition-all duration-200 hover:brightness-105 active:scale-[0.98] @sm:text-base shadow-sm"
             >
               {vl.ctaRunAudit}
               <ChevronRight className="h-4 w-4" aria-hidden />
             </Link>
             <Link
               to="/home"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-default px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-brand-800 @sm:text-base"
+              className="press inline-flex items-center gap-1.5 rounded-full border border-md-sys-outline-variant/50 bg-md-sys-surface-container-high/40 px-5 py-2.5 text-sm font-semibold text-md-sys-on-surface transition-all duration-200 hover:bg-md-sys-surface-container-highest active:scale-[0.98] @sm:text-base"
             >
               {vl.ctaDashboard}
               <ChevronRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
-          <p className="mt-4 text-xs text-muted-foreground @sm:text-sm">
+          <p className="mt-4 text-xs text-md-sys-on-surface-variant @sm:text-sm">
             {vl.heroProofNoSubscription} · {vl.heroProofLocalData}
           </p>
         </div>
@@ -63,10 +63,10 @@ export default function LandingFinalCta() {
         </div>
       </div>
 
-      <div className={`flex justify-center border-t border-muted/40 pt-5 ${landingGutterClass}`}>
+      <div className={`flex justify-center border-t border-md-sys-outline-variant/40 pt-5 ${landingGutterClass}`}>
         <a
           href="#quick-start"
-          className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs font-medium text-link transition-colors hover:bg-blue-500/20 @sm:text-sm"
+          className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs font-medium text-md-sys-primary transition-colors hover:bg-blue-500/20 @sm:text-sm"
         >
           {vl.finalCtaInstallLink}
           <ChevronRight className="h-3.5 w-3.5" aria-hidden />

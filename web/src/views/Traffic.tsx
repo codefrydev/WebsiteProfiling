@@ -48,7 +48,7 @@ type Ga4TabId = (typeof TABS)[number];
 const DATE_RANGE_LABEL = (s?: string, e?: string) => (s && e ? `${s} to ${e}` : '');
 
 function EngagementBadge({ rate }: { rate?: number | null }) {
-  if (rate == null) return <span className="text-muted-foreground">—</span>;
+  if (rate == null) return <span className="text-md-sys-on-surface-variant">—</span>;
   const pct = rate <= 1 ? rate * 100 : rate;
   const color =
     pct >= 50
@@ -127,7 +127,7 @@ export default function Traffic() {
         key: 'avgSessionDuration',
         label: tf.table.avgDuration,
         render: (v) => (
-          <span className="tabular-nums text-muted-foreground">{formatDuration(v as number | null | undefined)}</span>
+          <span className="tabular-nums text-md-sys-on-surface-variant">{formatDuration(v as number | null | undefined)}</span>
         ),
       },
       {
@@ -139,7 +139,7 @@ export default function Traffic() {
           return (
             <a
               href={buildLinksInspectHref(target, searchParams)}
-              className="text-xs text-link hover:underline whitespace-nowrap"
+              className="text-xs text-md-sys-primary hover:underline whitespace-nowrap"
             >
               {strings.components?.urlGapLists?.openInLinks || 'Link Explorer'}
             </a>
@@ -360,7 +360,7 @@ export default function Traffic() {
                 {tf.emptyIntegrationsHint}{' '}
                 <Link
                   to={integrationGuideHref('google', { from: 'integrations' })}
-                  className="text-link hover:underline"
+                  className="text-md-sys-primary hover:underline"
                 >
                   {strings.docs.setupGuideLink}
                 </Link>
@@ -434,7 +434,7 @@ export default function Traffic() {
       )}
 
       {!ga4 ? (
-        !errors.length && <p className="text-sm text-muted-foreground">{tf.notConfigured}</p>
+        !errors.length && <p className="text-sm text-md-sys-on-surface-variant">{tf.notConfigured}</p>
       ) : (
         <>
           <ViewTabs
@@ -468,13 +468,13 @@ export default function Traffic() {
               {urlJoin ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <UrlCoverageDoughnut urlJoin={urlJoin} devData={urlCoverageOverviewDevData} />
-                  <div className="relative group/dev-card bg-brand-800 border border-default rounded-xl p-4">
+                  <div className="relative group/dev-card bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-2xl p-4">
                     <DevCopyJsonButton data={insightsDevData} />
-                    <h3 className="text-sm font-bold text-foreground mb-3">{tf.coverage.title}</h3>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
+                    <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{tf.coverage.title}</h3>
+                    <ul className="space-y-2 text-sm text-md-sys-on-surface-variant">
                       {insights.map((line, i) => (
                         <li key={i} className="flex gap-2">
-                          <span className="text-link shrink-0">•</span>
+                          <span className="text-md-sys-primary shrink-0">•</span>
                           <span>{line}</span>
                         </li>
                       ))}
@@ -486,9 +486,9 @@ export default function Traffic() {
                 </div>
               ) : (
                 insights.length > 0 && (
-                  <div className="relative group/dev-card bg-brand-800 border border-default rounded-xl p-4">
+                  <div className="relative group/dev-card bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-2xl p-4">
                     <DevCopyJsonButton data={insightsDevData} />
-                    <ul className="space-y-2 text-sm text-muted-foreground">
+                    <ul className="space-y-2 text-sm text-md-sys-on-surface-variant">
                       {insights.map((line, i) => (
                         <li key={i}>{line}</li>
                       ))}
@@ -541,7 +541,7 @@ export default function Traffic() {
               aria-labelledby="ga4-tab-btn-engagement"
               className="space-y-4"
             >
-              <p className="text-xs text-muted-foreground">{tf.engagement.description}</p>
+              <p className="text-xs text-md-sys-on-surface-variant">{tf.engagement.description}</p>
               <SessionsEngagementScatter rows={lowEngagement} devData={scatterDevData} />
               <Card padding="none" className="overflow-hidden" devData={engagementTableDevData}>
                 <div className="flex justify-end p-4 pb-0">
@@ -558,7 +558,7 @@ export default function Traffic() {
                         'ga4-low-engagement.csv',
                       )
                     }
-                    className="px-3 py-1.5 text-xs bg-brand-900 border border-default rounded-lg text-muted-foreground hover:text-foreground flex items-center gap-1"
+                    className="px-4 py-1.5 text-xs bg-md-sys-surface-container-high border border-md-sys-outline-variant/50 rounded-full text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-highest active:scale-[0.98] transition-all flex items-center gap-1.5"
                   >
                     <Download className="w-3.5 h-3.5" />
                     {tf.engagement.exportCsv}
@@ -580,7 +580,7 @@ export default function Traffic() {
 
           {activeTab === 'coverage' && (
             <div id="ga4-tab-coverage" role="tabpanel" aria-labelledby="ga4-tab-btn-coverage" className="space-y-6">
-              <p className="text-sm text-muted-foreground">{tf.coverage.description}</p>
+              <p className="text-sm text-md-sys-on-surface-variant">{tf.coverage.description}</p>
               {urlJoin ? (
                 <>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -625,13 +625,13 @@ export default function Traffic() {
                       devData={gapListsDevData}
                     />
                   ) : (
-                    <p className="text-xs text-muted-foreground border border-default/60 rounded-lg px-3 py-2 bg-brand-800/50">
+                    <p className="text-xs text-md-sys-on-surface-variant border border-md-sys-outline-variant/40 rounded-xl px-3 py-2 bg-md-sys-surface-container-low">
                       {tf.coverage.urlListNote}
                     </p>
                   )}
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">{tf.coverage.noData}</p>
+                <p className="text-sm text-md-sys-on-surface-variant">{tf.coverage.noData}</p>
               )}
             </div>
           )}

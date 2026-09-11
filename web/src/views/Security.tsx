@@ -73,23 +73,23 @@ const SEVERITY_CONFIG: Record<SeverityKey, {
   },
   Low: {
     icon: Info,
-    text: 'text-muted-foreground',
-    bg: 'bg-brand-700/10',
-    border: 'border-brand-700/40',
+    text: 'text-md-sys-on-surface-variant',
+    bg: 'bg-md-sys-surface-container-high/10',
+    border: 'border-md-sys-outline-variant/50/40',
     ring: '',
     rowBorder: 'border-l-neutral-500',
-    recBg: 'bg-brand-700/30 border-brand-700/30',
+    recBg: 'bg-md-sys-surface-container-high/30 border-md-sys-outline-variant/50/30',
     order: 3,
     chartColor: '#64748B',
   },
   Info: {
     icon: Info,
-    text: 'text-muted-foreground',
-    bg: 'bg-brand-700/10',
-    border: 'border-brand-700/30',
+    text: 'text-md-sys-on-surface-variant',
+    bg: 'bg-md-sys-surface-container-high/10',
+    border: 'border-md-sys-outline-variant/50/30',
     ring: '',
     rowBorder: 'border-l-neutral-600',
-    recBg: 'bg-brand-700/20 border-brand-700/30',
+    recBg: 'bg-md-sys-surface-container-high/20 border-md-sys-outline-variant/50/30',
     order: 4,
     chartColor: '#475569',
   },
@@ -381,7 +381,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
               return (
                 <div
                   key={sev}
-                  className={`cursor-pointer transition-all select-none rounded-xl ${
+                  className={`cursor-pointer transition-all select-none rounded-2xl active:scale-[0.98] ${
                     isActive ? `${cfg.ring || `ring-1 ring-neutral-500/20`} ring-2` : ''
                   }`}
                   onClick={() => setSeverityFilter((prev) => (prev === sev ? 'All' : sev))}
@@ -400,7 +400,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
                         <Icon className="h-4 w-4" aria-hidden /> {sev}
                       </span>
                     }
-                    value={<span className={count > 0 ? cfg.text : 'text-muted-foreground'}>{count}</span>}
+                    value={<span className={count > 0 ? cfg.text : 'text-md-sys-on-surface-variant'}>{count}</span>}
                     hint={metricHelpHint('views.security.severityCount')}
                     size="lg"
                     shadow
@@ -417,7 +417,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
               <button
                 type="button"
                 onClick={() => setSeverityFilter('All')}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors border border-default rounded-full px-3 py-1"
+                className="text-xs text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-all border border-md-sys-outline-variant/50 bg-md-sys-surface-container rounded-full px-3.5 py-1.5 active:scale-[0.98]"
               >
                 {vs.showAllSeverities}
               </button>
@@ -441,14 +441,14 @@ export default function Security({ searchQuery = '' }: ViewProps) {
                   return (
                     <div
                       key={`${safeFindingsPage}-${i}`}
-                      className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.rowBorder} p-5 flex flex-col gap-3 hover:border-brand-700/80 transition-colors`}
+                      className={`bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-2xl border-l-4 ${cfg.rowBorder} p-5 flex flex-col gap-3 hover:border-md-sys-outline/60 transition-colors shadow-elevation-1`}
                     >
                       <div className="flex flex-wrap items-start gap-3">
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <Icon className={`h-4 w-4 ${cfg.text}`} />
                           <Badge value={sev} label={sev} />
                         </div>
-                        <span className={`font-mono text-xs px-2 py-0.5 rounded ${cfg.bg} ${cfg.text} border ${cfg.border} select-all`}>
+                        <span className={`font-mono text-xs px-2.5 py-0.5 rounded-full ${cfg.bg} ${cfg.text} border ${cfg.border} select-all`}>
                           {securityFindingLabel(f.finding_type)}
                         </span>
                         {f.url && (
@@ -456,17 +456,17 @@ export default function Security({ searchQuery = '' }: ViewProps) {
                             href={f.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center gap-1 font-mono text-link text-xs hover:underline break-all min-w-0"
+                            className="flex items-center gap-1 font-mono text-md-sys-primary text-xs hover:underline break-all min-w-0"
                           >
                             <span className="line-clamp-1">{f.url}</span>
                             <ExternalLink className="h-3 w-3 flex-shrink-0" />
                           </a>
                         )}
                       </div>
-                      <p className="text-foreground text-sm leading-snug">{f.message || strings.common.emDash}</p>
+                      <p className="text-md-sys-on-surface text-sm leading-snug">{f.message || strings.common.emDash}</p>
                       {f.recommendation && (
-                        <div className={`rounded-lg px-3 py-2.5 border text-sm text-muted-foreground leading-relaxed ${cfg.recBg}`}>
-                          <span className="text-xs font-bold uppercase tracking-wide text-link block mb-1">
+                        <div className={`rounded-xl px-4 py-3 border text-sm text-md-sys-on-surface-variant leading-relaxed ${cfg.recBg}`}>
+                          <span className="text-xs font-bold uppercase tracking-wide text-md-sys-primary block mb-1">
                             {vs.recommendation}
                           </span>
                           {f.recommendation}
@@ -479,13 +479,13 @@ export default function Security({ searchQuery = '' }: ViewProps) {
               </div>
               {filteredFindingsTotal > 0 ? (
                 <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center pt-1">
-                  <div className="text-sm text-muted-foreground space-y-0.5">
+                  <div className="text-sm text-md-sys-on-surface-variant space-y-0.5">
                     <div>{format(vsp.showingSlice, { from: findingsFrom, to: findingsTo, total: filteredFindingsTotal })}</div>
                     <div className="text-xs">
                       {vsp.pageOf}{' '}
-                      <span className="font-bold text-bright tabular-nums">{safeFindingsPage}</span> {vsp.of}{' '}
-                      <span className="font-bold text-bright tabular-nums">{findingsTotalPages}</span>
-                      <span className="text-muted-foreground ml-2">
+                      <span className="font-bold text-md-sys-on-surface tabular-nums">{safeFindingsPage}</span> {vsp.of}{' '}
+                      <span className="font-bold text-md-sys-on-surface tabular-nums">{findingsTotalPages}</span>
+                      <span className="text-md-sys-on-surface-variant ml-2">
                         ({format(vsp.rowsPerPage, { n: PAGE_SIZE })})
                       </span>
                     </div>
@@ -496,7 +496,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
                         variant="secondary"
                         onClick={() => setFindingsPage((p) => Math.max(1, p - 1))}
                         disabled={safeFindingsPage <= 1}
-                        className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                        className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
                       >
                         {vsp.previous}
                       </Button>
@@ -504,7 +504,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
                         variant="secondary"
                         onClick={() => setFindingsPage((p) => Math.min(findingsTotalPages, p + 1))}
                         disabled={safeFindingsPage >= findingsTotalPages}
-                        className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                        className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
                       >
                         {vsp.next}
                       </Button>

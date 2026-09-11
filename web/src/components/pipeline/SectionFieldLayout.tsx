@@ -60,7 +60,7 @@ function SubgroupedFields({
       {groups.map((group) => (
         <div key={group.id} className="space-y-2">
           {group.label ? (
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-wide text-md-sys-on-surface-variant">
               {group.label}
             </p>
           ) : null}
@@ -115,23 +115,23 @@ export default function SectionFieldLayout({
       {extra}
 
       {hasAdvanced ? (
-        <div className="overflow-hidden rounded-lg border border-default bg-brand-900/30">
+        <div className="overflow-hidden rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/30">
           <button
             type="button"
             onClick={() => setAdvancedOpen((open) => !open)}
             aria-expanded={advancedOpen}
-            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-brand-900/50"
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-md-sys-on-surface transition-colors hover:bg-md-sys-surface-container-low/50"
           >
             <span className="flex items-center gap-2">
-              <Chevron className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              <Chevron className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />
               {s.advancedOptionsLabel}
             </span>
-            <span className="shrink-0 text-xs font-normal text-muted-foreground">
+            <span className="shrink-0 text-xs font-normal text-md-sys-on-surface-variant">
               {format(s.advancedOptionsHint, { count: advancedFields.length })}
             </span>
           </button>
           {advancedOpen ? (
-            <div className="border-t border-default px-4 py-4">
+            <div className="border-t border-md-sys-outline-variant/40 px-4 py-4">
               <SubgroupedFields
                 section={section}
                 fields={advancedFields}

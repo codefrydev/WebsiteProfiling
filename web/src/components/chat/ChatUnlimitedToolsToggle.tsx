@@ -23,10 +23,10 @@ export default function ChatUnlimitedToolsToggle({ disabled }: ChatUnlimitedTool
       aria-pressed={enabled}
       aria-label={enabled ? c.unlimitedToolsOnLabel : c.unlimitedToolsOffLabel}
       onClick={() => void saveLlmChatUnlimitedTools(!enabled)}
-      className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-1.5 text-xs transition-colors disabled:opacity-50 ${
+      className={`press flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs transition-colors active:scale-[0.98] disabled:opacity-50 ${
         enabled
-          ? 'bg-violet-500/20 text-violet-200 hover:bg-violet-500/30'
-          : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+          ? 'bg-md-sys-primary-container text-md-sys-on-primary-container hover:brightness-105'
+          : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
       }`}
     >
       <Infinity className="h-3.5 w-3.5 shrink-0" />

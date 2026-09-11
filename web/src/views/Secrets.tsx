@@ -34,7 +34,7 @@ export default function SecretsPage() {
 
         <div className="chat-messages-scroll min-h-0 flex-1">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-20 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-2 py-20 text-sm text-md-sys-on-surface-variant">
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
               {s.loading}
             </div>
@@ -45,9 +45,9 @@ export default function SecretsPage() {
           ) : (
             <>
               <div className="mx-auto max-w-3xl px-4 pt-6 sm:px-6">
-                <p className="rounded-2xl border border-muted/30 bg-[var(--chat-surface)] px-4 py-3 text-xs text-muted-foreground">
+                <p className="rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container px-4 py-3 text-xs text-md-sys-on-surface-variant">
                   {s.mcpMovedHint}{' '}
-                  <Link to="/mcp" className="text-link hover:underline">
+                  <Link to="/mcp" className="text-md-sys-primary hover:underline">
                     {s.mcpMovedLink}
                   </Link>
                   .

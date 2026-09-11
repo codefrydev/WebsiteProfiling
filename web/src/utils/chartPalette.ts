@@ -15,12 +15,12 @@ export const PALETTE_CATEGORICAL = [
   '#A8BF5A', // lime
 ];
 
-/** Semantic colors for score bands (good / needs improvement / poor) */
+/** Semantic colors for score bands (good / needs improvement / poor) — tied to M3 tokens */
 export const SEMANTIC = {
-  good: '#22C55E',     // green-500
-  warn: '#EAB308',    // yellow-500
-  poor: '#EF4444',    // red-500
-  neutral: 'rgb(71, 85, 105)', // slate-500
+  good: 'var(--md-sys-color-success, #137333)',
+  warn: 'var(--md-sys-color-tertiary, #ea8600)',
+  poor: 'var(--md-sys-color-error, #d93025)',
+  neutral: 'var(--md-sys-color-outline, #94a3b8)',
 };
 
 export function scoreBandColor(score: number | null | undefined): string {

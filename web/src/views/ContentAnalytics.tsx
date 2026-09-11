@@ -145,13 +145,13 @@ function ThinPagesSection({ pages }: { pages: ThinPageEntry[] }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors py-1"
+        className="w-full flex items-center gap-2 text-sm font-semibold text-md-sys-warning hover:opacity-80 transition-opacity py-1 press"
       >
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         {format(vca.thinPagesView, { count: pages.length, s: pages.length !== 1 ? 's' : '' })}
       </button>
       {open && (
-        <div className="mt-2 max-h-64 overflow-y-auto rounded-lg border border-muted">
+        <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-md-sys-outline-variant/40">
           <Table>
             <TableHead sticky>
               <tr>
@@ -167,25 +167,25 @@ function ThinPagesSection({ pages }: { pages: ThinPageEntry[] }) {
                 const wc = typeof p === 'object' ? p.word_count : null;
                 return (
                   <TableRow key={i} className="group">
-                    <TableCell className="text-muted-foreground text-xs font-mono text-center w-8">{i + 1}</TableCell>
+                    <TableCell className="text-md-sys-on-surface-variant text-xs font-mono text-center w-8">{i + 1}</TableCell>
                     <TableCell className="max-w-[360px]">
                       <a
                         href={url !== sj.emDash ? url : undefined}
                         target="_blank"
                         rel="noreferrer"
                         title={url}
-                        className="block font-mono text-link text-xs truncate hover:text-link-soft hover:underline transition-colors"
+                        className="block font-mono text-md-sys-primary text-xs truncate hover:text-md-sys-primary-soft hover:underline transition-colors"
                       >
                         {url}
                       </a>
                     </TableCell>
                     <TableCell className="text-center w-20">
                       {wc != null && (
-                        <span className="font-mono text-amber-700 dark:text-amber-400 text-xs font-bold tabular-nums">{wc}</span>
+                        <span className="font-mono text-md-sys-warning text-xs font-bold tabular-nums">{wc}</span>
                       )}
                     </TableCell>
                     <TableCell className="w-8">
-                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ExternalLink className="h-3.5 w-3.5 text-md-sys-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity" />
                     </TableCell>
                   </TableRow>
                 );
@@ -715,28 +715,28 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             label={vca.ogCoverage}
             value={sc.og_coverage_pct != null ? `${sc.og_coverage_pct}%` : sj.emDash}
             sub={vca.ogTags}
-            icon={<Globe className="h-4 w-4 text-link" aria-hidden />}
+            icon={<Globe className="h-4 w-4 text-md-sys-primary" aria-hidden />}
             hint={metricHelpHint('views.overview.ogCoverage')}
             shadow
-            className="[&_.text-2xl]:text-link"
+            className="[&_.text-2xl]:text-md-sys-primary"
           />
           <StatCard
             label={vca.twitterCoverage}
             value={sc.twitter_coverage_pct != null ? `${sc.twitter_coverage_pct}%` : sj.emDash}
             sub={vca.twitterTags}
-            icon={<Share2 className="h-4 w-4 text-sky-700 dark:text-sky-400" aria-hidden />}
+            icon={<Share2 className="h-4 w-4 text-md-sys-info" aria-hidden />}
             hint={metricHelpHint('views.contentAnalytics.twitterCoverage')}
             shadow
-            className="[&_.text-2xl]:text-sky-700 [&_.text-2xl]:dark:text-sky-400"
+            className="[&_.text-2xl]:text-md-sys-info"
           />
           <StatCard
             label={vca.thinPages}
             value={thinPages.length}
             sub={vca.under300}
-            icon={<AlertTriangle className={`h-4 w-4 ${hasThinPages ? 'text-amber-700 dark:text-amber-400' : ''}`} aria-hidden />}
+            icon={<AlertTriangle className={`h-4 w-4 ${hasThinPages ? 'text-md-sys-warning' : ''}`} aria-hidden />}
             hint={metricHelpHint('shared.thinPages')}
             shadow
-            className={hasThinPages ? 'ring-1 ring-amber-500/20 border-amber-900/30 [&_.text-2xl]:text-amber-700 [&_.text-2xl]:dark:text-amber-400' : ''}
+            className={hasThinPages ? 'ring-1 ring-md-sys-warning/30 border-md-sys-warning/30 [&_.text-2xl]:text-md-sys-warning' : ''}
           />
         </div>
       </div>
@@ -750,21 +750,21 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           {(hreflang?.pages_200 ?? 0) > 0 && (
             <Card padding="tight" shadow devData={i18nDevData}>
               <div className="flex items-center gap-2 mb-3">
-                <Globe className="h-4 w-4 text-sky-700 dark:text-sky-400" />
-                <h3 className="text-sm font-bold text-foreground">{vca.i18nTitle}</h3>
+                <Globe className="h-4 w-4 text-md-sys-info" />
+                <h3 className="text-sm font-bold text-md-sys-on-surface">{vca.i18nTitle}</h3>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-brand-900 border border-default rounded-lg p-3">
-                  <div className="text-muted-foreground text-xs uppercase tracking-wider">{vca.pages2xx}</div>
-                  <div className="text-xl font-bold text-foreground">{hreflang?.pages_200}</div>
+                <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-3">
+                  <div className="text-md-sys-on-surface-variant text-xs uppercase tracking-wider">{vca.pages2xx}</div>
+                  <div className="text-xl font-bold text-md-sys-on-surface">{hreflang?.pages_200}</div>
                 </div>
-                <div className="bg-brand-900 border border-default rounded-lg p-3">
-                  <div className="text-muted-foreground text-xs uppercase tracking-wider">{vca.missingHtmlLang}</div>
-                  <div className="text-xl font-bold text-amber-700 dark:text-amber-400">{hreflang?.pages_missing_html_lang ?? sj.emDash}</div>
+                <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-3">
+                  <div className="text-md-sys-on-surface-variant text-xs uppercase tracking-wider">{vca.missingHtmlLang}</div>
+                  <div className="text-xl font-bold text-md-sys-warning">{hreflang?.pages_missing_html_lang ?? sj.emDash}</div>
                 </div>
-                <div className="bg-brand-900 border border-default rounded-lg p-3 col-span-2">
-                  <div className="text-muted-foreground text-xs uppercase tracking-wider">{vca.pagesHreflang}</div>
-                  <div className="text-xl font-bold text-sky-700 dark:text-sky-400">{hreflang?.pages_with_hreflang_links ?? sj.emDash}</div>
+                <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-3 col-span-2">
+                  <div className="text-md-sys-on-surface-variant text-xs uppercase tracking-wider">{vca.pagesHreflang}</div>
+                  <div className="text-xl font-bold text-md-sys-info">{hreflang?.pages_with_hreflang_links ?? sj.emDash}</div>
                 </div>
               </div>
             </Card>
@@ -772,10 +772,10 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           {outboundDomains.length > 0 && (
             <Card padding="tight" shadow className={(hreflang?.pages_200 ?? 0) > 0 ? '' : 'lg:col-span-2'} devData={outboundDomainsDevData}>
               <div className="flex items-center gap-2 mb-3">
-                <Link2 className="h-4 w-4 text-orange-700 dark:text-orange-400" />
-                <h3 className="text-sm font-bold text-foreground">{vca.outboundDomains}</h3>
+                <Link2 className="h-4 w-4 text-md-sys-tertiary" />
+                <h3 className="text-sm font-bold text-md-sys-on-surface">{vca.outboundDomains}</h3>
               </div>
-              <div className="max-h-64 overflow-y-auto rounded-lg border border-muted">
+              <div className="max-h-64 overflow-y-auto rounded-xl border border-md-sys-outline-variant/40">
                 <Table>
                   <TableHead>
                     <tr>
@@ -787,7 +787,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   <TableBody>
                     {outboundDomains.map((row: OutboundLinkDomain) => (
                       <TableRow key={row.host}>
-                        <TableCell className="font-mono text-xs text-foreground">{row.host}</TableCell>
+                        <TableCell className="font-mono text-xs text-md-sys-on-surface">{row.host}</TableCell>
                         <TableCell className="text-right font-mono text-xs tabular-nums">{row.link_count ?? sj.emDash}</TableCell>
                         <TableCell className="text-right font-mono text-xs tabular-nums">{row.page_count ?? sj.emDash}</TableCell>
                       </TableRow>
@@ -803,8 +803,8 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       {languageMlChart && (
         <Card padding="tight" shadow devData={languageMixDevData ?? undefined}>
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-400" />
-            <h3 className="text-sm font-bold text-foreground">{vca.languageMix}</h3>
+            <Sparkles className="h-4 w-4 text-md-sys-tertiary" />
+            <h3 className="text-sm font-bold text-md-sys-on-surface">{vca.languageMix}</h3>
           </div>
           <ChartPanel>
             <Bar
@@ -827,8 +827,8 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       {nerSiteChart && (
         <Card padding="tight" shadow devData={entityLabelsDevData ?? undefined}>
           <div className="flex items-center gap-2 mb-3">
-            <Tag className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
-            <h3 className="text-sm font-bold text-foreground">{vca.entityLabels}</h3>
+            <Tag className="h-4 w-4 text-md-sys-primary" />
+            <h3 className="text-sm font-bold text-md-sys-on-surface">{vca.entityLabels}</h3>
           </div>
           <ChartPanel>
             <Bar
@@ -851,10 +851,10 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       {tokenClusters.length > 0 && (
         <Card padding="tight" shadow devData={tokenTopicsDevData}>
           <div className="flex items-center gap-2 mb-3">
-            <Tag className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-            <h3 className="text-sm font-bold text-foreground">{vca.parentTopicsToken}</h3>
+            <Tag className="h-4 w-4 text-md-sys-warning" />
+            <h3 className="text-sm font-bold text-md-sys-on-surface">{vca.parentTopicsToken}</h3>
           </div>
-          <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
+          <div className="max-h-80 overflow-y-auto rounded-xl border border-md-sys-outline-variant/40">
             <Table>
               <TableHead>
                 <tr>
@@ -866,9 +866,9 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               <TableBody>
                 {tokenClusters.map((cl: TopicCluster, idx: number) => (
                   <TableRow key={`tok-${cl.top_keyword}-${idx}`}>
-                    <TableCell className="font-medium text-foreground">{String(cl.top_keyword ?? cl.representative ?? '')}</TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{String(cl.cluster_score ?? sj.emDash)}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="font-medium text-md-sys-on-surface">{String(cl.top_keyword ?? cl.representative ?? '')}</TableCell>
+                    <TableCell className="font-mono text-xs text-md-sys-on-surface-variant">{String(cl.cluster_score ?? sj.emDash)}</TableCell>
+                    <TableCell className="text-xs text-md-sys-on-surface-variant">
                       {Array.isArray(cl.keywords) ? cl.keywords.join(', ') : sj.emDash}
                     </TableCell>
                   </TableRow>
@@ -882,10 +882,10 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       {semanticClusters.length > 0 && (
         <Card padding="tight" shadow devData={semanticTopicsDevData}>
           <div className="flex items-center gap-2 mb-3">
-            <Layers className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
-            <h3 className="text-sm font-bold text-foreground">{vca.parentTopicsSemantic}</h3>
+            <Layers className="h-4 w-4 text-md-sys-success" />
+            <h3 className="text-sm font-bold text-md-sys-on-surface">{vca.parentTopicsSemantic}</h3>
           </div>
-          <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
+          <div className="max-h-80 overflow-y-auto rounded-xl border border-md-sys-outline-variant/40">
             <Table>
               <TableHead>
                 <tr>
@@ -897,9 +897,9 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               <TableBody>
                 {semanticClusters.map((cl: TopicCluster, idx: number) => (
                   <TableRow key={`${cl.top_keyword}-${idx}`}>
-                    <TableCell className="font-medium text-foreground">{String(cl.top_keyword ?? cl.representative ?? '')}</TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{String(cl.cluster_score ?? sj.emDash)}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="font-medium text-md-sys-on-surface">{String(cl.top_keyword ?? cl.representative ?? '')}</TableCell>
+                    <TableCell className="font-mono text-xs text-md-sys-on-surface-variant">{String(cl.cluster_score ?? sj.emDash)}</TableCell>
+                    <TableCell className="text-xs text-md-sys-on-surface-variant">
                       {Array.isArray(cl.keywords) ? cl.keywords.join(', ') : sj.emDash}
                     </TableCell>
                   </TableRow>
@@ -922,11 +922,11 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             {hasStatusChart && (
               <Card padding="tight" devData={statusChartDevData ?? undefined}>
                 <ChartTitleWithHint title={vca.urlsByStatus} helpKey="views.contentAnalytics.urlsByStatus" className="mb-1" />
-                <p className="text-xs text-muted-foreground mb-3">
+                <p className="text-xs text-md-sys-on-surface-variant mb-3">
                   {vca.totalCrawled}{' '}
-                  <span className="text-foreground font-semibold">{crawledCount.toLocaleString()}</span>
+                  <span className="text-md-sys-on-surface font-semibold">{crawledCount.toLocaleString()}</span>
                   {summary.success_rate != null && (
-                    <> · <span className="text-green-700 dark:text-green-400 font-semibold">{summary.success_rate}%</span> {vca.returned2xx}
+                    <> · <span className="text-md-sys-success font-semibold">{summary.success_rate}%</span> {vca.returned2xx}
                     </>
                   )}
                 </p>
@@ -936,15 +936,15 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             {hasRtDist && (
               <Card padding="tight" devData={responseTimeDevData ?? undefined}>
                 <ChartTitleWithHint title={vca.responseTimeDist} helpKey="views.contentAnalytics.responseTimeDist" className="mb-1" />
-                <p className="text-xs text-muted-foreground mb-3">
+                <p className="text-xs text-md-sys-on-surface-variant mb-3">
                   Pages per latency band
                   {rtStats.p50 != null && (
                     <>
                       {' '}
-                      · p50: <span className="text-foreground font-mono">{Math.round(rtStats.p50)}ms</span>
+                      · p50: <span className="text-md-sys-on-surface font-mono">{Math.round(rtStats.p50)}ms</span>
                       {rtStats.p95 != null && (
                         <>
-                          , p95: <span className="text-foreground font-mono">{Math.round(rtStats.p95)}ms</span>
+                          , p95: <span className="text-md-sys-on-surface font-mono">{Math.round(rtStats.p95)}ms</span>
                         </>
                       )}
                     </>
@@ -1018,8 +1018,8 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       {hasThinPages && (
         <Card padding="default" devData={thinPagesListDevData}>
           <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-            <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+            <AlertTriangle className="h-4 w-4 text-md-sys-warning" />
+            <span className="text-sm font-semibold text-md-sys-warning">
               {q
                 ? `${thinPagesFiltered.length} of ${thinPages.length} thin page${thinPages.length !== 1 ? 's' : ''} match search`
                 : `${thinPages.length} page${thinPages.length !== 1 ? 's' : ''} have very little content`}
@@ -1028,7 +1028,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           {thinPagesFiltered.length > 0 ? (
             <ThinPagesSection pages={thinPagesFiltered} />
           ) : (
-            <p className="text-sm text-muted-foreground">{vca.noThinSearch}</p>
+            <p className="text-sm text-md-sys-on-surface-variant">{vca.noThinSearch}</p>
           )}
         </Card>
       )}
@@ -1047,7 +1047,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 heightClass="h-64"
               />
             ) : (
-              <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+              <div className="flex items-center justify-center h-64 text-md-sys-on-surface-variant text-sm">{sj.noData}</div>
             )}
           </Card>
 
@@ -1065,7 +1065,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 heightClass="h-64"
               />
             ) : (
-              <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+              <div className="flex items-center justify-center h-64 text-md-sys-on-surface-variant text-sm">{sj.noData}</div>
             )}
           </Card>
 
@@ -1079,7 +1079,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 heightClass="h-64"
               />
             ) : (
-              <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+              <div className="flex items-center justify-center h-64 text-md-sys-on-surface-variant text-sm">{sj.noData}</div>
             )}
           </Card>
 
@@ -1094,7 +1094,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 svgHeight={Math.max(448, kwLabels.length * 28 + 40)}
               />
             ) : (
-              <div className="flex items-center justify-center h-[28rem] text-muted-foreground text-sm">{vca.noKeywordData}</div>
+              <div className="flex items-center justify-center h-[28rem] text-md-sys-on-surface-variant text-sm">{vca.noKeywordData}</div>
             )}
           </Card>
 
@@ -1131,7 +1131,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   ariaLabel={h1Aria}
                 />
               ) : (
-                <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+                <div className="flex items-center justify-center h-64 text-md-sys-on-surface-variant text-sm">{sj.noData}</div>
               )}
             </Card>
 
@@ -1145,7 +1145,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   ariaLabel={vca.titleTagQuality}
                 />
               ) : (
-                <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+                <div className="flex items-center justify-center h-64 text-md-sys-on-surface-variant text-sm">{sj.noData}</div>
               )}
             </Card>
 
@@ -1159,7 +1159,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   ariaLabel={vca.metaDescQuality}
                 />
               ) : (
-                <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+                <div className="flex items-center justify-center h-64 text-md-sys-on-surface-variant text-sm">{sj.noData}</div>
               )}
             </Card>
           </div>
@@ -1216,13 +1216,13 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           <Card shadow devData={socialCoverageDevData}>
             <div className="space-y-4">
               {sc.og_coverage_pct != null && (
-                <CoverageBar label={vca.ogProgress} pct={sc.og_coverage_pct} color="text-link" />
+                <CoverageBar label={vca.ogProgress} pct={sc.og_coverage_pct} color="text-md-sys-primary" />
               )}
               {sc.twitter_coverage_pct != null && (
-                <CoverageBar label={vca.twitterProgress} pct={sc.twitter_coverage_pct} color="text-sky-700 dark:text-sky-400" />
+                <CoverageBar label={vca.twitterProgress} pct={sc.twitter_coverage_pct} color="text-md-sys-info" />
               )}
               {hasOgImgData && (
-                <CoverageBar label={vca.ogImage} pct={sc.og_image_coverage_pct} color="text-violet-700 dark:text-violet-400" />
+                <CoverageBar label={vca.ogImage} pct={sc.og_image_coverage_pct} color="text-md-sys-tertiary" />
               )}
             </div>
           </Card>
@@ -1231,7 +1231,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         {/* Social meta visual comparison */}
         {hasSocialData && (
           <Card padding="tight" devData={socialOverviewDevData ?? undefined}>
-            <h3 className="text-sm font-bold text-foreground mb-3">{vca.socialOverview}</h3>
+            <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vca.socialOverview}</h3>
             <D3StackedVerticalBarChart
               labels={[vca.openGraph, vca.twitterCard, vca.ogImage]}
               series={[
@@ -1264,10 +1264,10 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {(sc.missing_og || []).length > 0 && (
             <Card overflowHidden padding="none" devData={missingOgDevData}>
-              <div className="px-4 py-3 border-b border-muted flex items-center gap-2">
-                <Globe className="h-4 w-4 text-link" />
-                <h3 className="text-sm font-bold text-foreground">Missing Open Graph Tags</h3>
-                <span className="ml-auto text-xs font-bold text-muted-foreground bg-brand-700/60 rounded-full px-2.5 py-0.5">
+              <div className="px-4 py-3 border-b border-md-sys-outline-variant/40 flex items-center gap-2">
+                <Globe className="h-4 w-4 text-md-sys-primary" />
+                <h3 className="text-sm font-bold text-md-sys-on-surface">Missing Open Graph Tags</h3>
+                <span className="ml-auto text-xs font-bold text-md-sys-on-surface-variant bg-md-sys-surface-container-high/60 rounded-full px-2.5 py-0.5">
                   {missingOgFiltered.length}
                 </span>
               </div>
@@ -1284,27 +1284,27 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   <TableBody striped>
                     {missingOgFiltered.slice(0, 50).map((u, i) => (
                       <TableRow key={i} className="group">
-                        <TableCell className="text-muted-foreground text-xs font-mono text-center w-8">{i + 1}</TableCell>
+                        <TableCell className="text-md-sys-on-surface-variant text-xs font-mono text-center w-8">{i + 1}</TableCell>
                         <TableCell className="max-w-[360px]">
                           <a
                             href={u}
                             target="_blank"
                             rel="noreferrer"
                             title={u}
-                            className="block font-mono text-link text-xs truncate hover:text-link-soft hover:underline transition-colors"
+                            className="block font-mono text-md-sys-primary text-xs truncate hover:text-md-sys-primary-soft hover:underline transition-colors"
                           >
                             {u}
                           </a>
                         </TableCell>
                         <TableCell className="w-8">
-                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ExternalLink className="h-3.5 w-3.5 text-md-sys-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity" />
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
                 ) : (
-                  <p className="p-4 text-sm text-muted-foreground">{vca.noUrlSearch}</p>
+                  <p className="p-4 text-sm text-md-sys-on-surface-variant">{vca.noUrlSearch}</p>
                 )}
               </div>
             </Card>
@@ -1312,10 +1312,10 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
           {(sc.missing_twitter || []).length > 0 && (
             <Card overflowHidden padding="none" devData={missingTwitterDevData}>
-              <div className="px-4 py-3 border-b border-muted flex items-center gap-2">
-                <Share2 className="h-4 w-4 text-sky-700 dark:text-sky-400" />
-                <h3 className="text-sm font-bold text-foreground">Missing Twitter Card Tags</h3>
-                <span className="ml-auto text-xs font-bold text-muted-foreground bg-brand-700/60 rounded-full px-2.5 py-0.5">
+              <div className="px-4 py-3 border-b border-md-sys-outline-variant/40 flex items-center gap-2">
+                <Share2 className="h-4 w-4 text-md-sys-info" />
+                <h3 className="text-sm font-bold text-md-sys-on-surface">Missing Twitter Card Tags</h3>
+                <span className="ml-auto text-xs font-bold text-md-sys-on-surface-variant bg-md-sys-surface-container-high/60 rounded-full px-2.5 py-0.5">
                   {missingTwitterFiltered.length}
                 </span>
               </div>
@@ -1332,27 +1332,27 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   <TableBody striped>
                     {missingTwitterFiltered.slice(0, 50).map((u, i) => (
                       <TableRow key={i} className="group">
-                        <TableCell className="text-muted-foreground text-xs font-mono text-center w-8">{i + 1}</TableCell>
+                        <TableCell className="text-md-sys-on-surface-variant text-xs font-mono text-center w-8">{i + 1}</TableCell>
                         <TableCell className="max-w-[360px]">
                           <a
                             href={u}
                             target="_blank"
                             rel="noreferrer"
                             title={u}
-                            className="block font-mono text-link text-xs truncate hover:text-link-soft hover:underline transition-colors"
+                            className="block font-mono text-md-sys-primary text-xs truncate hover:text-md-sys-primary-soft hover:underline transition-colors"
                           >
                             {u}
                           </a>
                         </TableCell>
                         <TableCell className="w-8">
-                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ExternalLink className="h-3.5 w-3.5 text-md-sys-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity" />
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
                 ) : (
-                  <p className="p-4 text-sm text-muted-foreground">{vca.noUrlSearch}</p>
+                  <p className="p-4 text-sm text-md-sys-on-surface-variant">{vca.noUrlSearch}</p>
                 )}
               </div>
             </Card>
@@ -1360,8 +1360,8 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
           {(sc.missing_og || []).length === 0 && (sc.missing_twitter || []).length === 0 && (
             <Card className="col-span-2 flex items-center gap-3 py-6">
-              <Share2 className="h-8 w-8 text-green-500" />
-              <p className="text-muted-foreground text-sm">{strings.views.contentAnalytics.socialAllGood}</p>
+              <Share2 className="h-8 w-8 text-md-sys-success" />
+              <p className="text-md-sys-on-surface-variant text-sm">{strings.views.contentAnalytics.socialAllGood}</p>
             </Card>
           )}
         </div>
@@ -1374,16 +1374,16 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             <Card padding="tight" devData={crawlDepthDevData ?? undefined}>
               <ChartTitleWithHint title="Crawl Depth Distribution" helpKey="views.contentAnalytics.crawlDepthDist" />
               {(depthDist.max_depth != null || depthDist.avg_depth != null) && (
-                <p className="text-xs text-muted-foreground mb-3">
+                <p className="text-xs text-md-sys-on-surface-variant mb-3">
                   {depthDist.max_depth != null && (
                     <>
-                      Max depth: <span className="text-foreground font-semibold">{depthDist.max_depth}</span>
+                      Max depth: <span className="text-md-sys-on-surface font-semibold">{depthDist.max_depth}</span>
                     </>
                   )}
                   {depthDist.max_depth != null && depthDist.avg_depth != null && ' · '}
                   {depthDist.avg_depth != null && (
                     <>
-                      avg: <span className="text-foreground font-semibold">{depthDist.avg_depth}</span>
+                      avg: <span className="text-md-sys-on-surface font-semibold">{depthDist.avg_depth}</span>
                     </>
                   )}
                 </p>
@@ -1402,24 +1402,24 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 <ChartTitleWithHint title={vca.wordCountPercentiles} helpKey="views.contentAnalytics.wordCountPercentiles" />
                 <div className="space-y-3">
                   {[
-                    { label: 'Min', value: wcStats.min, color: 'text-muted-foreground', barW: 0 },
-                    { label: '25th Percentile (P25)', value: wcStats.p25, color: 'text-amber-700 dark:text-amber-400', barW: 25 },
-                    { label: 'Median (P50)', value: wcStats.median, color: 'text-link', barW: 50 },
-                    { label: 'Mean (Avg)', value: wcStats.mean, color: 'text-purple-700 dark:text-purple-400', barW: null },
-                    { label: '75th Percentile (P75)', value: wcStats.p75, color: 'text-green-700 dark:text-green-400', barW: 75 },
-                    { label: 'Max', value: wcStats.max, color: 'text-foreground', barW: 100 },
+                    { label: 'Min', value: wcStats.min, color: 'text-md-sys-on-surface-variant', barW: 0 },
+                    { label: '25th Percentile (P25)', value: wcStats.p25, color: 'text-md-sys-warning', barW: 25 },
+                    { label: 'Median (P50)', value: wcStats.median, color: 'text-md-sys-primary', barW: 50 },
+                    { label: 'Mean (Avg)', value: wcStats.mean, color: 'text-md-sys-tertiary', barW: null },
+                    { label: '75th Percentile (P75)', value: wcStats.p75, color: 'text-md-sys-success', barW: 75 },
+                    { label: 'Max', value: wcStats.max, color: 'text-md-sys-on-surface', barW: 100 },
                   ].map(({ label, value, color, barW }) => {
                     const maxWc = wcStats.max ?? 0;
                     const pct = barW != null ? barW : maxWc > 0 ? Math.min(100, ((value ?? 0) / maxWc) * 100) : 0;
                     return (
                       <div key={label} className="space-y-0.5">
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">{label}</span>
+                          <span className="text-md-sys-on-surface-variant">{label}</span>
                           <span className={`font-bold tabular-nums ${color}`}>
                             {value != null ? Math.round(value).toLocaleString() : '—'}
                           </span>
                         </div>
-                        <div className="h-1.5 bg-track rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-md-sys-surface-container-highest/40 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${color.replace('text-', 'bg-')}`}
                             style={{ width: `${Math.min(100, Math.max(2, pct))}%` }}

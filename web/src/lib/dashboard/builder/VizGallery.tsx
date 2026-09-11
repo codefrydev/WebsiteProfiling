@@ -42,8 +42,8 @@ export function VizGallery({ value, spec, preferred, onChange }: VizGalleryProps
               active
                 ? 'border-blue-500 bg-blue-500/10 text-blue-300'
                 : fits
-                  ? 'border-default hover:border-blue-500/50 text-muted-foreground hover:text-bright'
-                  : 'border-default/50 text-muted-foreground/40'
+                  ? 'border-md-sys-outline-variant/40 hover:border-blue-500/50 text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
+                  : 'border-md-sys-outline-variant/30 text-md-sys-on-surface-variant/40'
             }`}
           >
             <Icon className="h-4 w-4" />

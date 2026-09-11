@@ -113,25 +113,25 @@ export function ConfigPanel({ widget, onChange, onClose, onDelete }: ConfigPanel
   const measureLabels = (spec.measures ?? []).map(measureLabel);
 
   return (
-    <div className="w-[340px] shrink-0 border-l border-default bg-brand-800 flex flex-col h-full">
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-default shrink-0">
-        <h2 className="font-bold text-foreground text-sm truncate">{widget.title || def?.label || 'Widget'}</h2>
+    <div className="w-[340px] shrink-0 border-l border-md-sys-outline-variant/40 bg-md-sys-surface-container flex flex-col h-full">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-md-sys-outline-variant/40 shrink-0">
+        <h2 className="font-bold text-md-sys-on-surface text-sm truncate">{widget.title || def?.label || 'Widget'}</h2>
         <button
           onClick={onClose}
           aria-label="Close configuration"
-          className="p-1 rounded hover:bg-brand-700/80 text-muted-foreground hover:text-foreground transition-colors"
+          className="press p-1 rounded-full hover:bg-md-sys-surface-container-high text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-colors active:scale-95"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="flex border-b border-default shrink-0 text-xs">
+      <div className="flex border-b border-md-sys-outline-variant/40 shrink-0 text-xs">
         {(['data', 'viz', 'format'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 py-2 font-medium capitalize transition-colors ${
-              tab === t ? 'text-link border-b-2 border-link -mb-px' : 'text-muted-foreground hover:text-foreground'
+              tab === t ? 'text-md-sys-primary border-b-2 border-link -mb-px' : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
             }`}
           >
             {t === 'viz' ? 'Visual' : t}
@@ -146,18 +146,18 @@ export function ConfigPanel({ widget, onChange, onClose, onDelete }: ConfigPanel
 
             <div>
               <div className="relative mb-1.5">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-md-sys-on-surface-variant" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search fields…"
-                  className="w-full pl-7 pr-2 py-1 text-xs bg-brand-900 border border-default focus:border-[var(--accent)] rounded-md text-foreground focus:outline-none transition-colors"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 focus:border-md-sys-primary rounded-full text-md-sys-on-surface focus:outline-none transition-colors"
                 />
               </div>
               <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
-                {dims.length > 0 && <p className="text-[9px] uppercase tracking-wide text-blue-400/80 font-bold">Dimensions</p>}
+                {dims.length > 0 && <p className="text-[9px] uppercase tracking-wide text-md-sys-primary font-bold">Dimensions</p>}
                 {dims.map((f) => <FieldChip key={f.key} field={f} onQuickAdd={quickAdd} />)}
-                {meas.length > 0 && <p className="text-[9px] uppercase tracking-wide text-emerald-400/80 font-bold mt-1.5">Measures</p>}
+                {meas.length > 0 && <p className="text-[9px] uppercase tracking-wide text-md-sys-success font-bold mt-1.5">Measures</p>}
                 {meas.map((f) => <FieldChip key={f.key} field={f} onQuickAdd={quickAdd} />)}
               </div>
             </div>
@@ -203,11 +203,11 @@ export function ConfigPanel({ widget, onChange, onClose, onDelete }: ConfigPanel
 
             <div className="grid grid-cols-2 gap-2 pt-1">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Sort by</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant mb-1">Sort by</label>
                 <select
                   value={spec.sort?.by ?? ''}
                   onChange={(e) => (e.target.value ? setQuery(withSort(spec, e.target.value, spec.sort?.dir ?? 'desc')) : setQuery({ ...spec, sort: undefined }))}
-                  className="w-full px-2 py-1.5 text-xs bg-brand-800 border border-default rounded-lg text-bright focus:outline-none"
+                  className="w-full px-2 py-1.5 text-xs bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg text-md-sys-on-surface focus:outline-none"
                 >
                   <option value="">Data order</option>
                   <option value="category">Category</option>
@@ -215,29 +215,29 @@ export function ConfigPanel({ widget, onChange, onClose, onDelete }: ConfigPanel
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Direction</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant mb-1">Direction</label>
                 <select
                   value={spec.sort?.dir ?? 'desc'}
                   disabled={!spec.sort}
                   onChange={(e) => spec.sort && setQuery(withSort(spec, spec.sort.by, e.target.value as 'asc' | 'desc'))}
-                  className="w-full px-2 py-1.5 text-xs bg-brand-800 border border-default rounded-lg text-bright focus:outline-none disabled:opacity-40"
+                  className="w-full px-2 py-1.5 text-xs bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg text-md-sys-on-surface focus:outline-none disabled:opacity-40"
                 >
                   <option value="desc">Descending</option>
                   <option value="asc">Ascending</option>
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Top N</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant mb-1">Top N</label>
                 <input
                   type="number"
                   min={0}
                   value={spec.topN?.n ?? ''}
                   placeholder="all"
                   onChange={(e) => setQuery(withTopN(spec, e.target.value ? Number(e.target.value) : undefined, spec.topN?.other ?? false))}
-                  className="w-full px-2 py-1.5 text-xs bg-brand-800 border border-default rounded-lg text-bright focus:outline-none"
+                  className="w-full px-2 py-1.5 text-xs bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg text-md-sys-on-surface focus:outline-none"
                 />
               </div>
-              <label className="flex items-center gap-1.5 text-xs text-foreground self-end pb-1.5">
+              <label className="flex items-center gap-1.5 text-xs text-md-sys-on-surface self-end pb-1.5">
                 <input
                   type="checkbox"
                   checked={spec.topN?.other ?? false}
@@ -249,7 +249,7 @@ export function ConfigPanel({ widget, onChange, onClose, onDelete }: ConfigPanel
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Drill-down path</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant mb-1">Drill-down path</label>
               <div className="flex flex-wrap gap-1">
                 {fields.filter((f) => f.role === 'dimension').map((f) => {
                   const dd = widget.drillDimensions ?? [];
@@ -262,8 +262,8 @@ export function ConfigPanel({ widget, onChange, onClose, onDelete }: ConfigPanel
                         const next = on ? dd.filter((k) => k !== f.key) : [...dd, f.key];
                         onChange({ ...widget, drillDimensions: next.length ? next : undefined });
                       }}
-                      className={`px-1.5 py-0.5 rounded text-[11px] border transition-colors ${
-                        on ? 'border-blue-500 bg-blue-500/10 text-blue-300' : 'border-default text-muted-foreground hover:text-bright'
+                      className={`press px-2.5 py-1 rounded-full text-[11px] border transition-all active:scale-[0.98] ${
+                        on ? 'border-md-sys-primary bg-md-sys-primary/10 text-md-sys-primary font-medium' : 'border-md-sys-outline-variant/40 text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                       }`}
                     >
                       {on ? `${idx + 1}. ${f.label}` : f.label}
@@ -271,7 +271,7 @@ export function ConfigPanel({ widget, onChange, onClose, onDelete }: ConfigPanel
                   );
                 })}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">Click dimensions in order — clicking a bar drills to the next level.</p>
+              <p className="text-[10px] text-md-sys-on-surface-variant mt-1">Click dimensions in order — clicking a bar drills to the next level.</p>
             </div>
 
             <DragOverlay>{active && <FieldChip field={active} overlay />}</DragOverlay>
@@ -285,10 +285,10 @@ export function ConfigPanel({ widget, onChange, onClose, onDelete }: ConfigPanel
         {tab === 'format' && <FormatPanel widget={widget} onChange={onChange} />}
       </div>
 
-      <div className="px-3 py-2.5 border-t border-default shrink-0">
+      <div className="px-3 py-2.5 border-t border-md-sys-outline-variant/40 shrink-0">
         <button
           onClick={onDelete}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-red-500/30 hover:bg-red-500/10 text-red-400 text-xs font-medium transition-colors"
+          className="press w-full flex items-center justify-center gap-1.5 py-2.5 rounded-full border border-md-sys-error/40 hover:bg-md-sys-error/10 text-md-sys-error text-xs font-medium transition-all active:scale-[0.98]"
         >
           <Trash2 className="h-3.5 w-3.5" /> Delete widget
         </button>

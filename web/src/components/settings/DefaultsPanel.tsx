@@ -24,8 +24,8 @@ function SelectRow({
 }) {
   return (
     <div className="py-4">
-      <p className="mb-0.5 text-sm font-medium text-bright">{label}</p>
-      <p className="mb-3 text-xs text-muted-foreground">{description}</p>
+      <p className="mb-0.5 text-sm font-medium text-md-sys-on-surface">{label}</p>
+      <p className="mb-3 text-xs text-md-sys-on-surface-variant">{description}</p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {options.map((opt) => {
           const active = value === opt.id;
@@ -34,16 +34,16 @@ function SelectRow({
               key={opt.id}
               type="button"
               onClick={() => onChange(opt.id)}
-              className={`flex flex-col items-start rounded-xl border px-3.5 py-3 text-left transition-all ${
+              className={`press flex flex-col items-start rounded-2xl border px-3.5 py-3 text-left transition-all duration-200 active:scale-[0.98] ${
                 active
-                  ? 'border-[var(--accent)] bg-[var(--accent-bg)]'
-                  : 'border-default hover:border-[var(--accent)] hover:bg-[var(--app-bg-muted)]'
+                  ? 'border-md-sys-primary bg-md-sys-primary/10'
+                  : 'border-md-sys-outline-variant/40 hover:border-md-sys-primary/50 hover:bg-md-sys-surface-container-high'
               }`}
             >
-              <span className={`text-xs font-medium ${active ? 'text-[var(--accent)]' : 'text-bright'}`}>
+              <span className={`text-xs font-medium ${active ? 'text-md-sys-primary font-semibold' : 'text-md-sys-on-surface'}`}>
                 {opt.label}
               </span>
-              <span className="mt-0.5 text-[11px] text-muted-foreground">{opt.description}</span>
+              <span className="mt-0.5 text-[11px] text-md-sys-on-surface-variant">{opt.description}</span>
             </button>
           );
         })}
@@ -70,13 +70,13 @@ export default function DefaultsPanel() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-bright">Defaults</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="text-xl font-semibold text-md-sys-on-surface">Defaults</h1>
+        <p className="mt-1 text-sm text-md-sys-on-surface-variant">
           Choose which view opens when you select a site from the home page. Syncs across browsers.
         </p>
       </div>
 
-      <section className="rounded-2xl border border-default bg-[var(--app-bg-elevated)] p-5">
+      <section className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5">
         <SelectRow
           label="Default report view"
           description="The view that opens automatically when you click a site in your portfolio."
@@ -84,7 +84,7 @@ export default function DefaultsPanel() {
           options={LANDING_VIEW_OPTIONS}
           onChange={handleDefaultViewChange}
         />
-        <p className="mt-2 text-[11px] text-muted-foreground">
+        <p className="mt-2 text-[11px] text-md-sys-on-surface-variant">
           Saved to this browser only. Crawl-only previews always open the Links view.
         </p>
       </section>

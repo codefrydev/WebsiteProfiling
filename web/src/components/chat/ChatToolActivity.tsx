@@ -64,7 +64,7 @@ export default function ChatToolActivity({ items, streaming }: ChatToolActivityP
           {failed.map((item) => (
             <span
               key={`fail-${item.id}`}
-              className="rounded-full border border-red-500/40 bg-red-500/15 px-2 py-0.5 text-xs text-red-200"
+              className="rounded-full border border-md-sys-error/30 bg-md-sys-error-container/40 px-2.5 py-0.5 text-xs text-md-sys-on-error-container"
               title={String(item.result?.error || '')}
             >
               {item.name} {c.toolFailedShort}
@@ -76,7 +76,7 @@ export default function ChatToolActivity({ items, streaming }: ChatToolActivityP
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+        className="press flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98]"
         aria-expanded={expanded}
       >
         {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
@@ -84,24 +84,24 @@ export default function ChatToolActivity({ items, streaming }: ChatToolActivityP
         <span>{format(c.toolsUsedSummary, { count: items.length })}</span>
       </button>
       {expanded ? (
-        <div className="mt-2 space-y-2 border-l border-muted/50 pl-3 text-xs">
+        <div className="mt-2 space-y-2 border-l border-md-sys-outline-variant/40 pl-3 text-xs">
           {groups.map(([label, groupItems]) => (
             <div key={label}>
-              <p className="mb-1 font-medium text-muted-foreground">{label}</p>
+              <p className="mb-1 font-medium text-md-sys-on-surface-variant">{label}</p>
               <ul className="space-y-1">
                 {groupItems.map((item) => (
-                  <li key={item.id} className="font-mono text-muted-foreground">
-                    <span className={isFailed(item) ? 'text-red-600 dark:text-red-300' : 'text-violet-600 dark:text-violet-300'}>
+                  <li key={item.id} className="font-mono text-md-sys-on-surface-variant">
+                    <span className={isFailed(item) ? 'text-md-sys-error' : 'text-md-sys-primary'}>
                       {item.name}
                     </span>
                     {item.status === 'running' ? (
-                      <span className="ml-2 text-amber-600 dark:text-amber-400">{c.toolRunning}</span>
+                      <span className="ml-2 text-md-sys-warning">{c.toolRunning}</span>
                     ) : isFailed(item) ? (
-                      <span className="ml-2 block font-sans text-red-600 dark:text-red-300/90">
+                      <span className="ml-2 block font-sans text-md-sys-error">
                         {String(item.result?.error)}
                       </span>
                     ) : (
-                      <span className="ml-2 text-emerald-600 dark:text-emerald-400">{c.toolDone}</span>
+                      <span className="ml-2 text-md-sys-success">{c.toolDone}</span>
                     )}
                   </li>
                 ))}

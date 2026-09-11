@@ -7,7 +7,7 @@ export default function ReportSelector() {
 
   return (
     <div className="flex items-center gap-1.5 shrink-0">
-      <label htmlFor="report-select" className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">
+      <label htmlFor="report-select" className="text-xs text-md-sys-on-surface-variant whitespace-nowrap hidden sm:inline">
         {strings.reportSelector.reportLabel}
       </label>
       <select
@@ -18,7 +18,7 @@ export default function ReportSelector() {
           setSelectedReportId(v === '' ? null : Number(v));
         }}
         disabled={loading || !!error}
-        className="bg-brand-900 border border-default focus:border-[var(--accent)] rounded-lg px-2.5 py-1.5 text-xs text-foreground outline-none max-w-[180px] sm:max-w-[220px] truncate transition-colors"
+        className="bg-md-sys-surface-container-high border border-md-sys-outline-variant/40 focus:ring-2 focus:ring-md-sys-primary rounded-full px-3.5 py-1.5 text-xs text-md-sys-on-surface outline-none max-w-[180px] sm:max-w-[220px] truncate transition-all duration-200"
         title={reportList.length <= 1 ? strings.reportSelector.titleReportHistory : strings.reportSelector.titleLoadReport}
       >
         <option value="">{strings.reportSelector.latestOption}</option>

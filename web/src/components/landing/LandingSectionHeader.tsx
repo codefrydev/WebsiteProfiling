@@ -28,13 +28,13 @@ export default function LandingSectionHeader({
     >
       <div className={centered ? 'w-full min-w-0 @sm:text-left' : 'w-full min-w-0'}>
         {eyebrow ? (
-          <p className={`mb-1 text-xs font-semibold uppercase tracking-wider text-link ${align} @sm:text-left`}>
+          <p className={`mb-1 text-xs font-semibold uppercase tracking-wider text-md-sys-primary ${align} @sm:text-left`}>
             {eyebrow}
           </p>
         ) : null}
-        <h2 className={`${titleClass} text-foreground ${align} @sm:text-left`}>{title}</h2>
+        <h2 className={`${titleClass} text-md-sys-on-surface ${align} @sm:text-left`}>{title}</h2>
         {subtitle ? (
-          <p className={`${subtitleClass} text-muted-foreground ${align} @sm:text-left`}>{subtitle}</p>
+          <p className={`${subtitleClass} text-md-sys-on-surface-variant ${align} @sm:text-left`}>{subtitle}</p>
         ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}

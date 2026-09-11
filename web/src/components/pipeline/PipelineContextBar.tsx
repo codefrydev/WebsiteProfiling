@@ -42,14 +42,14 @@ export default function PipelineContextBar({ activeNav, headerExtra }: PipelineC
     : SETTINGS_GROUP_ICONS[activeNav as PipelineSettingsGroupId];
 
   return (
-    <header className="chat-context-bar flex items-center gap-3 border-b border-muted/30 bg-[var(--chat-bg)] px-4 py-2.5">
+    <header className="chat-context-bar flex items-center gap-3 border-b border-md-sys-outline-variant/30 bg-md-sys-surface px-4 py-2.5">
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <Icon className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-bright" title={title}>
+          <p className="truncate text-sm font-medium text-md-sys-on-surface" title={title}>
             {title}
           </p>
-          <p className="truncate text-xs text-muted-foreground" title={subtitle}>
+          <p className="truncate text-xs text-md-sys-on-surface-variant" title={subtitle}>
             {subtitle}
           </p>
         </div>

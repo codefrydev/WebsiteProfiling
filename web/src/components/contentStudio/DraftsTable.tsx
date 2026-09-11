@@ -42,7 +42,7 @@ export default function DraftsTable({
 
   if (drafts.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-8 text-center">{t.empty}</p>
+      <p className="text-sm text-md-sys-on-surface-variant py-8 text-center">{t.empty}</p>
     );
   }
 
@@ -63,14 +63,14 @@ export default function DraftsTable({
           {drafts.map((d) => (
             <TableRow key={d.id}>
               <TableCell className="font-medium max-w-[200px] truncate">{d.title}</TableCell>
-              <TableCell className="max-w-[160px] truncate text-muted-foreground">
+              <TableCell className="max-w-[160px] truncate text-md-sys-on-surface-variant">
                 {d.target_keyword || t.noKeyword}
               </TableCell>
               <TableCell className="tabular-nums">
                 {d.grade_score != null ? `${d.grade_score}` : t.noGrade}
               </TableCell>
               <TableCell className="capitalize">{d.status}</TableCell>
-              <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+              <TableCell className="text-xs text-md-sys-on-surface-variant whitespace-nowrap">
                 {formatDate(d.updated_at)}
               </TableCell>
               {!readOnly ? (

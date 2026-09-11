@@ -74,7 +74,7 @@ function LandingShellInner({ children, footer, backdrop }: LandingShellProps) {
   return (
     <div
       ref={outerRef}
-      className="landing-grid-bg relative isolate flex h-dvh flex-col overflow-hidden bg-brand-900 text-foreground"
+      className="landing-grid-bg relative isolate flex h-dvh flex-col overflow-hidden bg-md-sys-surface-container-low text-md-sys-on-surface"
     >
       {backdrop ? (
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">{backdrop}</div>
@@ -91,7 +91,7 @@ function LandingShellInner({ children, footer, backdrop }: LandingShellProps) {
               {footer ? (
                 <footer
                   id={LANDING_SECTION_IDS.siteFooter}
-                  className="landing-deck-slide landing-footer-snap border-t border-muted/40"
+                  className="landing-deck-slide landing-footer-snap border-t border-md-sys-outline-variant/40"
                 >
                   {footer}
                 </footer>

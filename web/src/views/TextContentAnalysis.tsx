@@ -172,11 +172,11 @@ function KeywordIndexTable({
   };
 
   if (rows.length === 0) {
-    return <p className="text-sm text-muted-foreground">{vtca.noKeywordData}</p>;
+    return <p className="text-sm text-md-sys-on-surface-variant">{vtca.noKeywordData}</p>;
   }
 
   return (
-    <div className="max-h-[32rem] overflow-y-auto rounded-lg border border-muted">
+    <div className="max-h-[32rem] overflow-y-auto rounded-lg border border-md-sys-outline-variant/40">
       <Table>
         <TableHead sticky>
           <tr>
@@ -202,7 +202,7 @@ function KeywordIndexTable({
                       <button
                         type="button"
                         onClick={() => toggle(row.word)}
-                        className="text-muted-foreground hover:text-foreground"
+                        className="text-md-sys-on-surface-variant hover:text-md-sys-on-surface"
                         aria-expanded={isOpen}
                         aria-label={isOpen ? vtca.collapsePages : vtca.expandPages}
                       >
@@ -210,14 +210,14 @@ function KeywordIndexTable({
                       </button>
                     ) : null}
                   </TableCell>
-                  <TableCell className="font-medium text-foreground">{row.word}</TableCell>
+                  <TableCell className="font-medium text-md-sys-on-surface">{row.word}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{row.total_count.toLocaleString()}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{row.page_count.toLocaleString()}</TableCell>
                 </TableRow>
                 {isOpen && hasPages ? (
                   <TableRow>
-                    <td colSpan={4} className="bg-brand-900/40 py-2 px-3">
-                      <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">
+                    <td colSpan={4} className="bg-md-sys-surface-container-low/40 py-2 px-3">
+                      <div className="text-xs text-md-sys-on-surface-variant font-semibold uppercase tracking-wider mb-1">
                         {vtca.thTopPages}
                       </div>
                       <ul className="space-y-1">
@@ -227,11 +227,11 @@ function KeywordIndexTable({
                               href={p.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="font-mono text-link truncate hover:underline"
+                              className="font-mono text-md-sys-primary truncate hover:underline"
                             >
                               {p.url}
                             </a>
-                            <span className="font-mono tabular-nums text-muted-foreground shrink-0">{p.count}</span>
+                            <span className="font-mono tabular-nums text-md-sys-on-surface-variant shrink-0">{p.count}</span>
                           </li>
                         ))}
                       </ul>
@@ -530,30 +530,30 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             <DevCopyJsonButton data={overviewPrimaryStatsDevData} />
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card shadow>
-                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.uniqueTerms}</div>
-                <div className="text-3xl font-bold text-bright">{vocab.unique_terms ?? sj.emDash}</div>
+                <div className="text-md-sys-on-surface-variant text-xs font-bold uppercase tracking-wider mb-2">{vtca.uniqueTerms}</div>
+                <div className="text-3xl font-bold text-md-sys-on-surface">{vocab.unique_terms ?? sj.emDash}</div>
               </Card>
               <Card shadow>
-                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.pagesWithKeywords}</div>
-                <div className="text-3xl font-bold text-bright">{vocab.pages_with_keywords ?? sj.emDash}</div>
+                <div className="text-md-sys-on-surface-variant text-xs font-bold uppercase tracking-wider mb-2">{vtca.pagesWithKeywords}</div>
+                <div className="text-3xl font-bold text-md-sys-on-surface">{vocab.pages_with_keywords ?? sj.emDash}</div>
               </Card>
               <Card shadow>
-                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                <div className="text-md-sys-on-surface-variant text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
                   <BookOpen className="h-4 w-4" /> {vtca.meanWords}
                 </div>
-                <div className="text-3xl font-bold text-bright">
+                <div className="text-3xl font-bold text-md-sys-on-surface">
                   {wcStats.mean != null ? Math.round(wcStats.mean).toLocaleString() : sj.emDash}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">{vtca.perPage}</div>
+                <div className="text-xs text-md-sys-on-surface-variant mt-1">{vtca.perPage}</div>
               </Card>
               <Card shadow>
-                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                <div className="text-md-sys-on-surface-variant text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
                   <FileText className="h-4 w-4" /> {vtca.medianWords}
                 </div>
-                <div className="text-3xl font-bold text-bright">
+                <div className="text-3xl font-bold text-md-sys-on-surface">
                   {wcStats.median != null ? Math.round(wcStats.median).toLocaleString() : sj.emDash}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">{vtca.perPage}</div>
+                <div className="text-xs text-md-sys-on-surface-variant mt-1">{vtca.perPage}</div>
               </Card>
             </div>
           </div>
@@ -562,12 +562,12 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             <DevCopyJsonButton data={overviewSecondaryStatsDevData} />
             <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
               <Card shadow>
-                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.avgTermsPerPage}</div>
-                <div className="text-2xl font-bold text-bright">{vocab.avg_terms_per_page ?? sj.emDash}</div>
+                <div className="text-md-sys-on-surface-variant text-xs font-bold uppercase tracking-wider mb-2">{vtca.avgTermsPerPage}</div>
+                <div className="text-2xl font-bold text-md-sys-on-surface">{vocab.avg_terms_per_page ?? sj.emDash}</div>
               </Card>
               <Card shadow>
-                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.totalOccurrences}</div>
-                <div className="text-2xl font-bold text-bright">
+                <div className="text-md-sys-on-surface-variant text-xs font-bold uppercase tracking-wider mb-2">{vtca.totalOccurrences}</div>
+                <div className="text-2xl font-bold text-md-sys-on-surface">
                   {vocab.total_term_occurrences != null ? vocab.total_term_occurrences.toLocaleString() : sj.emDash}
                 </div>
               </Card>
@@ -595,8 +595,8 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
           {histChart ? (
             <Card padding="tight" shadow devData={histChartDevData ?? undefined}>
               <div className="flex items-center gap-2 mb-3">
-                <BarChart2 className="h-4 w-4 text-link" />
-                <h3 className="text-sm font-bold text-foreground">{vtca.keywordFrequencyHist}</h3>
+                <BarChart2 className="h-4 w-4 text-md-sys-primary" />
+                <h3 className="text-sm font-bold text-md-sys-on-surface">{vtca.keywordFrequencyHist}</h3>
               </div>
               <ChartPanel>
                 <Bar
@@ -623,10 +623,10 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             <Card padding="tight" shadow devData={topKeywordsChartDevData ?? undefined}>
               <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                 <div className="flex items-center gap-2">
-                  <Tag className="h-4 w-4 text-link" />
-                  <h3 className="text-sm font-bold text-foreground">{vtca.topKeywordsChart}</h3>
+                  <Tag className="h-4 w-4 text-md-sys-primary" />
+                  <h3 className="text-sm font-bold text-md-sys-on-surface">{vtca.topKeywordsChart}</h3>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-md-sys-on-surface-variant">
                   {keywordsChartPagination.total.toLocaleString()} terms
                 </p>
               </div>
@@ -641,8 +641,8 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                 />
               </ChartPanel>
               {keywordsChartPagination.total > 0 ? (
-                <div className="mt-3 pt-3 border-t border-default flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-                  <div className="text-sm text-muted-foreground space-y-0.5">
+                <div className="mt-3 pt-3 border-t border-md-sys-outline-variant/40 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+                  <div className="text-sm text-md-sys-on-surface-variant space-y-0.5">
                     <div>
                       {format(vtca.pagination.showingSlice, {
                         from: keywordsChartPagination.from,
@@ -652,10 +652,10 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                     </div>
                     <div className="text-xs">
                       {vtca.pagination.pageOf}{' '}
-                      <span className="font-bold text-bright tabular-nums">{keywordsChartPagination.page}</span>{' '}
+                      <span className="font-bold text-md-sys-on-surface tabular-nums">{keywordsChartPagination.page}</span>{' '}
                       {vtca.pagination.of}{' '}
-                      <span className="font-bold text-bright tabular-nums">{keywordsChartPagination.totalPages}</span>
-                      <span className="text-muted-foreground ml-2">
+                      <span className="font-bold text-md-sys-on-surface tabular-nums">{keywordsChartPagination.totalPages}</span>
+                      <span className="text-md-sys-on-surface-variant ml-2">
                         ({format(vtca.pagination.rowsPerPage, { n: PAGE_SIZE })})
                       </span>
                     </div>
@@ -666,7 +666,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                         variant="secondary"
                         onClick={() => setKeywordsChartPage((p) => Math.max(1, p - 1))}
                         disabled={keywordsChartPagination.page <= 1}
-                        className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                        className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
                       >
                         {vtca.pagination.previous}
                       </Button>
@@ -676,7 +676,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                           setKeywordsChartPage((p) => Math.min(keywordsChartPagination.totalPages, p + 1))
                         }
                         disabled={keywordsChartPagination.page >= keywordsChartPagination.totalPages}
-                        className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                        className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
                       >
                         {vtca.pagination.next}
                       </Button>
@@ -686,7 +686,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
               ) : null}
             </Card>
           ) : (
-            <p className="text-sm text-muted-foreground">{vtca.noKeywordData}</p>
+            <p className="text-sm text-md-sys-on-surface-variant">{vtca.noKeywordData}</p>
           )}
 
           <SectionHeader icon={BarChart2} title={vtca.tabs.analytics} helpKey="views.textContentAnalysis.analyticsSection" size="sm" />
@@ -701,7 +701,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                     plugins={[barValueLabelsPlugin]}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
+                  <div className="flex items-center justify-center h-full text-md-sys-on-surface-variant text-sm">{sj.noData}</div>
                 )}
               </ChartPanel>
             </Card>
@@ -725,7 +725,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                     plugins={[barValueLabelsPlugin]}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
+                  <div className="flex items-center justify-center h-full text-md-sys-on-surface-variant text-sm">{sj.noData}</div>
                 )}
               </ChartPanel>
             </Card>
@@ -740,7 +740,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                     plugins={[barValueLabelsPlugin]}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
+                  <div className="flex items-center justify-center h-full text-md-sys-on-surface-variant text-sm">{sj.noData}</div>
                 )}
               </ChartPanel>
             </Card>
@@ -787,7 +787,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             <Card padding="tight" shadow devData={languageMixDevData ?? undefined}>
               <div className="flex items-center gap-2 mb-3">
                 <Globe className="h-4 w-4 text-violet-700 dark:text-violet-400" />
-                <h3 className="text-sm font-bold text-foreground">{vtca.languageMix}</h3>
+                <h3 className="text-sm font-bold text-md-sys-on-surface">{vtca.languageMix}</h3>
               </div>
               <ChartPanel>
                 <Bar
@@ -805,7 +805,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             <Card padding="tight" shadow devData={entityLabelsDevData ?? undefined}>
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
-                <h3 className="text-sm font-bold text-foreground">{vtca.entityLabels}</h3>
+                <h3 className="text-sm font-bold text-md-sys-on-surface">{vtca.entityLabels}</h3>
               </div>
               <ChartPanel>
                 <Bar
@@ -823,9 +823,9 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             <Card padding="tight" shadow devData={tokenTopicsDevData}>
               <div className="flex items-center gap-2 mb-3">
                 <Tag className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-                <h3 className="text-sm font-bold text-foreground">{vtca.parentTopicsToken}</h3>
+                <h3 className="text-sm font-bold text-md-sys-on-surface">{vtca.parentTopicsToken}</h3>
               </div>
-              <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
+              <div className="max-h-80 overflow-y-auto rounded-lg border border-md-sys-outline-variant/40">
                 <Table>
                   <TableHead>
                     <tr>
@@ -837,13 +837,13 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                   <TableBody>
                     {tokenClusters.map((cl: TopicCluster, idx: number) => (
                       <TableRow key={`tok-${cl.top_keyword}-${idx}`}>
-                        <TableCell className="font-medium text-foreground">
+                        <TableCell className="font-medium text-md-sys-on-surface">
                           {String(cl.top_keyword ?? cl.representative ?? '')}
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
+                        <TableCell className="font-mono text-xs text-md-sys-on-surface-variant">
                           {String(cl.cluster_score ?? sj.emDash)}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className="text-xs text-md-sys-on-surface-variant">
                           {Array.isArray(cl.keywords) ? cl.keywords.join(', ') : sj.emDash}
                         </TableCell>
                       </TableRow>
@@ -858,9 +858,9 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             <Card padding="tight" shadow devData={semanticTopicsDevData}>
               <div className="flex items-center gap-2 mb-3">
                 <Layers className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
-                <h3 className="text-sm font-bold text-foreground">{vtca.parentTopicsSemantic}</h3>
+                <h3 className="text-sm font-bold text-md-sys-on-surface">{vtca.parentTopicsSemantic}</h3>
               </div>
-              <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
+              <div className="max-h-80 overflow-y-auto rounded-lg border border-md-sys-outline-variant/40">
                 <Table>
                   <TableHead>
                     <tr>
@@ -872,13 +872,13 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                   <TableBody>
                     {semanticClusters.map((cl: TopicCluster, idx: number) => (
                       <TableRow key={`sem-${cl.top_keyword}-${idx}`}>
-                        <TableCell className="font-medium text-foreground">
+                        <TableCell className="font-medium text-md-sys-on-surface">
                           {String(cl.top_keyword ?? cl.representative ?? '')}
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
+                        <TableCell className="font-mono text-xs text-md-sys-on-surface-variant">
                           {String(cl.cluster_score ?? sj.emDash)}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className="text-xs text-md-sys-on-surface-variant">
                           {Array.isArray(cl.keywords) ? cl.keywords.join(', ') : sj.emDash}
                         </TableCell>
                       </TableRow>
@@ -890,7 +890,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
           ) : null}
 
           {!languageMlChart && !nerSiteChart && tokenClusters.length === 0 && semanticClusters.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{sj.noData}</p>
+            <p className="text-sm text-md-sys-on-surface-variant">{sj.noData}</p>
           ) : null}
         </ViewTabPanel>
       )}

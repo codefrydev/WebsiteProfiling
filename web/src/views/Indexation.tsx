@@ -181,16 +181,16 @@ export default function Indexation({ searchQuery = '' }: ViewProps) {
       <PageHeader
         title={vi.title}
         subtitle={vi.subtitle}
-        icon={<FileSearch className="h-7 w-7 text-link shrink-0" />}
+        icon={<FileSearch className="h-7 w-7 text-md-sys-primary shrink-0" />}
         actions={
           <>
             <Link
               to={searchPerformanceCoverageHref(searchParams)}
-              className="text-sm text-link hover:underline"
+              className="text-sm text-md-sys-primary hover:underline"
             >
               {vi.viewSearchPerformance}
             </Link>
-            <Link to={`/subdomains${querySuffix}`} className="text-sm text-link hover:underline">
+            <Link to={`/subdomains${querySuffix}`} className="text-sm text-md-sys-primary hover:underline">
               {vi.viewSubdomains}
             </Link>
           </>
@@ -257,8 +257,8 @@ export default function Indexation({ searchQuery = '' }: ViewProps) {
       {activeTab === 'gscGaps' ? (
         <ViewTabPanel idPrefix="indexation" tabId="gscGaps">
           <Card devData={gapsDevData}>
-            <h3 className="text-sm font-semibold text-foreground mb-2">{vi.gapsTitle}</h3>
-            <p className="text-sm text-muted-foreground mb-4">{vi.gapsHint}</p>
+            <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{vi.gapsTitle}</h3>
+            <p className="text-sm text-md-sys-on-surface-variant mb-4">{vi.gapsHint}</p>
             {urlJoin ? (
               <UrlGapListsPanel
                 urlJoin={urlJoin}
@@ -269,7 +269,7 @@ export default function Indexation({ searchQuery = '' }: ViewProps) {
                 globalSearch={q}
               />
             ) : (
-              <p className="text-sm text-muted-foreground">{vi.noSearchGaps}</p>
+              <p className="text-sm text-md-sys-on-surface-variant">{vi.noSearchGaps}</p>
             )}
           </Card>
         </ViewTabPanel>
@@ -295,7 +295,7 @@ export default function Indexation({ searchQuery = '' }: ViewProps) {
           />
           {!hasSitemapGapData ? (
             <Card>
-              <p className="text-sm text-muted-foreground">{strings.common.notEnoughData}</p>
+              <p className="text-sm text-md-sys-on-surface-variant">{strings.common.notEnoughData}</p>
             </Card>
           ) : null}
         </ViewTabPanel>

@@ -19,8 +19,8 @@ export default function ThresholdBar({ metricKey, value }: ThresholdBarProps) {
   if (!t || value == null) {
     return (
       <div className="flex items-center justify-between px-5 py-4">
-        <span className="text-foreground text-sm">{t?.label || metricKey}</span>
-        <span className="text-muted-foreground font-semibold text-sm">—</span>
+        <span className="text-md-sys-on-surface text-sm">{t?.label || metricKey}</span>
+        <span className="text-md-sys-on-surface-variant font-semibold text-sm">—</span>
       </div>
     );
   }
@@ -39,22 +39,22 @@ export default function ThresholdBar({ metricKey, value }: ThresholdBarProps) {
   const hintBody = `${t.desc} Good: ≤${formatMetric(metricKey, t.good)}. Needs improvement: ≤${formatMetric(metricKey, t.warn)}.`;
 
   return (
-    <div className="flex items-center gap-4 px-5 py-4 hover:bg-brand-800 transition-colors">
-      <span className="text-foreground text-sm w-44 shrink-0 inline-flex items-center gap-1">
+    <div className="flex items-center gap-4 px-5 py-4 hover:bg-md-sys-surface-container transition-colors">
+      <span className="text-md-sys-on-surface text-sm w-44 shrink-0 inline-flex items-center gap-1">
         {t.label}
         <HelpHint title={t.label} ariaLabel={`About ${t.label}`}>
           {hintBody}
         </HelpHint>
       </span>
       <div className="flex-1 flex items-center gap-3">
-        <div className="flex-1 bg-track rounded-full h-2.5 overflow-hidden">
+        <div className="flex-1 bg-md-sys-surface-container-highest/40 rounded-full h-2.5 overflow-hidden">
           <div
             className={`h-2.5 rounded-full transition-all duration-700 ease-out ${barColor}`}
             style={{ width: mounted ? `${pct}%` : '0%' }}
           />
         </div>
         <div className="relative w-2 shrink-0">
-          <div className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-brand-700 rounded" style={{ left: 0 }} />
+          <div className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-md-sys-surface-container-high rounded" style={{ left: 0 }} />
         </div>
         <span className={`font-semibold text-sm tabular-nums w-16 text-right ${textColor}`}>
           {formatMetric(metricKey, v)}

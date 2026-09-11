@@ -60,7 +60,7 @@ export default function AxeTopRulesChart({ rules, devData, onRuleClick }: AxeTop
   if (!chart) {
     return (
       <ChartCard title={va.topRulesChartTitle} hint={va.topRulesChartHint} ariaLabel={va.topRulesChartAria} devData={devData}>
-        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        <div className="flex items-center justify-center h-full text-sm text-md-sys-on-surface-variant">
           {va.noViolations}
         </div>
       </ChartCard>

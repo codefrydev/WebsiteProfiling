@@ -60,7 +60,7 @@ export function TopPagesBySessionsChart({ pages, devData }: TopPagesBySessionsCh
   if (!chart) {
     return (
       <ChartCard title={tf.charts.topPagesTitle} hint={tf.charts.topPagesHint} ariaLabel={tf.charts.topPagesAria} devData={devData}>
-        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        <div className="flex items-center justify-center h-full text-sm text-md-sys-on-surface-variant">
           {strings.common.notEnoughData}
         </div>
       </ChartCard>
@@ -125,7 +125,7 @@ export function EngagementDistributionChart({ pages, devData }: EngagementDistri
         ariaLabel={tf.charts.engagementAria}
         devData={devData}
       >
-        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        <div className="flex items-center justify-center h-full text-sm text-md-sys-on-surface-variant">
           {strings.common.notEnoughData}
         </div>
       </ChartCard>
@@ -215,7 +215,7 @@ export function SessionsEngagementScatter({ rows, devData }: SessionsEngagementS
   if (!chart) {
     return (
       <ChartCard title={tf.charts.scatterTitle} hint={tf.charts.scatterHint} ariaLabel={tf.charts.scatterAria} heightClass="h-64" devData={devData}>
-        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        <div className="flex items-center justify-center h-full text-sm text-md-sys-on-surface-variant">
           {strings.common.notEnoughData}
         </div>
       </ChartCard>

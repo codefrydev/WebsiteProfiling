@@ -67,16 +67,16 @@ export default function CompetitorGapImport({ gscLinks }: CompetitorGapImportPro
   );
 
   return (
-    <div className="mb-6 p-4 rounded-xl border border-default bg-brand-800/50 space-y-3">
-      <h3 className="text-sm font-bold text-foreground">{s.title}</h3>
-      <p className="text-xs text-muted-foreground">{s.hint}</p>
+    <div className="mb-6 p-4 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/50 space-y-3">
+      <h3 className="text-sm font-bold text-md-sys-on-surface">{s.title}</h3>
+      <p className="text-xs text-md-sys-on-surface-variant">{s.hint}</p>
       <input
         type="text"
         value={competitor}
         onChange={(e) => setCompetitor(e.target.value)}
         placeholder={s.competitorPlaceholder}
         disabled={readOnly}
-        className="w-full max-w-md rounded-lg border border-default bg-brand-900 px-3 py-2 text-sm text-foreground disabled:opacity-60"
+        className="w-full max-w-md rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface disabled:opacity-60"
       />
       <input
         ref={fileRef}
@@ -96,20 +96,20 @@ export default function CompetitorGapImport({ gscLinks }: CompetitorGapImportPro
       {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
       {gap?.gap_count != null && gap.gap_count > 0 ? (
         <div className="text-xs space-y-1">
-          <p className="text-muted-foreground">
+          <p className="text-md-sys-on-surface-variant">
             {format(s.gapSummary, {
               count: gap.gap_count,
               competitor: gap.competitor || competitor,
             })}
           </p>
-          <ul className="font-mono text-[11px] text-foreground max-h-32 overflow-y-auto space-y-0.5">
+          <ul className="font-mono text-[11px] text-md-sys-on-surface max-h-32 overflow-y-auto space-y-0.5">
             {(gap.gap_domains || []).slice(0, 20).map((d) => (
               <li key={d}>{d}</li>
             ))}
           </ul>
         </div>
       ) : gap ? (
-        <p className="text-xs text-muted-foreground">{s.noGap}</p>
+        <p className="text-xs text-md-sys-on-surface-variant">{s.noGap}</p>
       ) : null}
     </div>
   );

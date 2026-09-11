@@ -102,8 +102,8 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
       <PageHeader title={vr.title} subtitle={vr.subtitle} />
       {redirects.length > 0 && statusLabels.length > 0 && (
         <Card padding="tight" shadow overflowHidden className="min-w-0 max-w-full" devData={statusChartDevData}>
-          <h2 className="text-sm font-bold text-foreground mb-1">{vr.chartTitle}</h2>
-          <p className="text-xs text-muted-foreground mb-3">{vr.chartHint}</p>
+          <h2 className="text-sm font-bold text-md-sys-on-surface mb-1">{vr.chartTitle}</h2>
+          <p className="text-xs text-md-sys-on-surface-variant mb-3">{vr.chartHint}</p>
           <div className="relative h-48 min-w-0 w-full max-w-xl overflow-hidden">
             <Bar
               data={{
@@ -129,7 +129,7 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
             <TableBody>
               {redirects.map((r, i) => (
                 <TableRow key={i} className="align-top">
-                  <TableCell className="font-mono text-link text-xs break-all py-3">
+                  <TableCell className="font-mono text-md-sys-primary text-xs break-all py-3">
                     <a href={r.url || r.from} target="_blank" rel="noreferrer" className="hover:underline">
                       {r.url || r.from}
                     </a>
@@ -137,7 +137,7 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
                   <TableCell className="py-3">
                     <Badge value={r.status || ''} />
                   </TableCell>
-                  <TableCell className="font-mono text-muted-foreground text-xs break-all py-3">
+                  <TableCell className="font-mono text-md-sys-on-surface-variant text-xs break-all py-3">
                     <a href={r.final_url || r.to} target="_blank" rel="noreferrer" className="hover:underline">
                       {r.final_url || r.to}
                     </a>
@@ -150,7 +150,7 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
             </TableBody>
           </Table>
         ) : (data?.redirects || []).length > 0 ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">
+          <div className="p-8 text-center text-md-sys-on-surface-variant text-sm">
             <p>{vr.noSearchMatch}</p>
           </div>
         ) : (

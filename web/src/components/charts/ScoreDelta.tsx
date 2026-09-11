@@ -24,7 +24,7 @@ export function isImprovedScoreDelta(delta: number, higherIsBetter = true): bool
 export function ScoreDelta({ delta, higherIsBetter = true }: ScoreDeltaProps) {
   if (!isDisplayableScoreDelta(delta)) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
+      <span className="inline-flex items-center gap-0.5 text-xs text-md-sys-on-surface-variant">
         <Minus className="h-3 w-3" /> 0
       </span>
     );

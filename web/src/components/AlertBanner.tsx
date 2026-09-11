@@ -9,23 +9,23 @@ const VARIANT_STYLES: Record<
   { container: string; text: string; defaultIcon: typeof AlertTriangle }
 > = {
   warning: {
-    container: 'border-amber-500/30 bg-amber-500/10',
-    text: 'text-amber-950 dark:text-amber-100',
+    container: 'border-md-sys-tertiary/40 bg-md-sys-tertiary-container/30',
+    text: 'text-md-sys-on-tertiary-container',
     defaultIcon: AlertTriangle,
   },
   info: {
-    container: 'border-blue-500/30 bg-blue-500/5',
-    text: 'text-foreground',
+    container: 'border-md-sys-primary/30 bg-md-sys-primary-container/20',
+    text: 'text-md-sys-on-surface',
     defaultIcon: Info,
   },
   error: {
-    container: 'border-red-500/30 bg-red-500/10',
-    text: 'text-red-950 dark:text-red-100',
+    container: 'border-md-sys-error/40 bg-md-sys-error-container/40',
+    text: 'text-md-sys-on-error-container',
     defaultIcon: XCircle,
   },
   success: {
-    container: 'border-emerald-500/30 bg-emerald-500/10',
-    text: 'text-emerald-950 dark:text-emerald-100',
+    container: 'border-md-sys-success/40 bg-md-sys-success-container/30',
+    text: 'text-md-sys-on-success-container',
     defaultIcon: CheckCircle,
   },
 };
@@ -61,7 +61,7 @@ export default function AlertBanner({
   const DefaultIcon = styles.defaultIcon;
   const iconNode = icon ?? <DefaultIcon className="h-5 w-5 shrink-0 text-current opacity-80" aria-hidden />;
 
-  const containerClass = `rounded-xl border text-sm ${styles.container} ${styles.text} ${className}`.trim();
+  const containerClass = `rounded-2xl border text-sm ${styles.container} ${styles.text} ${className}`.trim();
 
   if (collapsible && title) {
     const Chevron = open ? ChevronDown : ChevronRight;
@@ -82,7 +82,7 @@ export default function AlertBanner({
             <button
               type="button"
               onClick={onDismiss}
-              className="shrink-0 self-center mr-3 p-0.5 rounded opacity-70 hover:opacity-100 transition-opacity"
+              className="press shrink-0 self-center mr-3 p-1 rounded-full opacity-70 hover:opacity-100 hover:bg-current/10 active:scale-95 transition-all"
               aria-label="Dismiss"
             >
               <X className="h-4 w-4" />
@@ -108,7 +108,7 @@ export default function AlertBanner({
           <button
             type="button"
             onClick={onDismiss}
-            className="shrink-0 self-start p-0.5 rounded opacity-70 hover:opacity-100 transition-opacity"
+            className="press shrink-0 self-start p-1 rounded-full opacity-70 hover:opacity-100 hover:bg-current/10 active:scale-95 transition-all"
             aria-label="Dismiss"
           >
             <X className="h-4 w-4" />

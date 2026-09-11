@@ -24,8 +24,8 @@ function formatLabel(filename: string, mimeType?: string): string {
 
 export default function ChatFileDownloadBlock({ block }: { block: FileDownloadBlock }) {
   return (
-    <div className="rounded-lg border border-default bg-surface-muted/60 p-3 space-y-2">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Export ready</p>
+    <div className="rounded-lg border border-md-sys-outline-variant/40 bg-surface-muted/60 p-3 space-y-2">
+      <p className="text-xs font-medium text-md-sys-on-surface-variant uppercase tracking-wide">Export ready</p>
       <div className="flex flex-wrap gap-2">
         {block.files.map((file) => {
           const href = resolveHref(file.url);
@@ -37,8 +37,8 @@ export default function ChatFileDownloadBlock({ block }: { block: FileDownloadBl
               download={file.filename}
               className={
                 isPdf
-                  ? 'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-blue-600 hover:bg-blue-500 text-white transition-colors'
-                  : 'inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-default text-foreground hover:bg-brand-700/80 transition-colors'
+                  ? 'press inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold bg-md-sys-primary hover:brightness-105 active:scale-[0.98] text-md-sys-on-primary transition-all duration-200'
+                  : 'press inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border border-md-sys-outline-variant/40 text-md-sys-on-surface hover:bg-md-sys-surface-container-high/80 active:scale-[0.98] transition-all duration-200'
               }
             >
               {isPdf ? <Download className="h-4 w-4" /> : <FileText className="h-4 w-4" />}

@@ -65,18 +65,18 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-default bg-brand-800/40 px-6 py-12 text-center sm:py-16 ${className}`.trim()}
+      className={`relative overflow-hidden rounded-3xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-6 py-12 text-center sm:py-16 ${className}`.trim()}
     >
       {aurora ? <div aria-hidden className="aurora-bg" /> : null}
       <div className="relative mx-auto flex max-w-xl flex-col items-center">
         {Icon ? (
-          <span className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-default bg-brand-900/60 text-link">
+          <span className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high text-md-sys-primary">
             <Icon className="h-6 w-6" aria-hidden />
           </span>
         ) : null}
-        <h2 className="text-xl font-bold tracking-tight text-bright sm:text-2xl">{title}</h2>
+        <h2 className="text-xl font-bold tracking-tight text-md-sys-on-surface sm:text-2xl">{title}</h2>
         {description ? (
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{description}</p>
+          <p className="mt-3 text-sm leading-relaxed text-md-sys-on-surface-variant">{description}</p>
         ) : null}
         {primaryAction || secondaryAction ? (
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
@@ -89,9 +89,9 @@ export default function EmptyState({
             {highlights.map(({ icon: Hi, label }) => (
               <li
                 key={label}
-                className="flex flex-col items-center gap-2 rounded-xl border border-default bg-brand-900/30 px-4 py-4 text-xs text-muted-foreground"
+                className="flex flex-col items-center gap-2 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container-low px-4 py-4 text-xs text-md-sys-on-surface-variant"
               >
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 text-link">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-md-sys-primary-container/40 text-md-sys-primary">
                   <Hi className="h-4 w-4" aria-hidden />
                 </span>
                 <span className="leading-snug">{label}</span>

@@ -98,10 +98,10 @@ export default function Home({ onNavigate }: ViewProps) {
           <p className="text-xs font-semibold uppercase tracking-wider text-accent-warm">
             {greeting}
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-bright sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-md-sys-on-surface sm:text-3xl">
             {vh.title}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{vh.greetingTagline}</p>
+          <p className="mt-1 text-sm text-md-sys-on-surface-variant">{vh.greetingTagline}</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Link to="/chat">
@@ -120,13 +120,13 @@ export default function Home({ onNavigate }: ViewProps) {
       </header>
 
       <div className="mt-5 relative max-w-xl">
-        <Search className="h-4 w-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <Search className="h-4 w-4 text-md-sys-on-surface-variant absolute left-3.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={filterQuery}
           onChange={(e) => setFilterQuery(e.target.value)}
           placeholder={vh.searchPlaceholder}
-          className="w-full rounded-full border border-default bg-brand-900/40 px-10 py-2.5 text-sm text-foreground outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 px-10 py-2.5 text-sm text-md-sys-on-surface outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
         />
       </div>
 

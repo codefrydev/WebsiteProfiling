@@ -61,10 +61,10 @@ function RailButton({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+      className={`press flex h-10 w-10 items-center justify-center rounded-full transition-colors active:scale-95 ${
         active
-          ? 'bg-brand-700/80 text-foreground'
-          : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+          ? 'bg-md-sys-surface-container-high/80 text-md-sys-on-surface'
+          : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
       }`}
     >
       {children}
@@ -74,29 +74,29 @@ function RailButton({
 
 function SettingsMenu({ onClose }: { onClose: () => void }) {
   return (
-    <div className="w-56 rounded-2xl border border-default bg-[var(--chat-surface)] p-3 shadow-xl">
-      <p className="mb-2 text-xs font-medium text-bright">{c.settingsTitle}</p>
+    <div className="w-56 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-3 shadow-xl">
+      <p className="mb-2 text-xs font-medium text-md-sys-on-surface">{c.settingsTitle}</p>
       <div className="flex items-center justify-between gap-2 py-1.5">
-        <span className="text-xs text-muted-foreground">Theme</span>
+        <span className="text-xs text-md-sys-on-surface-variant">Theme</span>
         <ThemeToggle />
       </div>
       <Link
         to="/settings"
-        className="mt-1 block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
+        className="press mt-1 block rounded-full px-3 py-1.5 text-xs font-medium text-md-sys-primary hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all"
         onClick={onClose}
       >
         {strings.settings.settingsLink}
       </Link>
       <Link
         to="/secrets"
-        className="block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
+        className="press block rounded-full px-3 py-1.5 text-xs font-medium text-md-sys-primary hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all"
         onClick={onClose}
       >
         {c.aiSettingsLink}
       </Link>
       <Link
         to="/pipeline?group=content-ai"
-        className="block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
+        className="press block rounded-full px-3 py-1.5 text-xs font-medium text-md-sys-primary hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all"
         onClick={onClose}
       >
         {c.assistantAppearanceLink}
@@ -141,9 +141,9 @@ export default function ChatSidebar({
   const sessionList = (
     <>
       {loading ? (
-        <p className="px-2 py-4 text-xs text-muted-foreground">{c.loadingSessions}</p>
+        <p className="px-2 py-4 text-xs text-md-sys-on-surface-variant">{c.loadingSessions}</p>
       ) : sessions.length === 0 ? (
-        <p className="px-2 py-4 text-xs text-muted-foreground">{c.noSessions}</p>
+        <p className="px-2 py-4 text-xs text-md-sys-on-surface-variant">{c.noSessions}</p>
       ) : (
         <ul className="space-y-0.5">
           {sessions.map((s) => (
@@ -151,10 +151,10 @@ export default function ChatSidebar({
               <button
                 type="button"
                 onClick={() => onSelect(s.id)}
-                className={`min-w-0 flex-1 truncate rounded-lg px-2.5 py-2 text-left text-xs transition-colors ${
+                className={`press min-w-0 flex-1 truncate rounded-full px-3 py-2 text-left text-xs transition-colors active:scale-[0.98] ${
                   activeSessionId === s.id
-                    ? 'bg-brand-700/60 text-foreground'
-                    : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+                    ? 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface'
+                    : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
                 }`}
                 title={s.title}
               >
@@ -164,7 +164,7 @@ export default function ChatSidebar({
                 type="button"
                 aria-label={c.deleteSession}
                 onClick={() => onDelete(s.id)}
-                className="rounded p-1.5 text-muted-foreground opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100"
+                className="press rounded-full p-1.5 text-md-sys-on-surface-variant opacity-0 transition-opacity hover:text-md-sys-error hover:bg-md-sys-error-container/20 group-hover:opacity-100 active:scale-90"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -225,30 +225,30 @@ export default function ChatSidebar({
         <div className="flex items-center justify-between gap-2 px-3 py-3">
           <Link to="/home" className="flex min-w-0 items-center gap-2">
             <AppLogo size={20} />
-            <span className="truncate text-sm font-medium text-bright">{c.pageTitle}</span>
+            <span className="truncate text-sm font-medium text-md-sys-on-surface">{c.pageTitle}</span>
           </Link>
           <button
             type="button"
             onClick={toggle}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground"
+            className="press rounded-full p-1.5 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98] transition-all"
             aria-label={c.sidebarCollapse}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="space-y-3 border-b border-muted/30 px-3 pb-3">
+        <div className="space-y-3 border-b border-md-sys-outline-variant/30 px-3 pb-3">
           <button
             type="button"
             onClick={onNewChat}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-default px-3 py-2 text-sm text-foreground transition-colors hover:bg-[var(--chat-surface-hover)]"
+            className="press flex w-full items-center justify-center gap-2 rounded-full border border-md-sys-outline-variant/40 px-3 py-2 text-sm text-md-sys-on-surface transition-colors hover:bg-md-sys-surface-container-high active:scale-[0.98]"
           >
             <MessageSquarePlus className="h-4 w-4" />
             {c.newChat}
           </button>
         </div>
 
-        <nav className="border-b border-muted/30 px-2 py-2">
+        <nav className="border-b border-md-sys-outline-variant/30 px-2 py-2">
           <ul className="space-y-0.5">
             {NAV_LINKS.map(({ href, label, icon: Icon }) => {
               const isActive = isMiniNavLinkActive(href, pathname);
@@ -258,8 +258,8 @@ export default function ChatSidebar({
                     to={href}
                     className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
                       isActive
-                        ? 'bg-brand-700/60 text-foreground'
-                        : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+                        ? 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface'
+                        : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
                     }`}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
@@ -272,17 +272,17 @@ export default function ChatSidebar({
         </nav>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <p className="px-3 pb-1 pt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="px-3 pb-1 pt-2 text-[10px] font-medium uppercase tracking-wide text-md-sys-on-surface-variant">
             {c.recentChats}
           </p>
           <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">{sessionList}</div>
         </div>
 
-        <div className="relative border-t border-muted/30 p-2" ref={settingsRef}>
+        <div className="relative border-t border-md-sys-outline-variant/30 p-2" ref={settingsRef}>
           <button
             type="button"
             onClick={() => setSettingsOpen((v) => !v)}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground"
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-md-sys-on-surface-variant transition-colors hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface"
             aria-expanded={settingsOpen}
           >
             <Settings className="h-4 w-4" />

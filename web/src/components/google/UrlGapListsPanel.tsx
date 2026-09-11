@@ -148,7 +148,7 @@ export default function UrlGapListsPanel({
           <a
             href={href}
             title={cg.openInLinks || 'Open in Link Explorer'}
-            className="inline-flex items-center gap-1 text-xs text-link hover:underline whitespace-nowrap"
+            className="inline-flex items-center gap-1 text-xs text-md-sys-primary hover:underline whitespace-nowrap"
           >
             <ExternalLink className="w-3 h-3" />
             {cg.openInLinks || 'Link Explorer'}
@@ -174,8 +174,8 @@ export default function UrlGapListsPanel({
             onClick={() => { setActiveSegment(seg.key); setSearch(''); }}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               activeSegment === seg.key
-                ? 'bg-brand-700 text-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-brand-800'
+                ? 'bg-md-sys-surface-container-high text-md-sys-on-surface'
+                : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container'
             }`}
           >
             {seg.label}
@@ -185,7 +185,7 @@ export default function UrlGapListsPanel({
       </div>
 
       {isTruncated && current && (
-        <p className="text-xs text-muted-foreground mb-3 px-1">
+        <p className="text-xs text-md-sys-on-surface-variant mb-3 px-1">
           {format(cg.truncatedHint || 'Showing top {limit} of {total} URLs.', {
             limit,
             total: current.total.toLocaleString(),

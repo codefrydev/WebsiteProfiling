@@ -27,7 +27,7 @@ export default function AiSuggestionsPanel({
 
   if (!visible) {
     return (
-      <div className="rounded-lg border border-dashed border-default bg-[var(--chat-bg)]/80 p-3 text-xs text-muted-foreground">
+      <div className="rounded-lg border border-dashed border-md-sys-outline-variant/40 bg-md-sys-surface/80 p-3 text-xs text-md-sys-on-surface-variant">
         {s.disabledHint}
       </div>
     );
@@ -35,7 +35,7 @@ export default function AiSuggestionsPanel({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+      <div className="flex items-center gap-2 text-xs text-md-sys-on-surface-variant py-2">
         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
         {s.analyzing}
       </div>
@@ -48,24 +48,24 @@ export default function AiSuggestionsPanel({
 
   if (!analysis) {
     return (
-      <p className="text-xs text-muted-foreground">{s.clickAnalyze}</p>
+      <p className="text-xs text-md-sys-on-surface-variant">{s.clickAnalyze}</p>
     );
   }
 
   return (
     <div className="space-y-3 text-sm">
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-link">
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-md-sys-primary">
         <Sparkles className="h-3.5 w-3.5" aria-hidden />
         {s.title}
       </div>
       {analysis.summary ? (
-        <p className="text-xs text-muted-foreground leading-relaxed">{analysis.summary}</p>
+        <p className="text-xs text-md-sys-on-surface-variant leading-relaxed">{analysis.summary}</p>
       ) : null}
       {analysis.provenance ? (
-        <p className="text-[10px] text-muted-foreground/80">{analysis.provenance}</p>
+        <p className="text-[10px] text-md-sys-on-surface-variant/80">{analysis.provenance}</p>
       ) : null}
       {analysis.tools_used && analysis.tools_used.length > 0 ? (
-        <p className="text-[10px] text-muted-foreground/80">
+        <p className="text-[10px] text-md-sys-on-surface-variant/80">
           {s.toolsUsed}: {analysis.tools_used.join(' → ')}
         </p>
       ) : null}
@@ -78,20 +78,20 @@ export default function AiSuggestionsPanel({
           {analysis.suggestions.map((item, i) => (
             <li
               key={`${item.text}-${i}`}
-              className={`border-l-2 pl-2 text-xs text-foreground/90 ${priorityClass(item.priority)}`}
+              className={`border-l-2 pl-2 text-xs text-md-sys-on-surface/90 ${priorityClass(item.priority)}`}
             >
               {item.text}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-muted-foreground">{s.noSuggestions}</p>
+        <p className="text-xs text-md-sys-on-surface-variant">{s.noSuggestions}</p>
       )}
 
       {analysis.outline.length > 0 ? (
         <div>
-          <h4 className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{s.outlineTitle}</h4>
-          <ul className="list-disc pl-4 text-xs text-muted-foreground space-y-0.5">
+          <h4 className="text-[10px] uppercase tracking-wide text-md-sys-on-surface-variant mb-1">{s.outlineTitle}</h4>
+          <ul className="list-disc pl-4 text-xs text-md-sys-on-surface-variant space-y-0.5">
             {analysis.outline.map((line) => (
               <li key={line}>{line}</li>
             ))}
@@ -101,8 +101,8 @@ export default function AiSuggestionsPanel({
 
       {analysis.title_ideas.length > 0 ? (
         <div>
-          <h4 className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{s.titleIdeas}</h4>
-          <ul className="text-xs text-muted-foreground space-y-0.5">
+          <h4 className="text-[10px] uppercase tracking-wide text-md-sys-on-surface-variant mb-1">{s.titleIdeas}</h4>
+          <ul className="text-xs text-md-sys-on-surface-variant space-y-0.5">
             {analysis.title_ideas.map((t) => (
               <li key={t} className="truncate">{t}</li>
             ))}

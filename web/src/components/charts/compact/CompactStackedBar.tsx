@@ -21,7 +21,7 @@ export function CompactStackedBar({ segments }: CompactStackedBarProps) {
       </div>
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
         {segments.map((s) => (
-          <span key={s.label} className="inline-flex items-center gap-1 text-[8px] text-muted-foreground sm:text-[9px]">
+          <span key={s.label} className="inline-flex items-center gap-1 text-[8px] text-md-sys-on-surface-variant sm:text-[9px]">
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: s.color }} />
             {s.label} ({s.value})
           </span>

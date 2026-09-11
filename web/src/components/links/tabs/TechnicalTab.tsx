@@ -47,12 +47,12 @@ export default function TechnicalTab({ link }: TechnicalTabProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+        <h3 className="text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
           <Shield className="h-3.5 w-3.5" /> {lt.securityHeaders}
         </h3>
-        <p className="text-xs text-muted-foreground mb-3">
+        <p className="text-xs text-md-sys-on-surface-variant mb-3">
           {format(lt.headersPresentOf, { n: SEC_HEADERS.length })}{' '}
-          <span className="text-foreground font-semibold tabular-nums">
+          <span className="text-md-sys-on-surface font-semibold tabular-nums">
             {securityHeaderCounts.present} {lt.doughnutPresent.toLowerCase()}, {securityHeaderCounts.missing}{' '}
             {lt.doughnutMissing.toLowerCase()}
           </span>
@@ -71,15 +71,15 @@ export default function TechnicalTab({ link }: TechnicalTabProps) {
       </div>
 
       <div>
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+        <h3 className="text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
           <Zap className="h-3.5 w-3.5" /> {lt.performanceCaching}
         </h3>
         <div className="space-y-2">
           {perfRows.map(({ label, value, mono, warn }) => (
-            <div key={label} className="bg-brand-900 border border-default rounded-lg px-4 py-2.5 space-y-2">
+            <div key={label} className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg px-4 py-2.5 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{label}</span>
-                <span className={`text-sm ${mono ? 'font-mono' : ''} ${warn ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>
+                <span className="text-sm text-md-sys-on-surface-variant">{label}</span>
+                <span className={`text-sm ${mono ? 'font-mono' : ''} ${warn ? 'text-red-600 dark:text-red-400' : 'text-md-sys-on-surface'}`}>
                   {value}
                 </span>
               </div>
@@ -98,10 +98,10 @@ export default function TechnicalTab({ link }: TechnicalTabProps) {
       </div>
 
       <div>
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+        <h3 className="text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
           <ImageIcon className="h-3.5 w-3.5" /> {lt.imagesA11y}
         </h3>
-        <div className="bg-brand-900 border border-default rounded-xl p-4 space-y-3">
+        <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-4 space-y-3">
           <MiniBar
             value={imgTotal}
             total={Math.max(imgTotal, 1)}
@@ -126,9 +126,9 @@ export default function TechnicalTab({ link }: TechnicalTabProps) {
             label={lt.noDimensions}
             color={(link.img_without_dimensions ?? 0) > 0 ? 'bg-orange-500' : 'bg-green-500'}
           />
-          <div className="flex items-center justify-between pt-2 border-t border-muted">
-            <span className="text-sm text-muted-foreground">{lt.ariaElements}</span>
-            <span className="text-sm text-foreground font-mono">{link.aria_count ?? 0}</span>
+          <div className="flex items-center justify-between pt-2 border-t border-md-sys-outline-variant/40">
+            <span className="text-sm text-md-sys-on-surface-variant">{lt.ariaElements}</span>
+            <span className="text-sm text-md-sys-on-surface font-mono">{link.aria_count ?? 0}</span>
           </div>
         </div>
       </div>

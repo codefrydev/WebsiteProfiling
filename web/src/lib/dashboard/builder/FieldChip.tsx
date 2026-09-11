@@ -21,8 +21,8 @@ export function FieldChip({ field, onQuickAdd, overlay }: FieldChipProps) {
   if (overlay) {
     return (
       <div className={cls}>
-        <GripVertical className="h-3 w-3 shrink-0 text-muted-foreground" />
-        <span className="truncate text-bright">{field.label}</span>
+        <GripVertical className="h-3 w-3 shrink-0 text-md-sys-on-surface-variant" />
+        <span className="truncate text-md-sys-on-surface">{field.label}</span>
       </div>
     );
   }
@@ -36,8 +36,8 @@ export function FieldChip({ field, onQuickAdd, overlay }: FieldChipProps) {
       className={cls}
       title={`${field.key} — drag to a shelf, or click to add`}
     >
-      <GripVertical className="h-3 w-3 shrink-0 text-muted-foreground" />
-      <span className="truncate text-bright">{field.label}</span>
+      <GripVertical className="h-3 w-3 shrink-0 text-md-sys-on-surface-variant" />
+      <span className="truncate text-md-sys-on-surface">{field.label}</span>
       <span className={`ml-auto text-[9px] uppercase tracking-wide ${isMeasure ? 'text-emerald-400' : 'text-blue-400'}`}>
         {isMeasure ? '#' : 'Aa'}
       </span>

@@ -8,7 +8,7 @@ export default function NodeConfigPanel() {
 
   if (!selectedNode) {
     return (
-      <div className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground">
+      <div className="flex h-full items-center justify-center p-4 text-center text-xs text-md-sys-on-surface-variant">
         Select a step on the canvas to configure it.
       </div>
     );
@@ -20,13 +20,13 @@ export default function NodeConfigPanel() {
   return (
     <div className="h-full overflow-y-auto p-4">
       <div className="mb-3 flex items-center gap-2">
-        <Icon className="h-4 w-4 shrink-0 text-foreground" aria-hidden />
-        <h3 className="text-sm font-semibold text-foreground">{def.label}</h3>
+        <Icon className="h-4 w-4 shrink-0 text-md-sys-on-surface" aria-hidden />
+        <h3 className="text-sm font-semibold text-md-sys-on-surface">{def.label}</h3>
       </div>
-      <p className="mb-4 text-xs leading-relaxed text-muted-foreground">{def.description}</p>
+      <p className="mb-4 text-xs leading-relaxed text-md-sys-on-surface-variant">{def.description}</p>
 
       {def.configFields.length === 0 ? (
-        <p className="text-xs text-muted-foreground">This step has no configurable options.</p>
+        <p className="text-xs text-md-sys-on-surface-variant">This step has no configurable options.</p>
       ) : (
         <div className="space-y-4">
           {def.configFields.map((field) => (

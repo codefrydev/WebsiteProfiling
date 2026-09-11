@@ -36,10 +36,10 @@ export default function DevCopyJsonButton({ data, className = '' }: DevCopyJsonB
       onClick={copy}
       title={strings.components.devCopyJson.title}
       aria-label={strings.components.devCopyJson.title}
-      className={`absolute top-2 right-2 z-10 rounded border border-default/60 bg-brand-900/90 p-1 text-muted-foreground opacity-0 shadow-sm backdrop-blur transition-opacity hover:border-blue-500/40 hover:text-bright focus:opacity-100 group-hover/dev-card:opacity-100 ${className}`.trim()}
+      className={`press absolute top-2 right-2 z-10 rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/90 p-1.5 text-md-sys-on-surface-variant opacity-0 shadow-xs backdrop-blur transition-all duration-150 hover:border-md-sys-primary/40 hover:text-md-sys-on-surface active:scale-90 focus:opacity-100 group-hover/dev-card:opacity-100 ${className}`.trim()}
     >
       {copied ? (
-        <Check className="h-3.5 w-3.5 text-green-700 dark:text-green-400" aria-hidden />
+        <Check className="h-3.5 w-3.5 text-md-sys-success" aria-hidden />
       ) : (
         <Braces className="h-3.5 w-3.5" aria-hidden />
       )}

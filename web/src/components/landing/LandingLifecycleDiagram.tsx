@@ -264,8 +264,8 @@ export default function LandingLifecycleDiagram() {
               </span>
             </span>
             <div className="mt-1 min-w-0">
-              <p className="text-[13px] font-bold leading-tight text-foreground">{node.label}</p>
-              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">{node.hint}</p>
+              <p className="text-[13px] font-bold leading-tight text-md-sys-on-surface">{node.label}</p>
+              <p className="mt-0.5 text-[10px] leading-snug text-md-sys-on-surface-variant">{node.hint}</p>
             </div>
           </div>
         );

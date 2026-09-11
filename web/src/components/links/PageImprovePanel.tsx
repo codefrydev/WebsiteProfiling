@@ -78,8 +78,8 @@ export default function PageImprovePanel({ url, inspectorDetails }: PageImproveP
 
   return (
     <div className="space-y-4 p-4">
-      <p className="text-sm text-muted-foreground">
-        Page Improve checklist for <span className="font-mono text-foreground break-all">{url}</span>
+      <p className="text-sm text-md-sys-on-surface-variant">
+        Page Improve checklist for <span className="font-mono text-md-sys-on-surface break-all">{url}</span>
       </p>
       {!readOnly ? (
         <Button type="button" variant="secondary" className="!text-xs" onClick={() => void fetchCoach()} disabled={coachLoading}>
@@ -89,11 +89,11 @@ export default function PageImprovePanel({ url, inspectorDetails }: PageImproveP
       ) : null}
       {coachError ? <p className="text-xs text-red-700 dark:text-red-400">{coachError}</p> : null}
       {coach?.summary ? (
-        <div className="rounded-lg border border-default bg-brand-900/40 p-3 space-y-2">
-          <p className="text-xs font-semibold text-foreground">{pi.coachTitle}</p>
-          <pre className="whitespace-pre-wrap text-xs text-muted-foreground font-sans leading-relaxed">{coach.summary}</pre>
+        <div className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 p-3 space-y-2">
+          <p className="text-xs font-semibold text-md-sys-on-surface">{pi.coachTitle}</p>
+          <pre className="whitespace-pre-wrap text-xs text-md-sys-on-surface-variant font-sans leading-relaxed">{coach.summary}</pre>
           {coach.actions?.length ? (
-            <ul className="list-disc pl-4 text-xs text-muted-foreground space-y-1">
+            <ul className="list-disc pl-4 text-xs text-md-sys-on-surface-variant space-y-1">
               {coach.actions.slice(0, 8).map((action) => (
                 <li key={action}>{action}</li>
               ))}
@@ -104,9 +104,9 @@ export default function PageImprovePanel({ url, inspectorDetails }: PageImproveP
       <ol className="space-y-3 list-decimal list-inside">
         {checklist.slice(0, 12).map((item, i) => (
           <li key={i} className="text-sm">
-            <span className="font-medium text-foreground">{item.message}</span>
-            <span className="ml-2 text-xs rounded px-1.5 py-0.5 bg-brand-800 text-muted-foreground">{item.priority}</span>
-            <p className="text-xs text-muted-foreground mt-1 ml-5">{item.recommendation}</p>
+            <span className="font-medium text-md-sys-on-surface">{item.message}</span>
+            <span className="ml-2 text-xs rounded px-1.5 py-0.5 bg-md-sys-surface-container text-md-sys-on-surface-variant">{item.priority}</span>
+            <p className="text-xs text-md-sys-on-surface-variant mt-1 ml-5">{item.recommendation}</p>
           </li>
         ))}
       </ol>

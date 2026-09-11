@@ -22,10 +22,10 @@ function PathList({ title, paths, hint }: { title: string; paths: string[]; hint
   const sample = paths.slice(0, 50);
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <p className="text-xs text-muted-foreground">{hint}</p>
+      <h3 className="text-sm font-semibold text-md-sys-on-surface">{title}</h3>
+      <p className="text-xs text-md-sys-on-surface-variant">{hint}</p>
       {sample.length ? (
-        <ul className="max-h-48 overflow-y-auto rounded-lg border border-default bg-brand-900/30 p-2 text-xs font-mono space-y-1">
+        <ul className="max-h-48 overflow-y-auto rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/30 p-2 text-xs font-mono space-y-1">
           {sample.map((path) => (
             <li key={path} className="truncate" title={path}>
               {path}
@@ -33,7 +33,7 @@ function PathList({ title, paths, hint }: { title: string; paths: string[]; hint
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">{vl.emptyList}</p>
+        <p className="text-sm text-md-sys-on-surface-variant">{vl.emptyList}</p>
       )}
     </div>
   );
@@ -84,7 +84,7 @@ export default function LogAnalyzer(_props: ViewProps) {
       <PageHeader
         title={vl.title}
         subtitle={vl.subtitle}
-        icon={<Terminal className="h-7 w-7 text-link shrink-0" />}
+        icon={<Terminal className="h-7 w-7 text-md-sys-primary shrink-0" />}
       />
       {!propertyId ? (
         <EmptyState
@@ -99,7 +99,7 @@ export default function LogAnalyzer(_props: ViewProps) {
               type="file"
               accept=".log,.txt"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="text-xs text-muted-foreground file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border file:border-default file:text-xs file:font-semibold file:bg-brand-700/80 file:text-foreground hover:file:bg-brand-700 cursor-pointer"
+              className="text-xs text-md-sys-on-surface-variant file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border file:border-md-sys-outline-variant/40 file:text-xs file:font-semibold file:bg-md-sys-surface-container-high/80 file:text-md-sys-on-surface hover:file:bg-md-sys-surface-container-high cursor-pointer"
             />
             <Button
               variant="primary"

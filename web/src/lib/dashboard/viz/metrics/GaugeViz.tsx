@@ -22,7 +22,7 @@ export function GaugeViz({ data }: VizRenderProps) {
             strokeLinecap="round"
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-bright">
+        <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-md-sys-on-surface">
           {valid != null ? Math.round(valid) : '—'}
         </div>
       </div>

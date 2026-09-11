@@ -187,9 +187,9 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
       <PageHeader
         title={va.title}
         subtitle={va.subtitle}
-        icon={<Accessibility className="h-7 w-7 text-link shrink-0" />}
+        icon={<Accessibility className="h-7 w-7 text-md-sys-primary shrink-0" />}
         actions={
-          <Link to={pipelineHref(searchParams)} className="text-sm text-link hover:underline">
+          <Link to={pipelineHref(searchParams)} className="text-sm text-md-sys-primary hover:underline">
             {va.pipelineSettingsLink}
           </Link>
         }
@@ -261,13 +261,13 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
                 </div>
               </div>
               {summaryError ? (
-                <p className="text-xs text-muted-foreground mb-4">{summaryError}</p>
+                <p className="text-xs text-md-sys-on-surface-variant mb-4">{summaryError}</p>
               ) : null}
               <AxeTopRulesChart rules={topRules} devData={topRulesDevData} onRuleClick={handleRuleClick} />
               <Card devData={topRulesDevData}>
-                <h3 className="text-sm font-semibold text-foreground mb-3">{va.topRulesTitle}</h3>
+                <h3 className="text-sm font-semibold text-md-sys-on-surface mb-3">{va.topRulesTitle}</h3>
                 {topRules.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{va.noViolations}</p>
+                  <p className="text-sm text-md-sys-on-surface-variant">{va.noViolations}</p>
                 ) : (
                   <ul className="space-y-2">
                     {topRules.slice(0, 15).map((rule) => (
@@ -275,10 +275,10 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
                         <button
                           type="button"
                           onClick={() => handleRuleClick(String(rule.rule_id))}
-                          className="flex w-full items-center justify-between text-sm gap-4 rounded-lg px-2 py-1 hover:bg-brand-800/80 text-left"
+                          className="flex w-full items-center justify-between text-sm gap-4 rounded-xl px-2 py-1 hover:bg-md-sys-surface-container-high/60 active:scale-[0.99] transition-all text-left"
                         >
-                          <span className="font-mono text-xs text-foreground truncate">{rule.rule_id}</span>
-                          <span className="tabular-nums text-muted-foreground shrink-0">{rule.count}</span>
+                          <span className="font-mono text-xs text-md-sys-on-surface truncate">{rule.rule_id}</span>
+                          <span className="tabular-nums text-md-sys-on-surface-variant shrink-0">{rule.count}</span>
                         </button>
                       </li>
                     ))}
@@ -292,7 +292,7 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
             <ViewTabPanel idPrefix="accessibility" tabId="pages">
               {ruleFilter ? (
                 <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-md-sys-on-surface-variant">
                     {format(va.ruleFilterActive, { rule: ruleFilter })}
                   </p>
                   <Button variant="secondary" className="text-xs py-1 px-2" onClick={() => setRuleFilter(null)}>
@@ -302,8 +302,8 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
               ) : null}
               {filteredRows.length === 0 ? (
                 <Card className="p-8 text-center">
-                  <List className="h-8 w-8 mx-auto text-muted-foreground mb-2" aria-hidden />
-                  <p className="text-sm text-muted-foreground">{va.noViolations}</p>
+                  <List className="h-8 w-8 mx-auto text-md-sys-on-surface-variant mb-2" aria-hidden />
+                  <p className="text-sm text-md-sys-on-surface-variant">{va.noViolations}</p>
                 </Card>
               ) : (
                 <Card className="overflow-hidden" devData={pagesTableDevData}>

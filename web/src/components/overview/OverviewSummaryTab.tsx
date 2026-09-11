@@ -136,7 +136,7 @@ export function OverviewSummaryTab({
         </SectionLoadingGate>
         {provenanceSources.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-muted-foreground">{vo.dataSourcesLabel}:</span>
+            <span className="text-md-sys-on-surface-variant">{vo.dataSourcesLabel}:</span>
             <DataSourceBadgeRow sources={provenanceSources} />
             <LlmDisclosure llmMeta={data.report_meta?.llm} />
           </div>
@@ -150,7 +150,7 @@ export function OverviewSummaryTab({
         <div className="print:hidden">
           <Link
             to={exportHref}
-            className="inline-flex items-center gap-2 text-sm font-medium text-link hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-medium text-md-sys-primary hover:underline"
           >
             <FileDown className="h-4 w-4" />
             {vo.openExportPage}
@@ -160,10 +160,10 @@ export function OverviewSummaryTab({
           {!googleData ? (
             <AlertBanner
               variant="info"
-              icon={<TrendingUp className="h-4 w-4 text-link shrink-0" aria-hidden />}
+              icon={<TrendingUp className="h-4 w-4 text-md-sys-primary shrink-0" aria-hidden />}
               title={vo.googleConnectTitle}
             >
-              <p className="text-xs text-muted-foreground">{vo.googleConnectSubtitle}</p>
+              <p className="text-xs text-md-sys-on-surface-variant">{vo.googleConnectSubtitle}</p>
             </AlertBanner>
           ) : (
             <div className="relative group/dev-card">
@@ -237,13 +237,13 @@ export function OverviewSummaryTab({
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <ArrowLeftRight className="h-5 w-5 text-cyan-700 dark:text-cyan-400 shrink-0" />
-                <h2 className="text-lg font-bold text-bright">{vo.reportComparison}</h2>
+                <h2 className="text-lg font-bold text-md-sys-on-surface">{vo.reportComparison}</h2>
               </div>
-              <p className="text-xs text-muted-foreground max-w-2xl">{vo.reportComparisonTeaser}</p>
+              <p className="text-xs text-md-sys-on-surface-variant max-w-2xl">{vo.reportComparisonTeaser}</p>
             </div>
             <Link
               to={compareHref}
-              className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
+              className="press shrink-0 inline-flex items-center gap-2 rounded-full bg-md-sys-primary px-5 py-2.5 text-sm font-medium text-md-sys-on-primary hover:brightness-105 active:scale-[0.98] transition-all duration-200 shadow-sm"
             >
               {strings.views.compare.title}
               <ChevronRight className="h-4 w-4" />

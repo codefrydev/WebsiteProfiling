@@ -58,7 +58,7 @@ export default function SitemapGapUrlPanel({
             <a
               href={href}
               title={cg.openInLinks || 'Open in Link Explorer'}
-              className="inline-flex items-center gap-1 text-xs text-link hover:underline whitespace-nowrap"
+              className="inline-flex items-center gap-1 text-xs text-md-sys-primary hover:underline whitespace-nowrap"
             >
               <ExternalLink className="w-3 h-3" />
               {cg.openInLinks || 'Link Explorer'}
@@ -78,9 +78,9 @@ export default function SitemapGapUrlPanel({
   return (
     <div className={devData != null ? 'relative group/dev-card mb-6' : 'mb-6'}>
       {devData != null ? <DevCopyJsonButton data={devData} /> : null}
-      <h3 className="text-sm font-semibold text-foreground mb-2">{title}</h3>
+      <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{title}</h3>
       {isTruncated ? (
-        <p className="text-xs text-muted-foreground mb-3">
+        <p className="text-xs text-md-sys-on-surface-variant mb-3">
           {format(vi.listSampleHint, { limit: urls.length, total })}
         </p>
       ) : null}

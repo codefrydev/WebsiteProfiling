@@ -49,7 +49,7 @@ export function WidgetBody({ widget, result, status, onSelect, onChartReady }: W
   const empty = result.categories.length === 0 && result.series.every((s) => s.values.length === 0);
   if (empty || !isEChartsViz(widget.viz)) {
     return (
-      <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+      <div className="flex items-center justify-center h-full text-xs text-md-sys-on-surface-variant">
         No data for this configuration
       </div>
     );
