@@ -50,8 +50,15 @@ python -m src        # Run audit pipeline
 | Report/card widgets (dev JSON copy) | `Card` `devData` prop — see [AGENT.md](AGENT.md) § Dev widget JSON copy; reference: `web/src/components/overview/OverviewExecutiveSummary.tsx` |
 | Charts | D3: `web/src/components/charts/d3/`, `web/src/lib/viz/` · Chart.js: GSC/GA4/Links etc. — see [AGENT.md](AGENT.md) § Charts |
 
+**Google Material 3 (M3) Expressive Design (Strict UI Rules):** All UI components, pages, views, cards, modals, and styling in `web/` **must strictly follow Google Material 3 Expressive Design** — full specification in [.agents/rules/m3-expressive-design.md](.agents/rules/m3-expressive-design.md).
+- **Colors & Surfaces:** Use M3 semantic tokens (`md-sys-color-*`) and the 5-tier Surface Container system (`surface-container-lowest` through `highest`) for tonal elevation. No arbitrary hex values or harsh drop shadows.
+- **Shapes:** Action buttons, filter chips, and status badges **must be pill-shaped** (`rounded-full`); cards must use expressive curvature (`rounded-2xl` or `rounded-3xl`).
+- **Typography:** Strictly adhere to the 15-tier M3 typography scale (Display, Headline, Title, Body, Label).
+- **Motion & Feedback:** Include tactile press scaling (`active:scale-[0.98]` / `.press`), spring physics, and full `prefers-reduced-motion` compliance.
+
 **Charts:** Use **both** Chart.js and D3 — choose per chart (Overview/Compare → D3; standard GSC/GA4 bars → Chart.js). Full rules in [AGENT.md](AGENT.md).
 
 **Dev widget JSON copy:** In local dev, each report card/panel should pass `devData` on `Card` so agents/devs can copy the widget’s JSON from the top-right `{ }` button. Wire on every widget you add or touch; full conventions in [AGENT.md](AGENT.md) § Dev widget JSON copy.
 
 **Common pitfalls:** See [AGENT.md](AGENT.md) for the full footguns checklist (React context, Python local imports, psycopg dict rows, coverage gates).
+
