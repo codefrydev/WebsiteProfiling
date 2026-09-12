@@ -40,7 +40,7 @@ function gapStatProps(
   if (n <= 0) return {};
   return {
     band: bandLabel,
-    bandClassName: 'text-amber-700 dark:text-amber-400',
+    bandClassName: 'text-md-sys-warning font-medium',
     href: tabHref(searchParams, tab),
   };
 }

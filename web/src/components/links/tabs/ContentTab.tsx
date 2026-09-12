@@ -70,12 +70,12 @@ function barOptsCompare() {
 function qualityBadgeClass(label: string): string {
   const s = label.toLowerCase();
   if (s.includes('missing') || s.includes('no h1')) {
-    return 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30';
+    return 'bg-md-sys-error-container/20 text-md-sys-on-error-container border-md-sys-error/30';
   }
   if (s.includes('short') || s.includes('long') || s.includes('multiple')) {
-    return 'bg-amber-500/15 text-amber-800 dark:text-amber-400 border-amber-500/30';
+    return 'bg-md-sys-warning-container/20 text-md-sys-on-warning-container border-md-sys-warning/30';
   }
-  return 'bg-green-500/15 text-green-800 dark:text-green-400 border-green-500/30';
+  return 'bg-md-sys-success-container/20 text-md-sys-on-success-container border-md-sys-success/30';
 }
 
 function titleQualityIndex(len: number | string | undefined): number {
@@ -133,7 +133,7 @@ function SocialCheckItem({ label, present }: { label: string; present: boolean }
   return (
     <div className="flex items-center justify-between gap-3 py-2 border-b border-md-sys-outline-variant/40 last:border-0">
       <span className="text-sm text-md-sys-on-surface">{label}</span>
-      <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${present ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+      <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${present ? 'text-md-sys-success' : 'text-md-sys-error'}`}>
         {present ? <Check className="h-3.5 w-3.5" aria-hidden /> : <X className="h-3.5 w-3.5" aria-hidden />}
         {present ? lc.socialPresent : lc.socialMissing}
       </span>
@@ -264,9 +264,9 @@ export default function ContentTab({ link }: ContentTabProps) {
           <div className="text-2xl font-bold text-md-sys-on-surface tabular-nums">{link.depth != null ? link.depth : sj.emDash}</div>
           <div className="text-[10px] text-md-sys-on-surface-variant mt-0.5">{lc.crawlDepth}</div>
         </Card>
-        <Card shadow className={`!p-4 ${wc < 300 && wc > 0 ? 'ring-1 ring-amber-500/30' : ''}`}>
+        <Card shadow className={`!p-4 ${wc < 300 && wc > 0 ? 'ring-1 ring-md-sys-warning/30' : ''}`}>
           <div className="text-md-sys-on-surface-variant text-[10px] font-bold uppercase tracking-wider mb-1">{lc.thinQ}</div>
-          <div className={`text-2xl font-bold tabular-nums ${wc < 300 ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
+          <div className={`text-2xl font-bold tabular-nums ${wc < 300 ? 'text-md-sys-warning' : 'text-md-sys-success'}`}>
             {wc <= 0 ? sj.emDash : wc < 300 ? sj.yes : sj.no}
           </div>
           <div className="text-[10px] text-md-sys-on-surface-variant mt-0.5">{lc.under300Words}</div>
@@ -411,7 +411,7 @@ export default function ContentTab({ link }: ContentTabProps) {
                     type="button"
                     onMouseEnter={() => setKwHover(i)}
                     onMouseLeave={() => setKwHover(null)}
-                    className="text-xs bg-blue-500/10 text-md-sys-primary-soft border border-blue-500/20 px-2.5 py-1 rounded-full font-mono hover:bg-blue-500/20 transition-colors"
+                    className="text-xs bg-md-sys-primary-container/20 text-md-sys-primary border border-md-sys-primary/20 px-2.5 py-1 rounded-full font-mono hover:bg-md-sys-primary-container/40 transition-colors"
                   >
                     {word}
                   </button>

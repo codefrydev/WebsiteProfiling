@@ -25,7 +25,7 @@ export function Shelf({ id, label, accepts, empty, children, hasItems }: ShelfPr
       <div
         ref={setNodeRef}
         className={`min-h-[34px] rounded-lg border p-1.5 flex flex-wrap gap-1.5 transition-colors ${
-          highlight ? 'border-blue-400 bg-blue-500/10' : 'border-dashed border-md-sys-outline-variant/40'
+          highlight ? 'border-md-sys-primary bg-md-sys-primary-container/20' : 'border-dashed border-md-sys-outline-variant/40'
         } ${dim ? 'opacity-40' : ''}`}
       >
         {hasItems ? children : <span className="text-[11px] text-md-sys-on-surface-variant px-1 py-0.5">{empty}</span>}

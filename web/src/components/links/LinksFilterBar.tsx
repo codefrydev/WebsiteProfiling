@@ -117,7 +117,7 @@ export default function LinksFilterBar({
           <Filter className="h-4 w-4" />
           Filters
           {activeCount > 0 ? (
-            <span className="absolute -top-1.5 -right-1.5 bg-amber-600 text-white text-[10px] font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
+            <span className="absolute -top-1.5 -right-1.5 bg-md-sys-warning text-md-sys-on-warning text-[10px] font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
               {activeCount}
             </span>
           ) : null}

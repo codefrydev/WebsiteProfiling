@@ -17,8 +17,8 @@ export default function CompareDeltaBadge({ row }: { row: CompareMetricRow }) {
   const display =
     row.format === 'percent' ? `${sign}${delta}%` : `${sign}${delta.toLocaleString()}`;
   const color = improved
-    ? 'text-emerald-700 dark:text-emerald-400'
-    : 'text-rose-700 dark:text-rose-400';
+    ? 'text-md-sys-success'
+    : 'text-md-sys-error';
   return (
     <span className={`text-xs font-semibold tabular-nums ${color}`}>{display}</span>
   );

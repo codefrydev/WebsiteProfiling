@@ -126,11 +126,11 @@ function TopPagesTable({ pages }: { pages: ReportTopPage[] }) {
             const prPct = pr != null ? (pr / maxPR) * 100 : 0;
             const rankMedal =
               i === 0
-                ? 'text-amber-700 dark:text-amber-400'
+                ? 'text-md-sys-warning font-bold'
                 : i === 1
-                  ? 'text-md-sys-on-surface'
+                  ? 'text-md-sys-on-surface font-semibold'
                   : i === 2
-                    ? 'text-orange-700 dark:text-orange-400/90'
+                    ? 'text-md-sys-tertiary font-medium'
                     : null;
             const hrefLines = formatPageHrefLines(p.url);
             return (
@@ -171,7 +171,7 @@ function TopPagesTable({ pages }: { pages: ReportTopPage[] }) {
                     pct={prPct}
                     value={pr != null ? `${Math.round(prPct)}%` : sj.emDash}
                     valueClassName="text-sm font-semibold text-md-sys-on-surface tabular-nums"
-                    barClassName="bg-slate-500/75 dark:bg-slate-400/75"
+                    barClassName="bg-md-sys-primary/75"
                     title={
                       pr != null
                         ? format(vo.importanceTooltip, {

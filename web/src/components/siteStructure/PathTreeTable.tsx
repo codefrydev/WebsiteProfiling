@@ -27,7 +27,7 @@ function ComparePairBar({ current, baseline, title }: ComparePairBarProps) {
       title={title}
     >
       <div className="bg-md-sys-on-surface-variant/45" style={{ width: `${pctB}%` }} />
-      <div className="bg-blue-500" style={{ width: `${pctC}%` }} />
+      <div className="bg-md-sys-primary" style={{ width: `${pctC}%` }} />
     </div>
   );
 }
@@ -50,9 +50,9 @@ function fmtScore(n: unknown): string {
 function scoreTextClass(score: unknown): string {
   if (score == null || !Number.isFinite(Number(score))) return 'text-md-sys-on-surface-variant';
   const s = Number(score);
-  if (s >= 90) return 'text-green-700 dark:text-green-400 font-semibold';
-  if (s >= 50) return 'text-yellow-800 dark:text-yellow-400 font-semibold';
-  return 'text-red-600 dark:text-red-400 font-semibold';
+  if (s >= 90) return 'text-md-sys-success font-semibold';
+  if (s >= 50) return 'text-md-sys-warning font-semibold';
+  return 'text-md-sys-error font-semibold';
 }
 
 interface PathTreeTableStrings {
@@ -132,7 +132,7 @@ function PathTreeLabel({
       ) : isLeaf ? (
         <FileText className="h-3.5 w-3.5 text-md-sys-on-surface-variant shrink-0" aria-hidden />
       ) : (
-        <Folder className={`h-3.5 w-3.5 shrink-0 ${isOpen ? 'text-amber-500' : 'text-amber-600/70'}`} aria-hidden />
+        <Folder className={`h-3.5 w-3.5 shrink-0 ${isOpen ? 'text-md-sys-warning' : 'text-md-sys-warning/70'}`} aria-hidden />
       )}
       {hasKids ? (
         <button

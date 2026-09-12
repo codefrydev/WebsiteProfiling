@@ -5,7 +5,7 @@ export interface MiniBarProps {
   label?: string;
 }
 
-export default function MiniBar({ value, total, color = 'bg-blue-500', label }: MiniBarProps) {
+export default function MiniBar({ value, total, color = 'bg-md-sys-primary', label }: MiniBarProps) {
   const pct = total > 0 ? Math.min(100, (value / total) * 100) : 0;
   return (
     <div className="flex items-center gap-2">

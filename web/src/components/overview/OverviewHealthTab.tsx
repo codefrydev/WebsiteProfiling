@@ -17,12 +17,12 @@ import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
 import { buildOverviewRecommendationContext } from '@/lib/fixSuggestionContext';
 
 const REC_COLORS = [
-  { border: 'border-l-blue-500', bg: 'bg-blue-500/10', text: 'text-md-sys-primary', dot: 'bg-blue-500' },
-  { border: 'border-l-amber-500', bg: 'bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', dot: 'bg-amber-500' },
-  { border: 'border-l-purple-500', bg: 'bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', dot: 'bg-purple-500' },
-  { border: 'border-l-green-500', bg: 'bg-green-500/10', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500' },
-  { border: 'border-l-rose-500', bg: 'bg-rose-500/10', text: 'text-rose-700 dark:text-rose-400', dot: 'bg-rose-500' },
-  { border: 'border-l-cyan-500', bg: 'bg-cyan-500/10', text: 'text-cyan-700 dark:text-cyan-400', dot: 'bg-cyan-500' },
+  { border: 'border-l-[color:var(--md-sys-color-primary)]', bg: 'bg-md-sys-primary-container/20', text: 'text-md-sys-primary', dot: 'bg-md-sys-primary' },
+  { border: 'border-l-[color:var(--md-sys-color-warning)]', bg: 'bg-md-sys-warning-container/20', text: 'text-md-sys-warning', dot: 'bg-md-sys-warning' },
+  { border: 'border-l-[color:var(--md-sys-color-tertiary)]', bg: 'bg-md-sys-tertiary-container/20', text: 'text-md-sys-tertiary', dot: 'bg-md-sys-tertiary' },
+  { border: 'border-l-[color:var(--md-sys-color-success)]', bg: 'bg-md-sys-success-container/20', text: 'text-md-sys-success', dot: 'bg-md-sys-success' },
+  { border: 'border-l-[color:var(--md-sys-color-error)]', bg: 'bg-md-sys-error-container/20', text: 'text-md-sys-error', dot: 'bg-md-sys-error' },
+  { border: 'border-l-[color:var(--md-sys-color-secondary)]', bg: 'bg-md-sys-secondary-container/20', text: 'text-md-sys-secondary', dot: 'bg-md-sys-secondary' },
 ];
 
 export interface OverviewHealthTabProps {
@@ -218,7 +218,7 @@ export function OverviewHealthTab({
         <div className="relative group/dev-card mb-8">
           <DevCopyJsonButton data={recommendationsDevData} />
           <h2 className="text-xl font-bold text-md-sys-on-surface mb-4 flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-amber-700 dark:text-amber-400" /> {vo.recommendations}
+            <Lightbulb className="h-5 w-5 text-md-sys-warning" /> {vo.recommendations}
           </h2>
           {recommendationsFiltered.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -37,8 +37,8 @@ export function OverviewTerminalPanel({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg font-bold tracking-tight text-md-sys-on-surface">{title}</h2>
-                <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" aria-hidden />
+                <span className="flex items-center gap-1.5 rounded-full border border-md-sys-success/20 bg-md-sys-success-container/20 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-md-sys-success">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-md-sys-success" aria-hidden />
                   {liveLabel}
                 </span>
               </div>
@@ -84,8 +84,8 @@ export function OverviewTerminalActionLink({
 export type OverviewTerminalBand = 'good' | 'fair' | 'critical' | 'neutral';
 
 const BAND_TILE_CLASSES: Record<OverviewTerminalBand, string> = {
-  good: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-  fair: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  good: 'border-md-sys-success/30 bg-md-sys-success-container/15 text-md-sys-success',
+  fair: 'border-md-sys-warning/30 bg-md-sys-warning-container/15 text-md-sys-warning',
   critical: 'border-md-sys-error/30 bg-md-sys-error-container/30 text-md-sys-error',
   neutral: 'border-md-sys-primary/30 bg-md-sys-primary-container/20 text-md-sys-primary',
 };
@@ -140,13 +140,13 @@ export function OverviewSeverityBar({ score }: { score: number }) {
   const normalized = Math.max(0, Math.min(100, score));
   const activeSegments = Math.ceil(normalized / 10);
   const fillClass =
-    normalized >= 80 ? 'bg-md-sys-error' : normalized >= 60 ? 'bg-amber-500' : 'bg-emerald-500';
+    normalized >= 80 ? 'bg-md-sys-error' : normalized >= 60 ? 'bg-md-sys-warning' : 'bg-md-sys-success';
   const textClass =
     normalized >= 80
       ? 'text-md-sys-error'
       : normalized >= 60
-        ? 'text-amber-700 dark:text-amber-400'
-        : 'text-emerald-700 dark:text-emerald-400';
+        ? 'text-md-sys-warning'
+        : 'text-md-sys-success';
   return (
     <div className="flex items-center gap-[3px]">
       {Array.from({ length: 10 }, (_, i) => (

@@ -23,7 +23,7 @@ export default function InlinksMetricCell({
       {showBar ? (
         <div className="order-2 sm:order-1 min-w-0 flex-1 max-w-[5rem] bg-md-sys-surface-container-highest/40 rounded-full h-1.5 hidden sm:block overflow-hidden">
           <div
-            className="h-full rounded-full bg-sky-600/90 dark:bg-sky-500/90 transition-all"
+            className="h-full rounded-full bg-md-sys-primary transition-all"
             style={{ width: `${pct}%` }}
           />
         </div>

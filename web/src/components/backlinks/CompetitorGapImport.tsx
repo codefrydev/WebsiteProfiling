@@ -93,7 +93,7 @@ export default function CompetitorGapImport({ gscLinks }: CompetitorGapImportPro
         {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Upload className="h-4 w-4" aria-hidden />}
         {loading ? s.uploading : s.uploadLabel}
       </Button>
-      {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
+      {error ? <p className="text-xs text-md-sys-error font-medium">{error}</p> : null}
       {gap?.gap_count != null && gap.gap_count > 0 ? (
         <div className="text-xs space-y-1">
           <p className="text-md-sys-on-surface-variant">

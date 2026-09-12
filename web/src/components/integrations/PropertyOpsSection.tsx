@@ -112,7 +112,7 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
         </h3>
         <p className="text-xs text-md-sys-on-surface-variant mt-1 leading-relaxed">{s.hint}</p>
         {gscLinksStale ? (
-          <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">{gscLinksStale}</p>
+          <p className="text-xs text-md-sys-warning font-medium mt-2">{gscLinksStale}</p>
         ) : null}
       </div>
       {loading ? (
@@ -167,7 +167,7 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
               {saving ? s.saving : s.saveLabel}
             </Button>
             {message ? (
-              <span className={`text-xs ${message === s.saved ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+              <span className={`text-xs font-medium ${message === s.saved ? 'text-md-sys-success' : 'text-md-sys-error'}`}>
                 {message}
               </span>
             ) : null}

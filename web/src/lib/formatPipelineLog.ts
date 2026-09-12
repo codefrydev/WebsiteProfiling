@@ -550,7 +550,7 @@ export function getPipelineLogStats(lines: PipelineLogLine[]) {
 }
 
 export const PIPELINE_LOG_LINE_CLASS: Record<PipelineLogLineKind, string> = {
-  section: 'text-sky-300',
+  section: 'text-md-sys-primary font-medium',
   progress: 'text-md-sys-on-surface-variant',
   activity: 'text-md-sys-on-surface/90',
   info: 'text-md-sys-info',

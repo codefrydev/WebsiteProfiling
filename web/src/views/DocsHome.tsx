@@ -23,7 +23,7 @@ export default function DocsHome() {
               <Link
                 key={slug}
                 to={`/docs/integrations/${slug}`}
-                className="group flex items-start justify-between gap-3 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container p-4 transition-colors hover:border-blue-500/30 hover:bg-md-sys-surface-container-high"
+                className="group flex items-start justify-between gap-3 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container p-4 transition-colors hover:border-md-sys-primary/40 hover:bg-md-sys-surface-container-high"
               >
                 <div className="min-w-0">
                   <p className="font-semibold text-md-sys-on-surface group-hover:text-md-sys-primary">

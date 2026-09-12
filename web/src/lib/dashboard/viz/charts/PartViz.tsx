@@ -73,7 +73,7 @@ export function StackedBarViz({ widget, data, catalog, opts, onCrossFilter }: Vi
             <button
               key={label}
               onClick={() => onCrossFilter(xField, label)}
-              className="text-[10px] px-1.5 py-0.5 rounded border border-md-sys-outline-variant/40 hover:border-blue-500/50 text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-colors"
+              className="text-[10px] px-2 py-0.5 rounded-full border border-md-sys-outline-variant/40 hover:border-md-sys-primary/50 text-md-sys-on-surface-variant hover:text-md-sys-on-surface active:scale-95 transition-all"
             >
               {label}
             </button>

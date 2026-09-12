@@ -39,7 +39,7 @@ export default function ColumnPicker({ columns, onChange }: ColumnPickerProps) {
         <Columns3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Columns
         {hiddenCount > 0 ? (
-          <span className="rounded-full bg-amber-600 px-1.5 text-[10px] font-bold text-white">
+          <span className="rounded-full bg-md-sys-warning px-1.5 text-[10px] font-bold text-md-sys-on-warning">
             {hiddenCount}
           </span>
         ) : null}

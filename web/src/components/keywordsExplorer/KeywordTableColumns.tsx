@@ -21,19 +21,19 @@ function PositionBadge({ pos }: { pos: number | string | null | undefined }) {
   const p = numPos.toFixed(1);
   const color =
     numPos <= 3
-      ? 'text-green-700 dark:text-green-400'
+      ? 'text-md-sys-success'
       : numPos <= 10
-        ? 'text-yellow-700 dark:text-yellow-400'
+        ? 'text-md-sys-warning'
         : numPos <= 20
-          ? 'text-orange-700 dark:text-orange-400'
-          : 'text-red-700 dark:text-red-400';
+          ? 'text-md-sys-warning'
+          : 'text-md-sys-error';
   return <span className={`font-mono font-bold tabular-nums ${color}`}>{p}</span>;
 }
 
 function TrendIcon({ trend }: { trend: string | null | undefined }) {
   if (!trend) return <span className="text-md-sys-on-surface-variant">—</span>;
-  if (trend === 'up') return <TrendingUp className="w-4 h-4 text-green-700 dark:text-green-400 inline" />;
-  if (trend === 'down') return <TrendingDown className="w-4 h-4 text-red-700 dark:text-red-400 inline" />;
+  if (trend === 'up') return <TrendingUp className="w-4 h-4 text-md-sys-success inline" />;
+  if (trend === 'down') return <TrendingDown className="w-4 h-4 text-md-sys-error inline" />;
   return <Minus className="w-4 h-4 text-md-sys-on-surface-variant inline" />;
 }
 
@@ -77,12 +77,12 @@ export function buildKeywordColumns(
           <div className="min-w-[140px]">
             <span className="font-medium text-md-sys-on-surface">{String(v ?? '')}</span>
             {r?.is_branded && (
-              <span className="ml-1.5 text-[10px] bg-orange-500/20 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded-full font-semibold">
+              <span className="ml-1.5 text-[10px] bg-md-sys-warning-container/30 text-md-sys-on-warning-container px-1.5 py-0.5 rounded-full font-semibold">
                 {ke.table.brand}
               </span>
             )}
             {r?.is_question && (
-              <span className="ml-1 text-[10px] bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-semibold">
+              <span className="ml-1 text-[10px] bg-md-sys-primary-container/30 text-md-sys-on-primary-container px-1.5 py-0.5 rounded-full font-semibold">
                 {ke.table.question}
               </span>
             )}
@@ -140,7 +140,7 @@ export function buildKeywordColumns(
       hint: 'views.keywords.serpCompetition',
       render: (v) =>
         v != null && typeof v === 'number' ? (
-          <span className="tabular-nums text-orange-700 dark:text-orange-300 font-semibold">
+          <span className="tabular-nums text-md-sys-warning font-semibold">
             {v}
           </span>
         ) : (
@@ -172,7 +172,7 @@ export function buildKeywordColumns(
       hint: 'views.keywords.plannerVolume',
       render: (v) =>
         v != null && typeof v === 'number' ? (
-          <span className="tabular-nums text-violet-700 dark:text-violet-300 font-semibold">
+          <span className="tabular-nums text-md-sys-tertiary font-semibold">
             {Number(v).toLocaleString()}
           </span>
         ) : (
@@ -187,11 +187,11 @@ export function buildKeywordColumns(
         if (!v || typeof v !== 'string') return <span className="text-md-sys-on-surface-variant">—</span>;
         const color =
           v === 'HIGH'
-            ? 'text-red-700 dark:text-red-400'
+            ? 'text-md-sys-error'
             : v === 'MEDIUM'
-              ? 'text-yellow-700 dark:text-yellow-400'
+              ? 'text-md-sys-warning'
               : v === 'LOW'
-                ? 'text-green-700 dark:text-green-400'
+                ? 'text-md-sys-success'
                 : 'text-md-sys-on-surface-variant';
         return <span className={`font-semibold text-xs ${color}`}>{v}</span>;
       },
@@ -253,7 +253,7 @@ export function buildKeywordColumns(
       label: ke.table.trafficPotential,
       render: (v) =>
         v ? (
-          <span className="tabular-nums text-emerald-700 dark:text-emerald-400 font-semibold">
+          <span className="tabular-nums text-md-sys-success font-semibold">
             {Number(v).toLocaleString()}
           </span>
         ) : (
@@ -265,7 +265,7 @@ export function buildKeywordColumns(
       label: ke.table.opportunityClicks,
       render: (v) =>
         typeof v === 'number' && v > 0 ? (
-          <span className="tabular-nums text-yellow-700 dark:text-yellow-400 font-semibold">
+          <span className="tabular-nums text-md-sys-primary font-semibold">
             +{v.toLocaleString()}
           </span>
         ) : (

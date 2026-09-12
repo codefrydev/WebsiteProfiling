@@ -98,7 +98,7 @@ export default function ContentBriefButton({ keyword, clusterRows }: ContentBrie
                   {s.loading}
                 </p>
               ) : error ? (
-                <p className="text-red-700 dark:text-red-400 text-xs">{error}</p>
+                <p className="text-md-sys-error font-medium text-xs">{error}</p>
               ) : brief && formatBriefSummary(brief.summary) ? (
                 <>
                   <pre className="whitespace-pre-wrap text-xs text-md-sys-on-surface-variant leading-relaxed font-sans">

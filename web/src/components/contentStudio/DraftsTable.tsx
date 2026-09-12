@@ -88,7 +88,7 @@ export default function DraftsTable({
                     <Button
                       type="button"
                       variant="ghost"
-                      className="!px-2 !py-1 text-red-700 dark:text-red-400"
+                      className="!px-2 !py-1 text-md-sys-error hover:bg-md-sys-error/10"
                       onClick={() => onDelete(d.id)}
                       loading={deletingId === d.id}
                       title={t.delete}

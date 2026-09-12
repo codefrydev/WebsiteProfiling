@@ -577,7 +577,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
       {inspectNotFound && (
         <AlertBanner
           variant="warning"
-          icon={<AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0" aria-hidden />}
+          icon={<AlertTriangle className="h-4 w-4 text-md-sys-warning shrink-0" aria-hidden />}
           onDismiss={() => setInspectNotFound(false)}
         >
           {strings.components?.urlGapLists?.notInCrawlBanner || 'This URL was reported by Google but isn\'t in the crawl. Inspector data is limited.'}
@@ -686,7 +686,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
               <ArrowLeft className="h-4 w-4" /> {vl.backToExplorer}
             </Button>
             <h1 className="text-2xl font-bold text-md-sys-on-surface flex items-center gap-2">
-              <LinkIcon className="h-6 w-6 text-blue-500 shrink-0" /> {vl.urlInspector}
+              <LinkIcon className="h-6 w-6 text-md-sys-primary shrink-0" /> {vl.urlInspector}
             </h1>
           </div>
           <div className="flex items-center gap-2 bg-md-sys-surface-container border border-md-sys-outline-variant/40 p-3 rounded-2xl">

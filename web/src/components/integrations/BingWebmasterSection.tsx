@@ -43,7 +43,7 @@ export default function BingWebmasterSection() {
         {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
         {loading ? s.syncing : s.syncLabel}
       </Button>
-      {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
+      {error ? <p className="text-xs text-md-sys-error font-medium">{error}</p> : null}
       {result?.ok ? (
         <p className="text-xs text-md-sys-on-surface-variant">
           {s.success}

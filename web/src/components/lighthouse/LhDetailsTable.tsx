@@ -209,7 +209,7 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }: LhCellPro
       return <span className="font-mono">{String(obj.value)}</span>;
     }
     if (obj.type === 'code' && obj.value != null) {
-      return <code className="text-[10px] break-all text-amber-800 dark:text-amber-200/90">{String(obj.value)}</code>;
+      return <code className="text-[10px] break-all text-md-sys-warning font-mono">{String(obj.value)}</code>;
     }
 
     const imgSrc = pickDataImageSrc(obj);
@@ -254,7 +254,7 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }: LhCellPro
                 <HttpImageThumbOnly href={rowImageForNodeCol} />
               )}
               {label != null && label !== '' && <div className="text-md-sys-on-surface">{String(label)}</div>}
-              {sel != null && sel !== '' && <code className="block text-[10px] text-amber-800 dark:text-amber-200/90 break-all">{String(sel)}</code>}
+              {sel != null && sel !== '' && <code className="block text-[10px] text-md-sys-warning font-mono break-all">{String(sel)}</code>}
               {snip != null && snip !== '' && <div className="text-md-sys-on-surface-variant text-[10px] line-clamp-3 font-mono">{String(snip)}</div>}
             </div>
           )}

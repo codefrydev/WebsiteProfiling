@@ -33,8 +33,8 @@ export function ScoreDelta({ delta, higherIsBetter = true }: ScoreDeltaProps) {
   const improved = isImprovedScoreDelta(value, higherIsBetter);
   const Icon = value > 0 ? TrendingUp : TrendingDown;
   const color = improved
-    ? 'text-emerald-700 dark:text-emerald-400'
-    : 'text-rose-700 dark:text-rose-400';
+    ? 'text-md-sys-success'
+    : 'text-md-sys-error';
   return (
     <span className={`inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums ${color}`}>
       <Icon className="h-3 w-3" />

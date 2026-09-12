@@ -232,11 +232,11 @@ export function OverviewSummaryTab({
       </SectionLoadingGate>
 
       {reportCount >= 2 ? (
-        <Card shadow className="mb-8 border border-cyan-600/35 dark:border-cyan-900/40 bg-cyan-100/45 dark:bg-cyan-950/10">
+        <Card shadow className="mb-8 border border-md-sys-primary/30 bg-md-sys-primary-container/15">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <ArrowLeftRight className="h-5 w-5 text-cyan-700 dark:text-cyan-400 shrink-0" />
+                <ArrowLeftRight className="h-5 w-5 text-md-sys-primary shrink-0" />
                 <h2 className="text-lg font-bold text-md-sys-on-surface">{vo.reportComparison}</h2>
               </div>
               <p className="text-xs text-md-sys-on-surface-variant max-w-2xl">{vo.reportComparisonTeaser}</p>

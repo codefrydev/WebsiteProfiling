@@ -246,7 +246,7 @@ export default function ConnectionsTab({ link }: ConnectionsTabProps) {
             <ConnectionList
               title={ct.inboundTitle}
               hint={ct.inboundHint}
-              icon={<ArrowDownLeft className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
+              icon={<ArrowDownLeft className="h-4 w-4 text-md-sys-success" />}
               emptyText={ct.inboundEmpty}
               conns={inbound}
               urlStatus={urlStatus}
@@ -255,7 +255,7 @@ export default function ConnectionsTab({ link }: ConnectionsTabProps) {
             <ConnectionList
               title={ct.outboundTitle}
               hint={ct.outboundHint}
-              icon={<ArrowUpRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+              icon={<ArrowUpRight className="h-4 w-4 text-md-sys-primary" />}
               emptyText={ct.outboundEmpty}
               conns={outbound}
               urlStatus={urlStatus}

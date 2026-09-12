@@ -786,7 +786,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
           {languageMlChart ? (
             <Card padding="tight" shadow devData={languageMixDevData ?? undefined}>
               <div className="flex items-center gap-2 mb-3">
-                <Globe className="h-4 w-4 text-violet-700 dark:text-violet-400" />
+                <Globe className="h-4 w-4 text-md-sys-primary" />
                 <h3 className="text-sm font-bold text-md-sys-on-surface">{vtca.languageMix}</h3>
               </div>
               <ChartPanel>
@@ -804,7 +804,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
           {nerSiteChart ? (
             <Card padding="tight" shadow devData={entityLabelsDevData ?? undefined}>
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
+                <Sparkles className="h-4 w-4 text-md-sys-tertiary" />
                 <h3 className="text-sm font-bold text-md-sys-on-surface">{vtca.entityLabels}</h3>
               </div>
               <ChartPanel>
@@ -822,7 +822,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
           {tokenClusters.length > 0 ? (
             <Card padding="tight" shadow devData={tokenTopicsDevData}>
               <div className="flex items-center gap-2 mb-3">
-                <Tag className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+                <Tag className="h-4 w-4 text-md-sys-warning" />
                 <h3 className="text-sm font-bold text-md-sys-on-surface">{vtca.parentTopicsToken}</h3>
               </div>
               <div className="max-h-80 overflow-y-auto rounded-lg border border-md-sys-outline-variant/40">
@@ -857,7 +857,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
           {semanticClusters.length > 0 ? (
             <Card padding="tight" shadow devData={semanticTopicsDevData}>
               <div className="flex items-center gap-2 mb-3">
-                <Layers className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
+                <Layers className="h-4 w-4 text-md-sys-success" />
                 <h3 className="text-sm font-bold text-md-sys-on-surface">{vtca.parentTopicsSemantic}</h3>
               </div>
               <div className="max-h-80 overflow-y-auto rounded-lg border border-md-sys-outline-variant/40">

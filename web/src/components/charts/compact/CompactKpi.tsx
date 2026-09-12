@@ -11,7 +11,7 @@ export function CompactKpi({
   value,
   accent,
   delta,
-  deltaClassName = 'text-emerald-400',
+  deltaClassName = 'text-md-sys-success',
 }: CompactKpiProps) {
   return (
     <div className="rounded-lg border border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/50 px-2.5 py-2">

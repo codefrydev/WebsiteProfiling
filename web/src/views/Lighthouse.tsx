@@ -561,7 +561,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
                   <span className="text-md-sys-on-surface-variant uppercase text-xs">
                     <LabelWithHint label={metric} helpKey={cruxHelpKey} />
                   </span>
-                  <p className={`font-medium ${pass ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  <p className={`font-medium ${pass ? 'text-md-sys-success' : 'text-md-sys-warning'}`}>
                     {p75 != null ? String(p75) : '—'} {pass === false ? '(needs improvement)' : pass ? '(good)' : ''}
                   </p>
                 </div>
@@ -592,9 +592,9 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
               ))}
             </div>
             <div className="flex flex-wrap gap-6 mt-4 text-xs text-md-sys-on-surface-variant">
-              <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />{vlh.scorePoor}</span>
-              <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1" />{vlh.scoreNeeds}</span>
-              <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />{vlh.scoreGood}</span>
+              <span><span className="inline-block w-2 h-2 rounded-full bg-md-sys-error mr-1" />{vlh.scorePoor}</span>
+              <span><span className="inline-block w-2 h-2 rounded-full bg-md-sys-warning mr-1" />{vlh.scoreNeeds}</span>
+              <span><span className="inline-block w-2 h-2 rounded-full bg-md-sys-success mr-1" />{vlh.scoreGood}</span>
             </div>
           </div>
 

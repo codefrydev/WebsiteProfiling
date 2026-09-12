@@ -201,7 +201,7 @@ function SiteStructureTreePanel({
       </div>
 
       {hasCompare && showCompareCharts ? (
-        <div className="px-4 py-2 border-b border-md-sys-outline-variant/40 bg-amber-500/5 text-xs text-amber-800 dark:text-amber-300/90">
+        <div className="px-4 py-2 border-b border-md-sys-outline-variant/40 bg-md-sys-warning-container/15 text-xs text-md-sys-warning font-medium">
           {s.changeLegend}
         </div>
       ) : null}
@@ -537,7 +537,7 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
                       <td className="py-2 pr-3 font-mono text-md-sys-on-surface">
                         {seg.prefix}
                         {seg.pattern_type === 'regex' && (
-                          <span className="ml-1.5 inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium bg-blue-500/15 text-blue-400">regex</span>
+                          <span className="ml-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-md-sys-primary-container/25 text-md-sys-primary border border-md-sys-primary/30">regex</span>
                         )}
                       </td>
                       <td className="py-2 px-3 text-right tabular-nums">{seg.url_count ?? 0}</td>

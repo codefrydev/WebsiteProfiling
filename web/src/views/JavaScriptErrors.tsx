@@ -281,7 +281,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
       <PageLayout className="space-y-6">
         <PageHeader title={vj.title} subtitle={vj.subtitle} />
         <Card className="text-center py-12">
-          <Bug className="h-12 w-12 text-emerald-600 dark:text-emerald-400 mx-auto mb-4 opacity-80" />
+          <Bug className="h-12 w-12 text-md-sys-success mx-auto mb-4 opacity-80" />
           <h2 className="text-lg font-semibold text-md-sys-on-surface mb-2">{vj.emptyCleanTitle}</h2>
           <p className="text-sm text-md-sys-on-surface-variant max-w-lg mx-auto">{vj.emptyCleanBody}</p>
         </Card>

@@ -12,8 +12,8 @@ export interface DiagnosticGroupProps {
 }
 
 function severityDot(s: string): string {
-  if (s === 'critical' || s === 'high') return 'bg-red-500';
-  if (s === 'medium') return 'bg-yellow-500';
+  if (s === 'critical' || s === 'high') return 'bg-md-sys-error';
+  if (s === 'medium') return 'bg-md-sys-warning';
   return 'bg-md-sys-surface-container-high';
 }
 

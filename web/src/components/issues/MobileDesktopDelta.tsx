@@ -11,17 +11,17 @@ interface Props {
 
 const STATUS_CLS = (s: number) =>
   s >= 500
-    ? 'text-red-400'
+    ? 'text-md-sys-error font-medium'
     : s >= 400
-      ? 'text-orange-400'
+      ? 'text-md-sys-warning font-medium'
       : s >= 300
-        ? 'text-yellow-400'
-        : 'text-emerald-400';
+        ? 'text-md-sys-warning font-medium'
+        : 'text-md-sys-success font-medium';
 
 function DiffBadge({ label, differs }: { label: string; differs: boolean }) {
   if (!differs) return null;
   return (
-    <span className="inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium bg-orange-500/15 text-orange-400">
+    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-md-sys-warning-container/30 text-md-sys-warning border border-md-sys-warning/30">
       {label}
     </span>
   );
@@ -80,7 +80,7 @@ export default function MobileDesktopDelta({ runId }: Props) {
   return (
     <Card devData={devData ?? undefined} className="p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <Smartphone className="h-4 w-4 text-blue-400 shrink-0" />
+        <Smartphone className="h-4 w-4 text-md-sys-primary shrink-0" />
         <h3 className="text-sm font-semibold">Mobile vs Desktop differences</h3>
         <span className="ml-auto text-xs text-md-sys-on-surface-variant">{rows.length} URL{rows.length !== 1 ? 's' : ''} differ</span>
       </div>
@@ -88,17 +88,17 @@ export default function MobileDesktopDelta({ runId }: Props) {
       {/* Summary chips */}
       <div className="flex flex-wrap gap-2 text-xs">
         {statusDiffs > 0 && (
-          <span className="rounded px-2 py-0.5 bg-red-500/15 text-red-400 font-medium">
+          <span className="rounded-full px-2.5 py-0.5 bg-md-sys-error-container/20 text-md-sys-error border border-md-sys-error/30 font-medium">
             {statusDiffs} status change{statusDiffs !== 1 ? 's' : ''}
           </span>
         )}
         {titleDiffs > 0 && (
-          <span className="rounded px-2 py-0.5 bg-orange-500/15 text-orange-400 font-medium">
+          <span className="rounded-full px-2.5 py-0.5 bg-md-sys-warning-container/20 text-md-sys-warning border border-md-sys-warning/30 font-medium">
             {titleDiffs} title change{titleDiffs !== 1 ? 's' : ''}
           </span>
         )}
         {h1Diffs > 0 && (
-          <span className="rounded px-2 py-0.5 bg-amber-500/15 text-amber-400 font-medium">
+          <span className="rounded-full px-2.5 py-0.5 bg-md-sys-warning-container/20 text-md-sys-warning border border-md-sys-warning/30 font-medium">
             {h1Diffs} H1 change{h1Diffs !== 1 ? 's' : ''}
           </span>
         )}

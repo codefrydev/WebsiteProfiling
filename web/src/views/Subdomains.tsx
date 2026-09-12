@@ -134,7 +134,7 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
     <PageLayout>
       <PageHeader title={vs.title} subtitle={vs.subtitle} icon={<Globe2 className="h-7 w-7 text-md-sys-primary shrink-0" />} />
       {inv.crtsh_error ? (
-        <Card className="mb-4 border-amber-500/30 bg-amber-500/5 relative group/dev-card">
+        <Card className="mb-4 border-md-sys-warning/30 bg-md-sys-warning-container/20 relative group/dev-card">
           <DevCopyJsonButton data={ctWarningDevData} />
           <p className="text-sm text-md-sys-on-surface-variant">{vs.ctWarning}</p>
         </Card>

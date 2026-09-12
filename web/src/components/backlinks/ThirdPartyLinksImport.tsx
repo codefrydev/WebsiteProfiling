@@ -123,7 +123,7 @@ export default function ThirdPartyLinksImport({ gscLinks, onImported }: ThirdPar
         {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Upload className="h-4 w-4" aria-hidden />}
         {loading ? s.uploading : s.uploadLabel}
       </Button>
-      {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
+      {error ? <p className="text-xs text-md-sys-error font-medium">{error}</p> : null}
       {displayOverlays.length > 0 ? (
         <div className="space-y-3 pt-2 border-t border-md-sys-outline-variant/40">
           {displayOverlays.map((overlay) => (

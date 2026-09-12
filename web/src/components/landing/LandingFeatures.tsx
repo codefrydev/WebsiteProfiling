@@ -37,7 +37,7 @@ function FeatureRow({
 }: (typeof FEATURES)[number]) {
   return (
     <article className="flex gap-3 px-3.5 py-3 @sm:gap-4 @sm:px-4 @sm:py-3.5">
-      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-md-sys-primary">
+      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-md-sys-primary/20 bg-md-sys-primary-container/20 text-md-sys-primary">
         <Icon className="h-3.5 w-3.5" aria-hidden />
       </span>
       <div className="min-w-0">

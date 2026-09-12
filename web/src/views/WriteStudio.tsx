@@ -345,7 +345,7 @@ export default function WriteStudio() {
               onSelect={(keyword) => openNewDraft(keyword)}
               disabled={readOnly || !propertyId}
             />
-            {listError ? <p className="mt-4 text-xs text-red-500">{listError}</p> : null}
+            {listError ? <p className="mt-4 text-xs text-md-sys-error font-medium">{listError}</p> : null}
           </div>
         </div>
       ) : draftId && loadingDraft ? (
@@ -355,7 +355,7 @@ export default function WriteStudio() {
         </div>
       ) : draftId && (draftError || !activeDraft) ? (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8">
-          <p className="text-sm text-red-700 dark:text-red-400">{draftError || vs.loadFailed}</p>
+          <p className="text-sm text-md-sys-error font-medium">{draftError || vs.loadFailed}</p>
         </div>
       ) : showEditor && activeDraft && propertyId ? (
         <ContentEditor

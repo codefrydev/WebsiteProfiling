@@ -39,9 +39,9 @@ export default function LandingStatsStrip() {
             {STATS.map(({ icon: Icon, label, value, hint }) => (
               <article
                 key={label}
-                className="flex min-h-[7.5rem] flex-col rounded-xl border border-md-sys-outline-variant/40 px-4 py-4 transition-colors hover:border-blue-500/25 @sm:min-h-[8.25rem] @sm:px-5 @sm:py-5"
+                className="flex min-h-[7.5rem] flex-col rounded-xl border border-md-sys-outline-variant/40 px-4 py-4 transition-colors hover:border-md-sys-primary/30 @sm:min-h-[8.25rem] @sm:px-5 @sm:py-5"
               >
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-md-sys-primary">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-md-sys-primary/20 bg-md-sys-primary-container/20 text-md-sys-primary">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
                 <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-md-sys-on-surface-variant @sm:text-xs">
@@ -72,7 +72,7 @@ export default function LandingStatsStrip() {
             href={vl.githubRepoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-medium text-md-sys-primary transition-colors hover:bg-blue-500/20"
+            className="inline-flex items-center gap-1.5 rounded-full border border-md-sys-primary/30 bg-md-sys-primary-container/20 px-3 py-1 text-xs font-medium text-md-sys-primary transition-colors hover:bg-md-sys-primary-container/30"
           >
             {vl.trustGithub}
             <ExternalLink className="h-3.5 w-3.5" aria-hidden />

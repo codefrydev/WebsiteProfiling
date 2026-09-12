@@ -52,10 +52,10 @@ function EngagementBadge({ rate }: { rate?: number | null }) {
   const pct = rate <= 1 ? rate * 100 : rate;
   const color =
     pct >= 50
-      ? 'text-green-700 dark:text-green-400'
+      ? 'text-md-sys-success'
       : pct >= 25
-        ? 'text-yellow-700 dark:text-yellow-400'
-        : 'text-red-700 dark:text-red-400';
+        ? 'text-md-sys-warning'
+        : 'text-md-sys-error';
   return <span className={`font-semibold tabular-nums ${color}`}>{pct.toFixed(1)}%</span>;
 }
 
@@ -392,7 +392,7 @@ export default function Traffic() {
   return (
     <PageLayout className="space-y-6">
       <PageHeader
-        icon={<Users className="h-7 w-7 text-purple-700 dark:text-purple-400 shrink-0" />}
+        icon={<Users className="h-7 w-7 text-md-sys-tertiary shrink-0" />}
         title={tf.title}
         subtitle={
           <>
@@ -406,7 +406,7 @@ export default function Traffic() {
       {errors.length > 0 && (
         <AlertBanner
           variant="warning"
-          icon={<AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0" aria-hidden />}
+          icon={<AlertCircle className="h-4 w-4 text-md-sys-warning shrink-0" aria-hidden />}
         >
           {errors.map((e: string, i: number) => (
             <p key={i}>{e}</p>

@@ -343,7 +343,7 @@ export default function Dashboards(_props: ViewProps) {
               <select
                 value={activeId ?? ''}
                 onChange={(e) => selectDashboard(Number(e.target.value))}
-                className="px-2 py-1.5 text-sm bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg text-md-sys-on-surface focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="px-3 py-1.5 text-sm bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-full text-md-sys-on-surface focus:outline-none focus:ring-1 focus:ring-md-sys-primary"
               >
                 {(dashboards ?? []).map((d) => (
                   <option key={d.id} value={d.id}>{d.name}{d.isDefault ? ' ★' : ''}</option>
@@ -352,7 +352,7 @@ export default function Dashboards(_props: ViewProps) {
             )}
             <button
               onClick={() => void handleCreate()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/80 text-sm text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-colors"
+              className="press flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/80 text-sm text-md-sys-on-surface-variant hover:text-md-sys-on-surface active:scale-95 transition-all"
             >
               <Plus className="h-3.5 w-3.5" /> New
             </button>
@@ -366,8 +366,8 @@ export default function Dashboards(_props: ViewProps) {
                     return next;
                   });
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
-                  isEditing ? 'border-blue-500/40 bg-blue-500/10 text-md-sys-primary font-semibold shadow-xs' : 'border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/80 text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
+                className={`press flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-sm font-medium active:scale-95 transition-all ${
+                  isEditing ? 'border-md-sys-primary/40 bg-md-sys-primary-container/20 text-md-sys-primary font-semibold shadow-xs' : 'border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/80 text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                 }`}
               >
                 {isEditing ? <><Eye className="h-3.5 w-3.5" /> View</> : <><Pencil className="h-3.5 w-3.5" /> Edit</>}
@@ -378,7 +378,7 @@ export default function Dashboards(_props: ViewProps) {
               <button
                 onClick={() => window.print()}
                 title="Export to PDF (print)"
-                className="p-1.5 rounded-lg border border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/80 text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-colors"
+                className="press p-2 rounded-full border border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/80 text-md-sys-on-surface-variant hover:text-md-sys-on-surface active:scale-95 transition-all"
               >
                 <Printer className="h-4 w-4" />
               </button>
@@ -389,7 +389,7 @@ export default function Dashboards(_props: ViewProps) {
                 <select
                   value=""
                   onChange={(e) => { if (e.target.value) addWidget(e.target.value); e.currentTarget.value = ''; }}
-                  className="px-2.5 py-1.5 text-sm bg-md-sys-primary hover:bg-md-sys-primary-hover text-white rounded-lg font-medium shadow-xs focus:outline-none cursor-pointer transition-colors"
+                  className="px-3 py-1.5 text-sm bg-md-sys-primary hover:bg-md-sys-primary-hover text-md-sys-on-primary rounded-full font-medium shadow-xs focus:outline-none cursor-pointer transition-colors"
                 >
                   <option value="">+ Add widget…</option>
                   {groups.map((g) => (
@@ -403,7 +403,7 @@ export default function Dashboards(_props: ViewProps) {
                 <button
                   onClick={() => void handleDelete()}
                   title="Delete dashboard"
-                  className="p-1.5 rounded-lg border border-md-sys-outline-variant/40 hover:border-red-500/30 hover:bg-red-500/10 text-md-sys-on-surface-variant hover:text-red-500 transition-colors"
+                  className="press p-2 rounded-full border border-md-sys-outline-variant/40 hover:border-md-sys-error/30 hover:bg-md-sys-error-container/20 text-md-sys-on-surface-variant hover:text-md-sys-error active:scale-95 transition-all"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -415,7 +415,7 @@ export default function Dashboards(_props: ViewProps) {
                 <Save className="h-3.5 w-3.5 animate-pulse" /> Saving…
               </span>
             )}
-            {saveError && <span className="text-xs text-red-600 dark:text-red-400 font-medium">{saveError}</span>}
+            {saveError && <span className="text-xs text-md-sys-error font-medium">{saveError}</span>}
       </div>
 
       {loading ? (
@@ -424,7 +424,7 @@ export default function Dashboards(_props: ViewProps) {
         </div>
       ) : loadError ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-3">
-          <p className="text-sm text-red-400">{loadError}</p>
+          <p className="text-sm text-md-sys-error">{loadError}</p>
           <button onClick={() => void loadDashboards()} className="press px-5 py-2.5 rounded-full border border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/80 text-sm text-md-sys-on-surface-variant hover:text-md-sys-on-surface active:scale-[0.98] transition-all duration-200">Retry</button>
         </div>
       ) : !activeId ? (

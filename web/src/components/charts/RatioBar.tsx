@@ -18,8 +18,8 @@ export function RatioBar({
   secondaryLabel,
   primaryPct,
   ariaSummary,
-  primaryClassName = 'bg-green-500',
-  secondaryClassName = 'bg-slate-600',
+  primaryClassName = 'bg-md-sys-success',
+  secondaryClassName = 'bg-md-sys-surface-container-highest',
 }: RatioBarProps) {
   const safePrimary = Math.min(100, Math.max(0, primaryPct));
   const safeSecondary = 100 - safePrimary;
@@ -63,7 +63,7 @@ export function CoverageBar({ label, pct, color = 'text-md-sys-primary-soft' }: 
       </div>
       <div className="h-2 bg-md-sys-surface-container-highest/40 rounded-full overflow-hidden" aria-hidden>
         <div
-          className={`h-full rounded-full transition-all duration-500 ${safeP >= 80 ? 'bg-green-500' : safeP >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
+          className={`h-full rounded-full transition-all duration-500 ${safeP >= 80 ? 'bg-md-sys-success' : safeP >= 50 ? 'bg-md-sys-warning' : 'bg-md-sys-error'}`}
           style={{ width: `${safeP}%` }}
         />
       </div>

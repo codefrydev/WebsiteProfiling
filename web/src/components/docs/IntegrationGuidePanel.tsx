@@ -158,7 +158,7 @@ export default function IntegrationGuidePanel({
             </div>
           ) : null}
 
-          <p className="shrink-0 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-xs text-amber-950 dark:text-amber-100/90">
+          <p className="shrink-0 rounded-2xl border border-md-sys-warning/30 bg-md-sys-warning-container/15 px-4 py-3 text-xs text-md-sys-warning">
             {content.note}
           </p>
 

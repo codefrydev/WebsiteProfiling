@@ -24,14 +24,14 @@ export default function SecHeaderRow({ label, value, recommendation, pageUrl }: 
       >
         <div className="flex items-center gap-3">
           {present
-            ? <CheckCircle className="h-4 w-4 text-green-700 dark:text-green-400 shrink-0" />
-            : <XCircle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />}
+            ? <CheckCircle className="h-4 w-4 text-md-sys-success shrink-0" />
+            : <XCircle className="h-4 w-4 text-md-sys-error shrink-0" />}
           <span className="text-sm font-mono text-md-sys-on-surface">{label}</span>
         </div>
         <div className="flex items-center gap-2">
           {present
-            ? <span className="text-xs text-green-700 dark:text-green-400 bg-green-500/10 px-2 py-0.5 rounded">Present</span>
-            : <span className="text-xs text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded">Missing</span>}
+            ? <span className="text-xs text-md-sys-success bg-md-sys-success-container/20 border border-md-sys-success/30 px-2 py-0.5 rounded-full font-medium">Present</span>
+            : <span className="text-xs text-md-sys-error bg-md-sys-error-container/20 border border-md-sys-error/30 px-2 py-0.5 rounded-full font-medium">Missing</span>}
           {open
             ? <ChevronUp className="h-3 w-3 text-md-sys-on-surface-variant" />
             : <ChevronDown className="h-3 w-3 text-md-sys-on-surface-variant" />}

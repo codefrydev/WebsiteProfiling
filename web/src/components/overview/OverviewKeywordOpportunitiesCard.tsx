@@ -52,13 +52,13 @@ interface OverviewKeywordOpportunitiesCardProps {
 function intentIcon(intent?: string) {
   switch (intent) {
     case 'informational':
-      return <BookOpen className="h-3.5 w-3.5 text-blue-500" aria-hidden />;
+      return <BookOpen className="h-3.5 w-3.5 text-md-sys-primary" aria-hidden />;
     case 'navigational':
-      return <Compass className="h-3.5 w-3.5 text-purple-500" aria-hidden />;
+      return <Compass className="h-3.5 w-3.5 text-md-sys-tertiary" aria-hidden />;
     case 'commercial':
-      return <ShoppingCart className="h-3.5 w-3.5 text-amber-500" aria-hidden />;
+      return <ShoppingCart className="h-3.5 w-3.5 text-md-sys-warning" aria-hidden />;
     case 'transactional':
-      return <Target className="h-3.5 w-3.5 text-emerald-500" aria-hidden />;
+      return <Target className="h-3.5 w-3.5 text-md-sys-success" aria-hidden />;
     default:
       return <Tag className="h-3.5 w-3.5 text-md-sys-on-surface-variant" aria-hidden />;
   }
@@ -202,25 +202,25 @@ export function OverviewKeywordOpportunitiesCard({
           key: 'quickWins',
           label: vo.keywordStatQuickWins,
           value: gscQuickWinsAll.length.toLocaleString(),
-          icon: <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />,
-          iconWrapClassName: 'bg-amber-500/10',
-          valueClassName: 'text-amber-600 dark:text-amber-400',
+          icon: <Zap className="h-5 w-5 text-md-sys-warning" aria-hidden />,
+          iconWrapClassName: 'bg-md-sys-warning-container/30',
+          valueClassName: 'text-md-sys-warning',
         },
         {
           key: 'estClicks',
           label: vo.keywordStatEstClicks,
           value: `+${sumGscQuickWinClicks(kwRows).toLocaleString()}`,
-          icon: <MousePointerClick className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden />,
-          iconWrapClassName: 'bg-emerald-500/10',
-          valueClassName: 'text-emerald-600 dark:text-emerald-400',
+          icon: <MousePointerClick className="h-5 w-5 text-md-sys-success" aria-hidden />,
+          iconWrapClassName: 'bg-md-sys-success-container/30',
+          valueClassName: 'text-md-sys-success',
         },
         {
           key: 'expansion',
           label: vo.keywordStatExpansionTerms,
           value: gscOpportunitiesAll.length.toLocaleString(),
-          icon: <Lightbulb className="h-5 w-5 text-violet-600 dark:text-violet-300" aria-hidden />,
-          iconWrapClassName: 'bg-violet-500/10',
-          valueClassName: 'text-violet-600 dark:text-violet-300',
+          icon: <Lightbulb className="h-5 w-5 text-md-sys-tertiary" aria-hidden />,
+          iconWrapClassName: 'bg-md-sys-tertiary-container/30',
+          valueClassName: 'text-md-sys-tertiary',
         },
       ]
     : showCrawlColumns
@@ -229,17 +229,17 @@ export function OverviewKeywordOpportunitiesCard({
             key: 'actions',
             label: vo.quickWinsEase,
             value: crawlQuickWinsAll.length.toLocaleString(),
-            icon: <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />,
-            iconWrapClassName: 'bg-amber-500/10',
-            valueClassName: 'text-amber-600 dark:text-amber-400',
+            icon: <Zap className="h-5 w-5 text-md-sys-warning" aria-hidden />,
+            iconWrapClassName: 'bg-md-sys-warning-container/30',
+            valueClassName: 'text-md-sys-warning',
           },
           {
             key: 'highEmphasis',
             label: vo.highEmphasis,
             value: crawlHighValueAll.length.toLocaleString(),
-            icon: <Lightbulb className="h-5 w-5 text-violet-600 dark:text-violet-300" aria-hidden />,
-            iconWrapClassName: 'bg-violet-500/10',
-            valueClassName: 'text-violet-600 dark:text-violet-300',
+            icon: <Lightbulb className="h-5 w-5 text-md-sys-tertiary" aria-hidden />,
+            iconWrapClassName: 'bg-md-sys-tertiary-container/30',
+            valueClassName: 'text-md-sys-tertiary',
           },
         ]
       : showSiteTerms
@@ -363,7 +363,7 @@ export function OverviewKeywordOpportunitiesCard({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 shrink-0 text-amber-500" aria-hidden />
+              <Lightbulb className="h-5 w-5 shrink-0 text-md-sys-warning" aria-hidden />
               <h2 className="text-lg font-bold text-md-sys-on-surface">{vo.keywordOpportunities}</h2>
               <HelpHint ariaLabel={vo.keywordOpportunitiesHelpTitle} side="bottom">
                 {useGscMode ? vo.keywordOpportunitiesGscHint : vo.keywordOpportunitiesHint}
@@ -371,7 +371,7 @@ export function OverviewKeywordOpportunitiesCard({
             </div>
             <p className="mt-1 text-sm text-md-sys-on-surface-variant">{vo.keywordOpportunitiesSubtitle}</p>
             {hasGscEnrichment ? (
-              <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400">
+              <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-md-sys-success">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 {vo.keywordOpportunitiesGscConnected}
               </p>
@@ -403,7 +403,7 @@ export function OverviewKeywordOpportunitiesCard({
         ) : null}
 
         {showGscUpsell ? (
-          <div className="mt-4 flex flex-col gap-3 rounded-xl border border-blue-500/25 bg-blue-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-4 flex flex-col gap-3 rounded-xl border border-md-sys-primary/25 bg-md-sys-primary-container/10 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p className="flex items-center gap-2 text-sm font-semibold text-md-sys-on-surface">
                 <TrendingUp className="h-4 w-4 shrink-0 text-md-sys-primary" aria-hidden />
@@ -414,7 +414,7 @@ export function OverviewKeywordOpportunitiesCard({
             <button
               type="button"
               onClick={() => dispatchOpenIntegrations()}
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/60 px-4 py-2 text-sm font-medium text-md-sys-on-surface transition-colors hover:bg-md-sys-surface-container"
+              className="press inline-flex shrink-0 items-center gap-2 rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/60 px-4 py-2 text-sm font-medium text-md-sys-on-surface transition-colors hover:bg-md-sys-surface-container active:scale-95"
             >
               <Settings2 className="h-4 w-4" />
               {vo.keywordOpportunitiesConnectCta}
@@ -431,7 +431,7 @@ export function OverviewKeywordOpportunitiesCard({
                 <PreviewColumn
                   title={ke.overview.topQuickWins}
                   icon={Zap}
-                  iconClassName="text-amber-500"
+                  iconClassName="text-md-sys-warning"
                   viewAllHref={quickWinsHref}
                   viewAllLabel={ke.overview.viewAll}
                   devData={{
@@ -450,7 +450,7 @@ export function OverviewKeywordOpportunitiesCard({
                         href={keywordRowHref('quickwins')}
                         keyword={String(row.keyword ?? '')}
                         suffix={formatGscQuickWinSuffix(row)}
-                        metricClassName="text-amber-700 dark:text-amber-300"
+                        metricClassName="text-md-sys-warning"
                         icon={intentIcon(row.intent)}
                       />
                     ))}
@@ -461,7 +461,7 @@ export function OverviewKeywordOpportunitiesCard({
                 <PreviewColumn
                   title={ke.overview.topOpportunities}
                   icon={Lightbulb}
-                  iconClassName="text-violet-400"
+                  iconClassName="text-md-sys-tertiary"
                   viewAllHref={opportunitiesHref}
                   viewAllLabel={ke.overview.viewAll}
                   devData={{
@@ -480,7 +480,7 @@ export function OverviewKeywordOpportunitiesCard({
                         href={keywordRowHref('opportunities')}
                         keyword={String(row.keyword ?? '')}
                         suffix={formatGscOpportunitySuffix(row)}
-                        metricClassName="text-violet-700 dark:text-violet-300"
+                        metricClassName="text-md-sys-tertiary"
                         icon={intentIcon(row.intent)}
                       />
                     ))}
@@ -521,7 +521,7 @@ export function OverviewKeywordOpportunitiesCard({
                 <PreviewColumn
                   title={vo.quickWinsEase}
                   icon={Zap}
-                  iconClassName="text-amber-500"
+                  iconClassName="text-md-sys-warning"
                   viewAllHref={keywordsHref}
                   viewAllLabel={ke.overview.viewAll}
                   devData={{
@@ -549,7 +549,7 @@ export function OverviewKeywordOpportunitiesCard({
                 <PreviewColumn
                   title={vo.highEmphasis}
                   icon={Lightbulb}
-                  iconClassName="text-violet-400"
+                  iconClassName="text-md-sys-tertiary"
                   viewAllHref={keywordsHref}
                   viewAllLabel={ke.overview.viewAll}
                   devData={{
@@ -585,7 +585,7 @@ export function OverviewKeywordOpportunitiesCard({
           <DevCopyJsonButton data={topicThemesDevData} />
           <div className="mb-3 flex items-center justify-between gap-2">
             <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-md-sys-on-surface-variant">
-              <Tag className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden />
+              <Tag className="h-3.5 w-3.5 text-md-sys-warning" aria-hidden />
               {vo.topThemes}
             </h3>
             <div className="flex shrink-0 items-center gap-2">
@@ -608,7 +608,7 @@ export function OverviewKeywordOpportunitiesCard({
                 <Link
                   key={`theme-${label}-${idx}`}
                   to={topicsHref}
-                  className="inline-flex max-w-full items-center gap-1 rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 px-3 py-1.5 text-xs text-md-sys-on-surface transition-colors hover:border-blue-500/30 hover:bg-md-sys-surface-container-low/70"
+                  className="inline-flex max-w-full items-center gap-1 rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 px-3 py-1.5 text-xs text-md-sys-on-surface transition-colors hover:border-md-sys-primary/30 hover:bg-md-sys-surface-container-low/70"
                   title={label}
                 >
                   <span className="truncate font-medium">{label}</span>

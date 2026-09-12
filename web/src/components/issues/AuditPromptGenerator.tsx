@@ -171,12 +171,12 @@ export default function AuditPromptGenerator({
                 className="w-full min-h-[320px] resize-y rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low p-3 font-mono text-xs leading-relaxed text-md-sys-on-surface"
                 aria-label={vp.promptModalTitle}
               />
-              {aiError ? <p className="mt-2 text-xs text-red-700 dark:text-red-400">{aiError}</p> : null}
+              {aiError ? <p className="mt-2 text-xs text-md-sys-error font-medium">{aiError}</p> : null}
             </div>
 
             <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-md-sys-outline-variant/40 px-6 py-4">
               <Button type="button" variant="secondary" className="!text-xs" onClick={() => void handleCopy()}>
-                {copied ? <Check className="h-3.5 w-3.5 text-green-600" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+                {copied ? <Check className="h-3.5 w-3.5 text-md-sys-success" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
                 {copied ? vp.copiedPrompt : aiPlan ? vp.copyFullPrompt : vp.copyPrompt}
               </Button>
 

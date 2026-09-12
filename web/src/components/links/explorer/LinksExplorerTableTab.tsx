@@ -367,7 +367,7 @@ export function LinksExplorerTableTab({
                     })}
                     <td className={visibleCols.has('js_errors') ? 'px-4 py-3 text-xs align-middle whitespace-nowrap' : 'hidden'}>
                       {linkHasBrowserErrors(link) ? (
-                        <span className="inline-flex items-center rounded-full bg-red-500/10 border border-red-500/25 px-2.5 py-0.5 font-mono text-red-700 dark:text-red-300">
+                        <span className="inline-flex items-center rounded-full bg-md-sys-error-container/20 border border-md-sys-error/30 px-2.5 py-0.5 font-mono text-xs font-semibold text-md-sys-error">
                           {format(vl.jsErrorBadge, {
                             console: link.console_error_count ?? 0,
                             page: link.page_error_count ?? 0,

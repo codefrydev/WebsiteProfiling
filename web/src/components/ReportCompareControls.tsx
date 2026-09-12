@@ -67,7 +67,7 @@ export default function ReportCompareControls() {
             setSelectedReportId(v === '' ? null : Number(v));
           }}
           disabled={loading || !!error}
-          className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg px-3 py-2 text-sm text-md-sys-on-surface focus:border-blue-500 outline-none w-full"
+          className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg px-3 py-2 text-sm text-md-sys-on-surface focus:border-md-sys-primary outline-none w-full"
           title={s.titleLoadReport}
         >
           <option value="">{s.latestOption}</option>
@@ -90,7 +90,7 @@ export default function ReportCompareControls() {
             setCompareReportId(v === '' ? null : Number(v));
           }}
           disabled={loading || !!error}
-          className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg px-3 py-2 text-sm text-md-sys-on-surface focus:border-blue-500 outline-none w-full"
+          className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg px-3 py-2 text-sm text-md-sys-on-surface focus:border-md-sys-primary outline-none w-full"
           title={s.titleCompareBaseline}
         >
           <option value="">{s.noneOption}</option>

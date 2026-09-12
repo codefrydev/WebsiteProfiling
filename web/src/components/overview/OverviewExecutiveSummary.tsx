@@ -221,9 +221,9 @@ export function OverviewExecutiveSummary({
                     <div
                       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
                         healthDelta > 0
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          ? 'bg-md-sys-success-container/20 text-md-sys-success border border-md-sys-success/30'
                           : healthDelta < 0
-                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                            ? 'bg-md-sys-error-container/20 text-md-sys-error border border-md-sys-error/30'
                             : 'bg-md-sys-surface-container-high text-md-sys-on-surface-variant'
                       }`}
                     >

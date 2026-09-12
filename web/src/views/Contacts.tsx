@@ -215,7 +215,7 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
     <PageLayout>
       <PageHeader title={vc.title} subtitle={vc.subtitle} icon={<Contact2 className="h-7 w-7 text-md-sys-primary shrink-0" />} />
       {(intel.consistency_notes?.length ?? 0) > 0 ? (
-        <Card className="mb-6 border-amber-500/30 bg-amber-500/5" devData={consistencyNotesDevData}>
+        <Card className="mb-6 border-md-sys-warning/30 bg-md-sys-warning-container/20" devData={consistencyNotesDevData}>
           <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{vc.notesTitle}</h3>
           <ul className="list-disc list-inside text-sm text-md-sys-on-surface-variant space-y-1">
             {(intel.consistency_notes || []).map((note) => (

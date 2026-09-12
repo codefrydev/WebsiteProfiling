@@ -286,13 +286,13 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
 
       <Card shadow>
         <div className="flex items-center gap-2 mb-4">
-          <ArrowLeftRight className="h-5 w-5 text-cyan-700 dark:text-cyan-400 shrink-0" />
+          <ArrowLeftRight className="h-5 w-5 text-md-sys-secondary shrink-0" />
           <h2 className="text-sm font-bold text-md-sys-on-surface">{vc.selectReports}</h2>
         </div>
         <ReportCompareControls />
         {reportList.length >= 2 && newerRow && baselineRow && compareReportId != null ? (
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded-full bg-blue-500/15 border border-blue-500/30 px-3 py-1 text-md-sys-primary font-medium">
+            <span className="rounded-full bg-md-sys-primary-container/20 border border-md-sys-primary/30 px-3 py-1 text-md-sys-primary font-medium">
               {vc.newerLabel}: {formatReportGeneratedAt(newerRow.generated_at)}
             </span>
             <span className="rounded-full bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 px-3 py-1 text-md-sys-on-surface-variant font-medium">
@@ -326,7 +326,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
               Export issue diff (CSV)
             </button>
             {copyHint ? (
-              <span className="text-xs text-rose-600 dark:text-rose-400">{copyHint}</span>
+              <span className="text-xs text-md-sys-error">{copyHint}</span>
             ) : null}
           </div>
         ) : null}
@@ -375,7 +375,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                   onClick={() => setTab(id)}
                   className={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap shrink-0 ${
                     tab === id
-                      ? 'bg-blue-500/15 text-md-sys-primary border border-b-0 border-blue-500/30 -mb-px'
+                      ? 'bg-md-sys-primary-container/20 text-md-sys-primary border border-b-0 border-md-sys-primary/30 -mb-px'
                       : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                   }`}
                 >
@@ -430,17 +430,17 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                     <div className="text-md-sys-on-surface-variant text-xs uppercase tracking-wider">
                       <LabelWithHint label={vo.newUrls} helpKey="views.compare.newUrls" />
                     </div>
-                    <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{urlLists.newUrls.length}</div>
+                    <div className="text-2xl font-bold text-md-sys-success">{urlLists.newUrls.length}</div>
                   </Card>
                   <Card className="p-4">
                     <div className="text-md-sys-on-surface-variant text-xs uppercase tracking-wider">
                       <LabelWithHint label={vo.removedUrls} helpKey="views.compare.removedUrls" />
                     </div>
-                    <div className="text-2xl font-bold text-rose-700 dark:text-rose-400">{urlLists.removedUrls.length}</div>
+                    <div className="text-2xl font-bold text-md-sys-error">{urlLists.removedUrls.length}</div>
                   </Card>
                   <Card className="p-4">
                     <div className="text-md-sys-on-surface-variant text-xs uppercase tracking-wider">{vo.contentChanged}</div>
-                    <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">{urlLists.contentChanged.length}</div>
+                    <div className="text-2xl font-bold text-md-sys-warning">{urlLists.contentChanged.length}</div>
                   </Card>
                   <Card className="p-4">
                     <div className="text-md-sys-on-surface-variant text-xs uppercase tracking-wider">{vo.structureChanged}</div>
@@ -468,7 +468,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                     onClick={() => setUrlTab(id)}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-[0.98] ${
                       urlTab === id
-                        ? 'bg-blue-500/15 border-blue-500/35 text-md-sys-primary shadow-elevation-1'
+                        ? 'bg-md-sys-primary-container/20 border-md-sys-primary/35 text-md-sys-primary shadow-elevation-1'
                         : 'border-md-sys-outline-variant/40 text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                     }`}
                   >
@@ -476,7 +476,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                   </button>
                 ))}
               </div>
-              {copyHint ? <p className="text-xs text-emerald-700 dark:text-emerald-400">{copyHint}</p> : null}
+              {copyHint ? <p className="text-xs text-md-sys-success">{copyHint}</p> : null}
               {urlTab === 'fields' ? (
                 <Card shadow>
                   <CompareUrlMetadataTable rows={metadataFiltered} emptyLabel={vc.noneInCategory} />
@@ -602,10 +602,10 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
             </div>
           ) : null}
 
-          <Card shadow className="border border-cyan-600/25 bg-cyan-500/5">
+          <Card shadow className="border border-md-sys-primary/25 bg-md-sys-primary-container/10">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
               <div className="flex items-start gap-2 min-w-0">
-                <FolderTree className="h-5 w-5 text-cyan-700 dark:text-cyan-400 shrink-0 mt-0.5" />
+                <FolderTree className="h-5 w-5 text-md-sys-primary shrink-0 mt-0.5" />
                 <p className="text-sm text-md-sys-on-surface-variant">{vc.siteStructureHint}</p>
               </div>
               <Link

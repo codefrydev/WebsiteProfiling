@@ -51,7 +51,7 @@ export default function SecretsSettingsPanel({
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-6 sm:px-6">
       {activeEnvHints.length ? (
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-xs text-emerald-700 dark:text-emerald-300">
+        <div className="rounded-2xl border border-md-sys-success/30 bg-md-sys-success-container/15 px-4 py-3 text-xs text-md-sys-success">
           {s.envConfigured}: {activeEnvHints.join(', ')}
         </div>
       ) : null}
@@ -65,7 +65,7 @@ export default function SecretsSettingsPanel({
                 {field.help ? (
                   <p className="text-xs leading-relaxed text-md-sys-on-surface-variant">{field.help}</p>
                 ) : null}
-                <p className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400">
+                <p className="flex items-center gap-1.5 text-xs text-md-sys-success">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
                   {s.serviceAccountSaved}
                 </p>
@@ -75,7 +75,7 @@ export default function SecretsSettingsPanel({
                   placeholder={s.serviceAccountReplacePlaceholder}
                   value={String(state[field.key] || '') === '{configured}' ? '' : String(state[field.key] || '')}
                   onChange={(e) => onChange(field.key, e.target.value)}
-                  className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface px-3 py-2 font-mono text-sm text-md-sys-on-surface placeholder:text-md-sys-on-surface-variant/60 focus:border-blue-500/50 focus:outline-none"
+                  className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface px-3 py-2 font-mono text-sm text-md-sys-on-surface placeholder:text-md-sys-on-surface-variant/60 focus:border-md-sys-primary/50 focus:outline-none"
                 />
               </div>
             );
@@ -174,7 +174,7 @@ export function SecretsSaveBar({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
       <span
-        className={`text-sm ${saveMsg ? (saveFailed ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400') : 'text-xs text-md-sys-on-surface-variant'}`}
+        className={`text-sm ${saveMsg ? (saveFailed ? 'text-md-sys-error' : 'text-md-sys-success') : 'text-xs text-md-sys-on-surface-variant'}`}
       >
         {saveMsg || hint}
       </span>

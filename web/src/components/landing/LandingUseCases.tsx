@@ -47,7 +47,7 @@ export default function LandingUseCases() {
             {USE_CASES.map(({ icon: Icon, title, description }) => (
               <li key={title}>
                 <article className="flex gap-4 px-4 py-4 @sm:gap-5 @sm:px-5 @sm:py-5">
-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-md-sys-primary">
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-md-sys-primary/20 bg-md-sys-primary-container/20 text-md-sys-primary">
                     <Icon className="h-4 w-4" aria-hidden />
                   </span>
                   <div className="min-w-0">

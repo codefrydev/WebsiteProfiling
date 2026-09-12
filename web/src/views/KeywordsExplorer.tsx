@@ -516,7 +516,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
           aurora
         />
         {!hasGscConnected && onOpenIntegrations && (
-          <Card className="max-w-lg mx-auto mt-6 text-center border-blue-500/30">
+          <Card className="max-w-lg mx-auto mt-6 text-center border-md-sys-primary/30">
             <p className="text-sm text-md-sys-on-surface-variant mb-3">{ke.connectBanner}</p>
             <Button
               variant="primary"

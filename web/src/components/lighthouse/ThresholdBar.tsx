@@ -27,13 +27,13 @@ export default function ThresholdBar({ metricKey, value }: ThresholdBarProps) {
 
   const v = Number(value);
   const status = metricStatus(metricKey, v);
-  const barColor = status === 'good' ? 'bg-green-500' : status === 'warn' ? 'bg-yellow-500' : 'bg-red-500';
+  const barColor = status === 'good' ? 'bg-md-sys-success' : status === 'warn' ? 'bg-md-sys-warning' : 'bg-md-sys-error';
   const textColor =
     status === 'good'
-      ? 'text-green-700 dark:text-green-400'
+      ? 'text-md-sys-success'
       : status === 'warn'
-        ? 'text-yellow-800 dark:text-yellow-400'
-        : 'text-red-600 dark:text-red-400';
+        ? 'text-md-sys-warning'
+        : 'text-md-sys-error';
   const refVal = t.good * 1.5;
   const pct = Math.min(100, (v / refVal) * 100);
   const hintBody = `${t.desc} Good: ≤${formatMetric(metricKey, t.good)}. Needs improvement: ≤${formatMetric(metricKey, t.warn)}.`;

@@ -299,7 +299,7 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-md-sys-on-surface">
-                  <BarChart3 className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" aria-hidden />
+                  <BarChart3 className="h-5 w-5 shrink-0 text-md-sys-primary" aria-hidden />
                   {vo.insightsGlance}
                 </h2>
                 <p className="mt-1 max-w-3xl text-sm text-md-sys-on-surface-variant">{vo.chartsSubtitle}</p>
@@ -316,10 +316,10 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                     <Link
                       key={concern.id}
                       to={concern.href}
-                      className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-md-sys-on-surface transition-colors hover:border-amber-500/40 hover:bg-amber-500/15"
+                      className="press inline-flex max-w-full items-center gap-1.5 rounded-full border border-md-sys-warning/30 bg-md-sys-warning-container/20 px-3 py-1.5 text-xs font-medium text-md-sys-on-surface transition-colors hover:border-md-sys-warning/50 hover:bg-md-sys-warning-container/30 active:scale-95"
                     >
                       <AlertTriangle
-                        className="h-3.5 w-3.5 shrink-0 text-amber-700 dark:text-amber-400"
+                        className="h-3.5 w-3.5 shrink-0 text-md-sys-warning"
                         aria-hidden
                       />
                       <span className="truncate">{concern.label}</span>

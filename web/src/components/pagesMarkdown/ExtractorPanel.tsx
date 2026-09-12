@@ -178,7 +178,7 @@ export default function ExtractorPanel({
         </div>
 
         {runsError ? (
-          <p className="text-xs text-red-400">{runsError}</p>
+          <p className="text-xs text-md-sys-error">{runsError}</p>
         ) : loadingRuns ? (
           <div className="flex items-center gap-2 text-xs text-md-sys-on-surface-variant">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -207,8 +207,8 @@ export default function ExtractorPanel({
             <span
               className={`flex items-center gap-1 rounded-full px-2.5 py-1 font-medium ${
                 htmlCount > 0
-                  ? 'bg-green-500/15 text-green-400'
-                  : 'bg-yellow-500/15 text-yellow-400'
+                  ? 'bg-md-sys-success-container/20 text-md-sys-success'
+                  : 'bg-md-sys-warning-container/20 text-md-sys-warning'
               }`}
             >
               {htmlCount > 0 ? (
@@ -219,7 +219,7 @@ export default function ExtractorPanel({
               {htmlCount > 0 ? `HTML ready (${htmlCount} pages)` : 'No HTML — capture required'}
             </span>
             {mdCount > 0 ? (
-              <span className="flex items-center gap-1 rounded-full px-2.5 py-1 font-medium bg-blue-500/15 text-blue-400">
+              <span className="flex items-center gap-1 rounded-full px-2.5 py-1 font-medium bg-md-sys-primary-container/20 text-md-sys-primary">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Markdown ready ({mdCount} pages)
               </span>
@@ -289,14 +289,14 @@ export default function ExtractorPanel({
             </button>
 
             {extractStatus === 'done' ? (
-              <p className="flex items-center gap-1.5 text-sm text-green-400">
+              <p className="flex items-center gap-1.5 text-sm text-md-sys-success">
                 <CheckCircle2 className="h-4 w-4" />
                 Extraction complete — switch to Preview tab to view results.
               </p>
             ) : null}
 
             {extractError ? (
-              <p className="flex items-center gap-1.5 text-sm text-red-400">
+              <p className="flex items-center gap-1.5 text-sm text-md-sys-error">
                 <AlertCircle className="h-4 w-4" />
                 {extractError}
               </p>
@@ -358,13 +358,13 @@ function CaptureSection({ selectedRun, captureStatus, captureLog, onCaptureStart
   };
 
   return (
-    <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-5 space-y-3">
+    <div className="rounded-xl border border-md-sys-warning/30 bg-md-sys-warning-container/10 p-5 space-y-3">
       <div className="flex items-start gap-2">
-        <AlertCircle className="h-4 w-4 text-yellow-400 mt-0.5 shrink-0" />
+        <AlertCircle className="h-4 w-4 text-md-sys-warning mt-0.5 shrink-0" />
         <div>
           <p className="text-sm font-medium text-md-sys-on-surface">No stored HTML for this run</p>
           <p className="text-xs text-md-sys-on-surface-variant mt-0.5">
-            Capture HTML by re-crawling with <code className="text-yellow-300/80">store_page_html=true</code>.
+            Capture HTML by re-crawling with <code className="text-md-sys-warning/80">store_page_html=true</code>.
             This will start a new crawl job for the same site.
           </p>
         </div>
@@ -374,7 +374,7 @@ function CaptureSection({ selectedRun, captureStatus, captureLog, onCaptureStart
         type="button"
         onClick={() => void handleCapture()}
         disabled={starting || captureStatus === 'running' || !selectedRun}
-        className="flex items-center gap-2 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-2 text-sm font-medium text-yellow-300 hover:bg-yellow-500/20 disabled:opacity-60"
+        className="flex items-center gap-2 rounded-lg border border-md-sys-warning/40 bg-md-sys-warning-container/15 px-4 py-2 text-sm font-medium text-md-sys-warning hover:bg-md-sys-warning-container/30 disabled:opacity-60"
       >
         {captureStatus === 'running' || starting ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -385,13 +385,13 @@ function CaptureSection({ selectedRun, captureStatus, captureLog, onCaptureStart
       </button>
 
       {captureStatus === 'done' ? (
-        <p className="text-xs text-green-400 flex items-center gap-1">
+        <p className="text-xs text-md-sys-success flex items-center gap-1">
           <CheckCircle2 className="h-3.5 w-3.5" />
           Crawl complete — HTML stored. You can now extract markdown.
         </p>
       ) : null}
 
-      {error ? <p className="text-xs text-red-400">{error}</p> : null}
+      {error ? <p className="text-xs text-md-sys-error">{error}</p> : null}
 
       {captureLog ? (
         <pre className="max-h-48 overflow-y-auto text-[11px] text-md-sys-on-surface-variant bg-md-sys-surface-container-lowest/60 rounded-lg p-3 font-mono whitespace-pre-wrap">

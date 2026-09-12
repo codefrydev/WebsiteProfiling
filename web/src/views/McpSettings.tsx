@@ -104,7 +104,7 @@ export default function McpSettingsPage() {
           ) : (
             <div className="mx-auto max-w-3xl space-y-8 px-4 py-6 sm:px-6">
               {envHintNames.length ? (
-                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-xs text-emerald-700 dark:text-emerald-300">
+                <div className="rounded-2xl border border-md-sys-success/30 bg-md-sys-success-container/15 px-4 py-3 text-xs text-md-sys-success">
                   {s.envConfigured}: {envHintNames.join(', ')} ({s.envOverrides})
                 </div>
               ) : null}
@@ -135,7 +135,7 @@ export default function McpSettingsPage() {
                       type="button"
                       disabled={readOnly || saving}
                       onClick={generateToken}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-md-sys-outline-variant/40 px-4 py-2 text-sm font-medium text-md-sys-on-surface transition-colors hover:border-blue-500/30 hover:bg-blue-500/5 disabled:opacity-50"
+                      className="press inline-flex items-center gap-1.5 rounded-full border border-md-sys-outline-variant/40 px-4 py-2 text-sm font-medium text-md-sys-on-surface transition-colors hover:border-md-sys-primary/30 hover:bg-md-sys-primary-container/10 active:scale-95 disabled:opacity-50"
                     >
                       <Sparkles className="h-4 w-4" aria-hidden />
                       {s.generateToken}
@@ -205,7 +205,7 @@ export default function McpSettingsPage() {
                       value={domain}
                       disabled={readOnly || saving}
                       onChange={(e) => setField('mcp_domain', e.target.value)}
-                      className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface px-3 py-2 text-sm text-md-sys-on-surface focus:border-blue-500/50 focus:outline-none"
+                      className="w-full rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface px-3 py-2 text-sm text-md-sys-on-surface focus:border-md-sys-primary/50 focus:outline-none"
                     >
                       {MCP_DOMAIN_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>

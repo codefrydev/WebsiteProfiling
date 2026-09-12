@@ -38,11 +38,11 @@ export function VizGallery({ value, spec, preferred, onChange }: VizGalleryProps
             key={viz}
             onClick={() => onChange(viz)}
             title={fits ? VIZ_META[viz].label : `${VIZ_META[viz].label} — needs more fields`}
-            className={`flex flex-col items-center gap-1 py-2 rounded-lg border text-[10px] transition-colors ${
+            className={`press flex flex-col items-center gap-1 py-2 rounded-xl border text-[10px] active:scale-95 transition-all ${
               active
-                ? 'border-blue-500 bg-blue-500/10 text-blue-300'
+                ? 'border-md-sys-primary bg-md-sys-primary-container/20 text-md-sys-primary font-medium'
                 : fits
-                  ? 'border-md-sys-outline-variant/40 hover:border-blue-500/50 text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
+                  ? 'border-md-sys-outline-variant/40 hover:border-md-sys-primary/50 text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                   : 'border-md-sys-outline-variant/30 text-md-sys-on-surface-variant/40'
             }`}
           >

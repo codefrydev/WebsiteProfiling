@@ -66,7 +66,7 @@ export default function LandingFinalCta() {
       <div className={`flex justify-center border-t border-md-sys-outline-variant/40 pt-5 ${landingGutterClass}`}>
         <a
           href="#quick-start"
-          className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs font-medium text-md-sys-primary transition-colors hover:bg-blue-500/20 @sm:text-sm"
+          className="inline-flex items-center gap-1.5 rounded-full border border-md-sys-primary/30 bg-md-sys-primary-container/20 px-4 py-1.5 text-xs font-medium text-md-sys-primary transition-colors hover:bg-md-sys-primary-container/30 @sm:text-sm"
         >
           {vl.finalCtaInstallLink}
           <ChevronRight className="h-3.5 w-3.5" aria-hidden />

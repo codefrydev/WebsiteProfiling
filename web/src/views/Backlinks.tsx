@@ -497,7 +497,7 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
             {(competitorGap.competitors as Array<{ competitor?: string; links_to_us?: boolean }>).map((row) => (
               <li key={row.competitor} className="flex items-center gap-2">
                 <span className="font-mono text-xs">{row.competitor}</span>
-                <span className={row.links_to_us ? 'text-emerald-600 text-xs' : 'text-amber-600 text-xs'}>
+                <span className={row.links_to_us ? 'text-md-sys-success text-xs font-medium' : 'text-md-sys-warning text-xs font-medium'}>
                   {row.links_to_us ? vb.linksToYou : vb.notInSample}
                 </span>
               </li>

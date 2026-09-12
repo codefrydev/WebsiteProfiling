@@ -63,7 +63,7 @@ export default function RichResultsValidationPanel({ rows, meta, devData }: Rich
   return (
     <Card padding="tight" shadow devData={devData}>
       <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-400" />
+        <Sparkles className="h-4 w-4 text-md-sys-primary" />
         <h3 className="text-sm font-bold text-md-sys-on-surface">{vca.richResultsTitle}</h3>
       </div>
       <p className="text-xs text-md-sys-on-surface-variant mb-2">{vca.richResultsHint}</p>
@@ -77,7 +77,7 @@ export default function RichResultsValidationPanel({ rows, meta, devData }: Rich
         </p>
       ) : null}
       {heuristicOnly ? (
-        <p className="text-xs text-amber-700 dark:text-amber-300 mb-4">{vca.richResultsUpgradeHint}</p>
+        <p className="text-xs text-md-sys-warning font-medium mb-4">{vca.richResultsUpgradeHint}</p>
       ) : (
         <div className="mb-4" />
       )}

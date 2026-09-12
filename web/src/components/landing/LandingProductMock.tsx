@@ -92,9 +92,9 @@ function MockLineChart({ label }: { label?: string }) {
 }
 
 const SCORE_RING_STROKE: Record<string, string> = {
-  'text-md-sys-primary': 'stroke-blue-400',
-  'text-amber-400': 'stroke-amber-400',
-  'text-emerald-400': 'stroke-emerald-400',
+  'text-md-sys-primary': 'stroke-md-sys-primary',
+  'text-md-sys-warning': 'stroke-md-sys-warning',
+  'text-md-sys-success': 'stroke-md-sys-success',
 };
 
 function MockScoreRing({
@@ -232,12 +232,12 @@ function IssuesPanel() {
         </CompactWidget>
         <CompactWidget title="Issue trend">
           <CompactAreaSparkline points={[42, 38, 35, 40, 32, 28, 26, 24]} />
-          <p className="mt-1 text-[8px] text-emerald-400">↓ 18% vs last crawl</p>
+          <p className="mt-1 text-[8px] text-md-sys-success">↓ 18% vs last crawl</p>
         </CompactWidget>
       </div>
       <div className="mb-2.5 grid grid-cols-3 gap-1.5 rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 p-2">
-        <MockScoreRing score={72} label="Perf" color="text-amber-400" />
-        <MockScoreRing score={91} label="SEO" color="text-emerald-400" />
+        <MockScoreRing score={72} label="Perf" color="text-md-sys-warning" />
+        <MockScoreRing score={91} label="SEO" color="text-md-sys-success" />
         <MockScoreRing score={88} label="A11y" color="text-md-sys-primary" />
       </div>
       <CompactWidget title="Top issues">
@@ -277,7 +277,7 @@ function OverviewPanel() {
         <MockLineChart label="Organic trend" />
         <CompactWidget title="Lighthouse">
           <div className="flex justify-around px-1">
-            <MockScoreRing score={84} label="Perf" color="text-emerald-400" />
+            <MockScoreRing score={84} label="Perf" color="text-md-sys-success" />
             <MockScoreRing score={96} label="SEO" color="text-md-sys-primary" />
           </div>
         </CompactWidget>
@@ -414,16 +414,16 @@ function PromptGeneratorPanel() {
         <div className="mt-2 space-y-1 rounded-md border border-md-sys-outline-variant/30 bg-md-sys-surface-container-low/40 p-1.5">
           <span className="block h-1 w-[95%] rounded bg-md-sys-surface-container-high/80" />
           <span className="block h-1 w-[88%] rounded bg-md-sys-surface-container-high/80" />
-          <span className="block h-1 w-[72%] rounded bg-blue-500/30" />
+          <span className="block h-1 w-[72%] rounded bg-md-sys-primary/30" />
           <span className="block h-1 w-[90%] rounded bg-md-sys-surface-container-high/80" />
           <span className="block h-1 w-[65%] rounded bg-md-sys-surface-container-high/80" />
         </div>
         <div className="mt-2 flex flex-wrap gap-1">
-          <span className="rounded border border-md-sys-outline-variant/40 px-1.5 py-0.5 text-[7px] text-md-sys-on-surface">Copy prompt</span>
-          <span className="rounded border border-fuchsia-500/30 bg-fuchsia-500/10 px-1.5 py-0.5 text-[7px] text-fuchsia-300">
+          <span className="rounded-full border border-md-sys-outline-variant/40 px-1.5 py-0.5 text-[7px] text-md-sys-on-surface">Copy prompt</span>
+          <span className="rounded-full border border-md-sys-tertiary/30 bg-md-sys-tertiary-container/20 px-1.5 py-0.5 text-[7px] text-md-sys-tertiary font-medium">
             Get AI plan
           </span>
-          <span className="rounded border border-md-sys-outline-variant/40 px-1.5 py-0.5 text-[7px] text-md-sys-on-surface">Open in Chat</span>
+          <span className="rounded-full border border-md-sys-outline-variant/40 px-1.5 py-0.5 text-[7px] text-md-sys-on-surface">Open in Chat</span>
         </div>
       </div>
       <CompactWidget title="Also on Security & JS errors" className="mb-0 mt-auto">

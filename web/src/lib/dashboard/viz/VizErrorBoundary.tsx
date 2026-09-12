@@ -32,7 +32,7 @@ export class VizErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <div className="flex items-center gap-1.5 text-amber-400 text-xs py-2">
+        <div className="flex items-center gap-1.5 text-md-sys-warning text-xs py-2">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
           <span className="break-all">Failed to render: {this.state.error.message}</span>
         </div>

@@ -80,7 +80,7 @@ function NerBlock({ nlp }: NerBlockProps) {
             return (
               <span
                 key={`${String(label)}-${i}`}
-                className="text-[11px] font-mono px-2 py-0.5 rounded bg-violet-200/70 border border-violet-400/35 text-violet-950 dark:bg-violet-950/50 dark:border-violet-500/20 dark:text-violet-200"
+                className="text-[11px] font-mono px-2 py-0.5 rounded bg-md-sys-tertiary-container/30 border border-md-sys-tertiary/35 text-md-sys-on-tertiary-container dark:text-md-sys-tertiary"
               >
                 {String(label)}
                 {n != null ? `: ${n}` : ''}
@@ -183,12 +183,12 @@ function InsightsPanel({
   }
 
   return (
-    <div className="border border-violet-400/30 dark:border-violet-500/20 rounded-xl p-4 bg-violet-100/45 dark:bg-violet-950/20 space-y-3">
+    <div className="border border-md-sys-tertiary/30 rounded-xl p-4 bg-md-sys-tertiary-container/10 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-md-sys-on-surface">
         {link.duplicate_group_id && (
           <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg p-3">
             <div className="text-md-sys-on-surface-variant mb-1">{p.duplicateCluster}</div>
-            <div className="font-mono text-violet-800 dark:text-violet-300">{link.duplicate_group_id}</div>
+            <div className="font-mono text-md-sys-tertiary">{link.duplicate_group_id}</div>
           </div>
         )}
         {link.detected_language && (
@@ -207,7 +207,7 @@ function InsightsPanel({
                 return (
                   <li
                     key={`${String(phrasePair[0])}-${i}`}
-                    className="text-[11px] font-mono px-2 py-0.5 rounded bg-md-sys-surface-container border border-md-sys-outline-variant/40 text-emerald-800 dark:text-emerald-300/90"
+                    className="text-[11px] font-mono px-2 py-0.5 rounded bg-md-sys-surface-container border border-md-sys-outline-variant/40 text-md-sys-success"
                   >
                     {String(phrasePair[0])}
                     {typeof phrasePair[1] === 'number' && (
@@ -232,7 +232,7 @@ function InsightsPanel({
             {similarRows.slice(0, 8).map((row) => (
               <li key={row.url} className="flex flex-wrap items-baseline gap-2 gap-y-0">
                 {row.score != null && !Number.isNaN(row.score) && (
-                  <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400/90 shrink-0 w-14">
+                  <span className="text-[10px] font-mono text-md-sys-success shrink-0 w-14">
                     {row.score.toFixed(4)}
                   </span>
                 )}

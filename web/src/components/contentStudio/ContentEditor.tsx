@@ -255,7 +255,7 @@ export default function ContentEditor({
               onChange={(e) => setKeyword(e.target.value)}
               disabled={readOnly}
               placeholder={s.targetKeyword}
-              className="min-w-[7rem] flex-1 rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-blue-500 focus:outline-none disabled:opacity-60"
+              className="min-w-[7rem] flex-1 rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none disabled:opacity-60"
             />
             <input
               type="url"
@@ -263,7 +263,7 @@ export default function ContentEditor({
               onChange={(e) => setLandingUrl(e.target.value)}
               disabled={readOnly}
               placeholder={s.landingUrl}
-              className="min-w-[9rem] flex-[2] rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-blue-500 focus:outline-none disabled:opacity-60"
+              className="min-w-[9rem] flex-[2] rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none disabled:opacity-60"
             />
             <button
               type="button"
@@ -282,7 +282,7 @@ export default function ContentEditor({
                 onChange={(e) => setTitleTag(e.target.value)}
                 disabled={readOnly}
                 placeholder={s.titleTag}
-                className="rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-blue-500 focus:outline-none disabled:opacity-60"
+                className="rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none disabled:opacity-60"
               />
               <input
                 type="text"
@@ -290,7 +290,7 @@ export default function ContentEditor({
                 onChange={(e) => setMetaDescription(e.target.value)}
                 disabled={readOnly}
                 placeholder={s.metaDescription}
-                className="rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-blue-500 focus:outline-none disabled:opacity-60"
+                className="rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2 py-1 text-xs text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none disabled:opacity-60"
               />
             </div>
           ) : null}

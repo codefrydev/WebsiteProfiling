@@ -184,7 +184,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
   const agentGrade = String(agentScore?.grade || '—');
   const agentCategories = (agentScore?.categories || {}) as Record<string, { score: number; max: number }>;
   const gradeColor = (g: string) =>
-    g === 'A' ? 'text-green-600' : g === 'B' ? 'text-green-500' : g === 'C' ? 'text-yellow-600' : g === 'D' ? 'text-orange-500' : g === 'F' ? 'text-destructive' : 'text-md-sys-on-surface-variant';
+    g === 'A' ? 'text-md-sys-success' : g === 'B' ? 'text-md-sys-success' : g === 'C' ? 'text-md-sys-warning' : g === 'D' ? 'text-md-sys-warning' : g === 'F' ? 'text-destructive' : 'text-md-sys-on-surface-variant';
 
   const citationStatsDevData = useMemo(
     () => ({
@@ -397,7 +397,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
         icon={<Globe2 className="h-7 w-7 text-md-sys-primary shrink-0" />}
       />
 
-      <Card className="mb-4 border-violet-500/25 bg-violet-500/5 p-4">
+      <Card className="mb-4 border-md-sys-tertiary/25 bg-md-sys-tertiary-container/10 p-4">
         <p className="text-sm text-md-sys-on-surface-variant">{vg.provenanceBanner}</p>
       </Card>
 
@@ -463,7 +463,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
                 <>
                   <p className="text-xs font-mono text-md-sys-on-surface break-all">{String(llms.url || '')}</p>
                   {llms.llms_full_txt_found && (
-                    <p className="text-xs text-green-600 mt-1">llms-full.txt also found</p>
+                    <p className="text-xs text-md-sys-success mt-1">llms-full.txt also found</p>
                   )}
                   {llms.depth ? (
                     <ul className="mt-2 space-y-1 text-xs text-md-sys-on-surface-variant">
@@ -493,7 +493,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
             <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               {Object.entries(aiDiscoveryEndpoints).map(([key, ep]) => (
                 <li key={key} className="flex items-center gap-2">
-                  <span className={ep.found ? 'text-green-600' : 'text-destructive'}>
+                  <span className={ep.found ? 'text-md-sys-success' : 'text-destructive'}>
                     {ep.found ? '✓' : '✗'}
                   </span>
                   <span className="text-md-sys-on-surface-variant truncate">{key.replace(/_/g, ' ')}</span>
@@ -537,7 +537,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
                           bot.access === 'blocked'
                             ? 'text-destructive text-xs font-medium'
                             : bot.access === 'allowed'
-                              ? 'text-green-600 text-xs font-medium'
+                              ? 'text-md-sys-success text-xs font-medium'
                               : 'text-md-sys-on-surface-variant text-xs'
                         }>
                           {String(bot.access)}
@@ -681,7 +681,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           </Card>
 
           {/* Live citation check note */}
-          <Card className="p-4 border-violet-500/25 bg-violet-500/5">
+          <Card className="p-4 border-md-sys-tertiary/25 bg-md-sys-tertiary-container/10">
             <h3 className="text-sm font-semibold text-md-sys-on-surface mb-1">{vg.citationLiveTitle}</h3>
             <p className="text-xs text-md-sys-on-surface-variant">{vg.citationLiveOptInNote}</p>
           </Card>
@@ -732,7 +732,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
                 { label: 'agent-permissions.json', data: agentPermissions },
               ].map(({ label, data }) => (
                 <li key={label} className="flex items-center gap-3">
-                  <span className={data?.found ? 'text-green-600' : 'text-destructive'}>
+                  <span className={data?.found ? 'text-md-sys-success' : 'text-destructive'}>
                     {data?.found ? '✓' : '✗'}
                   </span>
                   <span className="font-mono text-xs flex-1">{label}</span>
@@ -795,7 +795,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="text-xs tabular-nums font-medium text-orange-600">
+                          <span className="text-xs tabular-nums font-medium text-md-sys-warning">
                             {String(row.token_count ?? '—')}
                           </span>
                         </TableCell>
@@ -836,7 +836,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           </Card>
 
           {/* Generate bundle CTA */}
-          <Card className="p-4 border-violet-500/25 bg-violet-500/5" devData={agentBundleDevData}>
+          <Card className="p-4 border-md-sys-tertiary/25 bg-md-sys-tertiary-container/10" devData={agentBundleDevData}>
             <h3 className="text-sm font-semibold text-md-sys-on-surface mb-1">{vg.agentBundleTitle}</h3>
             <p className="text-xs text-md-sys-on-surface-variant mb-3">{vg.agentBundleSubtitle}</p>
             {!agentBundle ? (
@@ -850,7 +850,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
             ) : (
               <div className="space-y-3">
                 {Array.isArray(agentBundle.missing_files) && (agentBundle.missing_files as string[]).length > 0 && (
-                  <p className="text-xs text-orange-600">
+                  <p className="text-xs text-md-sys-warning">
                     {vg.agentBundleMissingLabel}: {(agentBundle.missing_files as string[]).join(', ')}
                   </p>
                 )}

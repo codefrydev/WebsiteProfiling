@@ -167,7 +167,7 @@ function ResearchTab({ active, keyword, title }: { active: boolean; keyword: str
           {p.loading}
         </p>
       ) : null}
-      {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
+      {error ? <p className="text-xs text-md-sys-error">{error}</p> : null}
 
       {questions && questions.length > 0 ? (
         <div>
@@ -279,7 +279,7 @@ function OutlineTab({
           {p.loading}
         </p>
       ) : null}
-      {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
+      {error ? <p className="text-xs text-md-sys-error">{error}</p> : null}
 
       {outline && outline.length > 0 ? (
         <ul className="space-y-1.5">
@@ -293,7 +293,7 @@ function OutlineTab({
                 }`}
               >
                 {covered ? (
-                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-md-sys-success" aria-hidden />
                 ) : (
                   <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-md-sys-on-surface-variant/40" aria-hidden />
                 )}

@@ -12,9 +12,9 @@ interface AiSuggestionsPanelProps {
 
 function priorityClass(p: string): string {
   const v = p.toLowerCase();
-  if (v === 'high') return 'border-l-red-500/60';
-  if (v === 'low') return 'border-l-muted-foreground/40';
-  return 'border-l-amber-500/60';
+  if (v === 'high') return 'border-l-md-sys-error';
+  if (v === 'low') return 'border-l-md-sys-outline-variant/40';
+  return 'border-l-md-sys-warning';
 }
 
 export default function AiSuggestionsPanel({
@@ -43,7 +43,7 @@ export default function AiSuggestionsPanel({
   }
 
   if (error) {
-    return <p className="text-xs text-red-700 dark:text-red-400">{error}</p>;
+    return <p className="text-xs text-md-sys-error font-medium">{error}</p>;
   }
 
   if (!analysis) {
@@ -70,7 +70,7 @@ export default function AiSuggestionsPanel({
         </p>
       ) : null}
       {analysis.ai_error ? (
-        <p className="text-[10px] text-amber-700 dark:text-amber-400">{analysis.ai_error}</p>
+        <p className="text-[10px] text-md-sys-warning font-medium">{analysis.ai_error}</p>
       ) : null}
 
       {analysis.suggestions.length > 0 ? (

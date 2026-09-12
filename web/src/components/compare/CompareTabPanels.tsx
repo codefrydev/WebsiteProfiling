@@ -328,7 +328,7 @@ export function ComparePerformancePanel({
 function LhDelta({ delta }: { delta: number | null }) {
   if (delta == null) return <span className="text-md-sys-on-surface-variant text-xs">—</span>;
   const improved = delta > 0;
-  const color = improved ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400';
+  const color = improved ? 'text-md-sys-success' : 'text-md-sys-error';
   return (
     <span className={`text-xs font-bold tabular-nums ${color}`}>
       {delta > 0 ? '+' : ''}
@@ -413,10 +413,10 @@ export function CompareContentPanel({ compare, searchQuery, vc, emptyLabel }: Pa
             {tech.map((row) => (
               <span
                 key={`${row.kind}-${row.name}`}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
                   row.kind === 'added'
-                    ? 'border-emerald-500/35 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
-                    : 'border-rose-500/35 bg-rose-500/10 text-rose-800 dark:text-rose-300'
+                    ? 'border-md-sys-success/35 bg-md-sys-success-container/20 text-md-sys-success'
+                    : 'border-md-sys-error/35 bg-md-sys-error-container/20 text-md-sys-error'
                 }`}
               >
                 {row.kind === 'added' ? '+' : '−'} {row.name}

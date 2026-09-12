@@ -37,9 +37,9 @@ export default function McpCopyBlock({ label, description, value, language = 'js
         <button
           type="button"
           onClick={() => { void handleCopy(); }}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-md-sys-outline-variant/40 px-3 py-1.5 text-xs font-medium text-md-sys-on-surface-variant transition-colors hover:border-blue-500/25 hover:text-md-sys-on-surface"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-md-sys-outline-variant/40 px-3 py-1.5 text-xs font-medium text-md-sys-on-surface-variant transition-colors hover:border-md-sys-primary/40 hover:text-md-sys-on-surface"
         >
-          {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+          {copied ? <Check className="h-3.5 w-3.5 text-md-sys-success" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
           {copied ? s.copied : s.copy}
         </button>
       </div>

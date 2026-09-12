@@ -213,7 +213,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
           {(data?.content_duplicates?.length ?? 0) > 0 && (
             <Card shadow devData={duplicatesDevData}>
               <div className="flex items-center gap-2 mb-3">
-                <Copy className="h-4 w-4 text-violet-700 dark:text-violet-400" />
+                <Copy className="h-4 w-4 text-md-sys-primary" />
                 <h2 className="text-sm font-bold text-md-sys-on-surface">{vc.dupClusters}</h2>
               </div>
               <div className="max-h-72 overflow-y-auto rounded-lg border border-md-sys-outline-variant/40">
@@ -229,7 +229,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                   <TableBody striped>
                     {(data?.content_duplicates || []).slice(0, 40).map((g) => (
                       <TableRow key={g.id} className="align-top">
-                        <TableCell className="font-mono text-xs text-violet-800 dark:text-violet-300">{g.id}</TableCell>
+                        <TableCell className="font-mono text-xs text-md-sys-primary">{g.id}</TableCell>
                         <TableCell className="max-w-md">
                           <a
                             href={g.representative_url}
@@ -288,14 +288,14 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                     className={`text-left rounded-xl border p-3 transition-all ${
                       isActive
                         ? hasIssues
-                          ? 'bg-red-500/10 border-red-500/40 ring-1 ring-red-500/20'
-                          : 'bg-green-500/10 border-green-500/40 ring-1 ring-green-500/20'
+                          ? 'bg-md-sys-error-container/20 border-md-sys-error/40 ring-1 ring-md-sys-error/20'
+                          : 'bg-md-sys-success-container/20 border-md-sys-success/40 ring-1 ring-md-sys-success/20'
                         : hasIssues
-                          ? 'bg-md-sys-surface-container border-amber-700/40 hover:border-amber-600/60'
-                          : 'bg-md-sys-surface-container border-md-sys-outline-variant/40 hover:border-md-sys-outline/60/80 opacity-60'
+                          ? 'bg-md-sys-surface-container border-md-sys-warning/40 hover:border-md-sys-warning/60'
+                          : 'bg-md-sys-surface-container border-md-sys-outline-variant/40 hover:border-md-sys-outline/80 opacity-60'
                     }`}
                   >
-                    <div className={`text-xl font-bold ${hasIssues ? (isActive ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400') : 'text-green-700 dark:text-green-400'}`}>
+                    <div className={`text-xl font-bold ${hasIssues ? (isActive ? 'text-md-sys-error' : 'text-md-sys-warning') : 'text-md-sys-success'}`}>
                       {count}
                     </div>
                     <div className="text-xs text-md-sys-on-surface-variant mt-0.5 leading-tight">{label}</div>
@@ -321,17 +321,17 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                   onClick={() => setFilter(key)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
                     isActive
-                      ? 'bg-blue-500/20 text-md-sys-primary border-blue-500/30'
+                      ? 'bg-md-sys-primary-container/30 text-md-sys-primary border-md-sys-primary/30'
                       : hasIssues
-                        ? 'border-amber-700/50 bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:border-amber-600/60'
-                        : 'border-md-sys-outline-variant/40 bg-md-sys-surface-container text-md-sys-on-surface-variant hover:border-md-sys-outline/60/80'
+                        ? 'border-md-sys-warning/50 bg-md-sys-warning-container/20 text-md-sys-on-warning-container hover:border-md-sys-warning/70'
+                        : 'border-md-sys-outline-variant/40 bg-md-sys-surface-container text-md-sys-on-surface-variant hover:border-md-sys-outline/80'
                   }`}
                 >
                   {hasIssues && !isActive && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-md-sys-warning flex-shrink-0" />
                   )}
                   {label}
-                  <span className={`text-xs font-bold ${isActive ? 'text-md-sys-primary-soft' : hasIssues ? 'text-amber-700 dark:text-amber-400' : 'text-md-sys-on-surface-variant'}`}>
+                  <span className={`text-xs font-bold ${isActive ? 'text-md-sys-primary' : hasIssues ? 'text-md-sys-warning' : 'text-md-sys-on-surface-variant'}`}>
                     ({count})
                   </span>
                 </button>
@@ -340,7 +340,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
           </div>
 
           {activeFilter?.guidance && (
-            <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3">
+            <div className="flex items-start gap-3 bg-md-sys-primary-container/10 border border-md-sys-primary/20 rounded-xl px-4 py-3">
               <FileText className="h-4 w-4 text-md-sys-primary flex-shrink-0 mt-0.5" />
               <p className="text-sm text-md-sys-on-surface leading-relaxed">{activeFilter.guidance}</p>
             </div>
@@ -349,7 +349,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
           <Card overflowHidden shadow padding="none" className="flex flex-col" devData={issuesTableDevData}>
         {list.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <CheckCircle2 className="h-10 w-10 text-green-600" />
+            <CheckCircle2 className="h-10 w-10 text-md-sys-success" />
             <p className="text-md-sys-on-surface-variant text-sm font-medium">{vc.emptyFilter}</p>
             <p className="text-xs text-md-sys-on-surface-variant">{vc.emptyGreat}</p>
           </div>
@@ -419,17 +419,17 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                         {showMetricCol && (
                           <p className="mt-1 md:hidden text-[11px] text-md-sys-on-surface-variant leading-snug">
                             {(filter === 'meta_desc_short' || filter === 'meta_desc_long') && (
-                              <span className={`font-semibold tabular-nums ${filter === 'meta_desc_short' ? 'text-amber-700 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+                              <span className={`font-semibold tabular-nums ${filter === 'meta_desc_short' ? 'text-md-sys-warning' : 'text-md-sys-error'}`}>
                                 {vc.tableLength}: {item.meta_desc_len ?? sj.emDash}
                               </span>
                             )}
                             {filter === 'multiple_h1' && (
-                              <span className="font-semibold tabular-nums text-red-600 dark:text-red-400">
+                              <span className="font-semibold tabular-nums text-md-sys-error">
                                 {vc.tableH1Count}: {item.h1_count ?? sj.emDash}
                               </span>
                             )}
                             {filter === 'thin_content' && (
-                              <span className="font-semibold tabular-nums text-amber-700 dark:text-amber-400">
+                              <span className="font-semibold tabular-nums text-md-sys-warning">
                                 {vc.tableWords}: {item.word_count ?? item.content_length ?? sj.emDash}
                               </span>
                             )}
@@ -440,7 +440,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                     {(filter === 'meta_desc_short' || filter === 'meta_desc_long') && (
                       <TableCell className="hidden md:table-cell text-center align-middle px-3 sm:px-4">
                         <span className={`text-sm font-bold tabular-nums ${
-                          filter === 'meta_desc_short' ? 'text-amber-700 dark:text-amber-400' : 'text-red-600 dark:text-red-400'
+                          filter === 'meta_desc_short' ? 'text-md-sys-warning' : 'text-md-sys-error'
                         }`}>
                           {item.meta_desc_len ?? sj.emDash}
                         </span>
@@ -448,12 +448,12 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                     )}
                     {filter === 'multiple_h1' && (
                       <TableCell className="hidden md:table-cell text-center align-middle px-3 sm:px-4">
-                        <span className="text-sm font-bold tabular-nums text-red-600 dark:text-red-400">{item.h1_count ?? sj.emDash}</span>
+                        <span className="text-sm font-bold tabular-nums text-md-sys-error">{item.h1_count ?? sj.emDash}</span>
                       </TableCell>
                     )}
                     {filter === 'thin_content' && (
                       <TableCell className="hidden md:table-cell text-center align-middle px-3 sm:px-4">
-                        <span className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400">{item.word_count ?? item.content_length ?? sj.emDash}</span>
+                        <span className="text-sm font-bold tabular-nums text-md-sys-warning">{item.word_count ?? item.content_length ?? sj.emDash}</span>
                       </TableCell>
                     )}
                   </TableRow>

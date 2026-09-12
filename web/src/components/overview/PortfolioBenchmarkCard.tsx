@@ -88,16 +88,16 @@ function StatusBanner({
     <div
       className={`flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
         isError
-          ? 'border-red-500/30 bg-red-500/10'
-          : 'border-amber-500/25 bg-amber-500/10'
+          ? 'border-md-sys-error/30 bg-md-sys-error-container/15'
+          : 'border-md-sys-warning/25 bg-md-sys-warning-container/15'
       }`}
     >
       <div className="flex items-start gap-2 min-w-0">
         <AlertCircle
-          className={`h-4 w-4 shrink-0 mt-0.5 ${isError ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}
+          className={`h-4 w-4 shrink-0 mt-0.5 ${isError ? 'text-md-sys-error' : 'text-md-sys-warning'}`}
           aria-hidden
         />
-        <p className={`text-sm ${isError ? 'text-red-800 dark:text-red-300' : 'text-amber-900 dark:text-amber-100'}`}>
+        <p className={`text-sm ${isError ? 'text-md-sys-error' : 'text-md-sys-warning'}`}>
           {message}
         </p>
       </div>
@@ -187,7 +187,7 @@ export function PortfolioBenchmarkCard({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" aria-hidden />
+              <TrendingUp className="h-5 w-5 shrink-0 text-md-sys-primary" aria-hidden />
               <h2 className="text-lg font-bold text-md-sys-on-surface">{vo.portfolioBenchmarkTitle}</h2>
               <HelpHint ariaLabel={vo.portfolioBenchmarkHelpTitle} side="bottom">
                 {vo.portfolioBenchmarkHelpBody}

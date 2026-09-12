@@ -317,7 +317,7 @@ export default function GuidedDraftWizard({
               ) : null}
 
               {error ? (
-                <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-md-sys-error/40 bg-md-sys-error-container/10 px-4 py-3 text-sm text-md-sys-error">
                   <span>{error}</span>
                   <Button type="button" variant="secondary" className="!px-2 !py-1 !text-xs" onClick={() => void load(step)}>
                     {w.retry}
@@ -406,7 +406,7 @@ function KeywordGate({
             onChange={(e) => onChange(e.target.value)}
             placeholder={w.keywordPlaceholder}
             autoFocus
-            className="min-w-0 flex-1 rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-3 py-2 text-sm text-md-sys-on-surface focus:border-blue-500 focus:outline-none"
+            className="min-w-0 flex-1 rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-3 py-2 text-sm text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none"
           />
           <Button type="submit" variant="primary" disabled={!keyword.trim()}>
             {w.start}
@@ -434,7 +434,7 @@ function Stepper({ current }: { current: number }) {
                     active
                       ? 'bg-md-sys-primary text-md-sys-on-primary'
                       : done
-                        ? 'bg-emerald-600 text-white'
+                        ? 'bg-md-sys-success text-md-sys-on-success'
                         : 'bg-md-sys-surface-container-high text-md-sys-on-surface-variant'
                   }`}
                 >
@@ -554,13 +554,13 @@ function OptionList({
               onClick={() => onSelect(opt.label)}
               className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
                 active
-                  ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/40'
+                  ? 'border-md-sys-primary bg-md-sys-primary-container/10 ring-1 ring-md-sys-primary/40'
                   : 'border-md-sys-outline-variant/40 hover:border-md-sys-outline-variant/50 hover:bg-md-sys-surface-container/40'
               }`}
             >
               <span
                 className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                  active ? 'border-blue-500 bg-blue-500' : 'border-md-sys-outline-variant/60'
+                  active ? 'border-md-sys-primary bg-md-sys-primary' : 'border-md-sys-outline-variant/60'
                 }`}
               >
                 {active ? <span className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
@@ -603,7 +603,7 @@ function TitleStep({
               onClick={() => onSelect(t)}
               className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
                 active
-                  ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/40 text-md-sys-on-surface'
+                  ? 'border-md-sys-primary bg-md-sys-primary-container/10 ring-1 ring-md-sys-primary/40 text-md-sys-on-surface'
                   : 'border-md-sys-outline-variant/40 text-md-sys-on-surface hover:bg-md-sys-surface-container/40'
               }`}
             >
@@ -619,7 +619,7 @@ function TitleStep({
           value={title}
           onChange={(e) => onSelect(e.target.value)}
           placeholder={w.titleCustomPlaceholder}
-          className="mt-1 w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-3 py-2 text-sm text-md-sys-on-surface focus:border-blue-500 focus:outline-none"
+          className="mt-1 w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-3 py-2 text-sm text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none"
         />
       </label>
     </div>
@@ -660,7 +660,7 @@ function OutlineStep({
               value={row.text}
               onChange={(e) => onUpdateRow(row.uid, e.target.value)}
               disabled={row.level === 'h1'}
-              className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1 text-sm text-md-sys-on-surface hover:border-md-sys-outline-variant/40 focus:border-blue-500 focus:bg-md-sys-surface-container focus:outline-none disabled:opacity-80"
+              className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1 text-sm text-md-sys-on-surface hover:border-md-sys-outline-variant/40 focus:border-md-sys-primary focus:bg-md-sys-surface-container focus:outline-none disabled:opacity-80"
             />
             {row.level !== 'h1' ? (
               <span className="flex shrink-0 items-center gap-0.5">
@@ -685,7 +685,7 @@ function OutlineStep({
                 <button
                   type="button"
                   onClick={() => onDeleteRow(row.uid)}
-                  className="rounded p-1 text-md-sys-on-surface-variant hover:bg-red-500/10 hover:text-red-600"
+                  className="rounded p-1 text-md-sys-on-surface-variant hover:bg-md-sys-error-container/20 hover:text-md-sys-error"
                   aria-label={w.deleteHeading}
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden />

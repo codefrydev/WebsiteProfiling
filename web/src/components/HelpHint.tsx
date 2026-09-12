@@ -160,7 +160,7 @@ export default function HelpHint({
         ref={buttonRef}
         role="button"
         tabIndex={0}
-        className="rounded-full p-0.5 text-md-sys-on-surface-variant hover:text-md-sys-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 align-middle cursor-pointer"
+        className="rounded-full p-0.5 text-md-sys-on-surface-variant hover:text-md-sys-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-md-sys-primary/40 align-middle cursor-pointer"
         aria-expanded={open}
         aria-describedby={open ? id : undefined}
         aria-label={ariaLabel}

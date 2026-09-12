@@ -14,7 +14,7 @@ export function DatasetPicker({ value, onChange }: DatasetPickerProps) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-2 py-1.5 text-sm bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg text-md-sys-on-surface focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="w-full px-2 py-1.5 text-sm bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg text-md-sys-on-surface focus:outline-none focus:ring-1 focus:ring-md-sys-primary"
       >
         {groups.map((g) => (
           <optgroup key={g.group} label={g.group}>

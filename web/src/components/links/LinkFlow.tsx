@@ -52,7 +52,7 @@ function NodeChip({
       type="button"
       onClick={() => onSelect(node.url)}
       title={node.url}
-      className={`${cls} text-md-sys-on-surface hover-lift press hover:border-blue-500/40 hover:text-md-sys-on-surface transition-colors`}
+      className={`${cls} text-md-sys-on-surface hover-lift press hover:border-md-sys-primary/40 hover:text-md-sys-on-surface transition-colors`}
     >
       {inner}
     </button>

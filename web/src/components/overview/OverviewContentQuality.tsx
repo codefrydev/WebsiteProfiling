@@ -373,7 +373,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
           <div className="border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-lowest/30 px-4 py-2">
             <h3 className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-md-sys-on-surface-variant">
               <Activity
-                className={`h-3.5 w-3.5 ${concerns.length > 0 ? 'text-rose-500' : 'text-emerald-500'}`}
+                className={`h-3.5 w-3.5 ${concerns.length > 0 ? 'text-md-sys-error' : 'text-md-sys-success'}`}
                 aria-hidden
               />
               {vo.diagnosticLog}
@@ -447,7 +447,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
           >
             <div>
               {mixedLanguage ? (
-                <p className="mb-3 text-xs text-amber-800 dark:text-amber-200/90">
+                <p className="mb-3 text-xs text-md-sys-warning font-medium">
                   {vo.contentQualityMixedLanguageHint}
                 </p>
               ) : null}

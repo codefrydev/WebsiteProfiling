@@ -52,7 +52,7 @@ function ContentPipelineBody() {
   return (
     <>
       {loadError ? (
-        <div className="shrink-0 border-b border-red-500/40 bg-red-500/10 px-4 py-2 text-xs text-red-400">
+        <div className="shrink-0 border-b border-md-sys-error/40 bg-md-sys-error-container/30 px-4 py-2 text-xs text-md-sys-error font-medium">
           Failed to load saved settings: {loadError}. Showing an unsaved default pipeline.
         </div>
       ) : null}

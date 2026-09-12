@@ -12,10 +12,10 @@ interface CrawlMapPanelProps {
 }
 
 function healthBarClass(score: number | null | undefined): string {
-  if (score == null || !Number.isFinite(score)) return 'bg-cyan-500/40';
-  if (score < 50) return 'bg-red-500/50';
-  if (score < 70) return 'bg-amber-500/50';
-  return 'bg-emerald-500/50';
+  if (score == null || !Number.isFinite(score)) return 'bg-md-sys-primary/40';
+  if (score < 50) return 'bg-md-sys-error/50';
+  if (score < 70) return 'bg-md-sys-warning/50';
+  return 'bg-md-sys-success/50';
 }
 
 function barWidth(pages: number, maxPages: number): number {
@@ -60,8 +60,8 @@ function TreeNodeRow({
       <button
         type="button"
         onClick={() => onSelect(key)}
-        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-md-sys-surface-container/80 ${
-          isSelected ? 'bg-blue-500/15 ring-1 ring-blue-500/30' : ''
+        className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-md-sys-surface-container/80 ${
+          isSelected ? 'bg-md-sys-primary-container/25 ring-1 ring-md-sys-primary/30 text-md-sys-primary font-medium' : ''
         }`}
         style={{ paddingLeft: `${8 + depth * 16}px` }}
       >

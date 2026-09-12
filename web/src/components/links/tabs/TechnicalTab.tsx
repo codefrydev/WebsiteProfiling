@@ -79,7 +79,7 @@ export default function TechnicalTab({ link }: TechnicalTabProps) {
             <div key={label} className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg px-4 py-2.5 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-md-sys-on-surface-variant">{label}</span>
-                <span className={`text-sm ${mono ? 'font-mono' : ''} ${warn ? 'text-red-600 dark:text-red-400' : 'text-md-sys-on-surface'}`}>
+                <span className={`text-sm ${mono ? 'font-mono' : ''} ${warn ? 'text-md-sys-error' : 'text-md-sys-on-surface'}`}>
                   {value}
                 </span>
               </div>
@@ -106,25 +106,25 @@ export default function TechnicalTab({ link }: TechnicalTabProps) {
             value={imgTotal}
             total={Math.max(imgTotal, 1)}
             label={lt.totalImages}
-            color="bg-blue-500"
+            color="bg-md-sys-primary"
           />
           <MiniBar
             value={link.images_without_alt || 0}
             total={Math.max(imgTotal, 1)}
             label={lt.missingAlt}
-            color={(link.images_without_alt ?? 0) > 0 ? 'bg-red-500' : 'bg-green-500'}
+            color={(link.images_without_alt ?? 0) > 0 ? 'bg-md-sys-error' : 'bg-md-sys-success'}
           />
           <MiniBar
             value={link.img_without_lazy || 0}
             total={Math.max(imgTotal, 1)}
             label={lt.noLazyLoad}
-            color={(link.img_without_lazy ?? 0) > 0 ? 'bg-yellow-500' : 'bg-green-500'}
+            color={(link.img_without_lazy ?? 0) > 0 ? 'bg-md-sys-warning' : 'bg-md-sys-success'}
           />
           <MiniBar
             value={link.img_without_dimensions || 0}
             total={Math.max(imgTotal, 1)}
             label={lt.noDimensions}
-            color={(link.img_without_dimensions ?? 0) > 0 ? 'bg-orange-500' : 'bg-green-500'}
+            color={(link.img_without_dimensions ?? 0) > 0 ? 'bg-md-sys-warning' : 'bg-md-sys-success'}
           />
           <div className="flex items-center justify-between pt-2 border-t border-md-sys-outline-variant/40">
             <span className="text-sm text-md-sys-on-surface-variant">{lt.ariaElements}</span>

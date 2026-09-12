@@ -41,10 +41,10 @@ export default function PortfolioResumeSection({
               onClick={() => { onOpen(group); }}
               disabled={opening}
               style={{ '--i': i } as CSSProperties}
-              className="press hover-lift group min-w-0 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60 p-3 text-left transition-colors hover:border-blue-500/30 disabled:opacity-60"
+              className="press hover-lift group min-w-0 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60 p-3 text-left transition-colors hover:border-md-sys-primary/40 disabled:opacity-60"
             >
               <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-md-sys-primary">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-md-sys-primary-container/20 text-md-sys-primary">
                   <Building2 className="h-3.5 w-3.5" aria-hidden />
                 </span>
                 <span className="truncate text-sm font-semibold text-md-sys-on-surface">

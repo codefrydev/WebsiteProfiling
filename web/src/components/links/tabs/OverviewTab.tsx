@@ -95,7 +95,7 @@ function SocialCheckItem({ label, present }: { label: string; present: boolean }
       <span className="text-sm text-md-sys-on-surface">{label}</span>
       <span
         className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-          present ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+          present ? 'text-md-sys-success' : 'text-md-sys-error'
         }`}
       >
         {present ? <Check className="h-3.5 w-3.5" aria-hidden /> : <X className="h-3.5 w-3.5" aria-hidden />}
@@ -187,7 +187,7 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
       value: link.redirect_chain_length ?? 0,
       valueClassName:
         (link.redirect_chain_length ?? 0) > 0
-          ? 'text-yellow-800 dark:text-yellow-400'
+          ? 'text-md-sys-warning'
           : 'text-md-sys-on-surface',
     },
   ];
@@ -219,13 +219,13 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
     },
     {
       key: 'stylesheets',
-      icon: <FileCode className="h-4 w-4 shrink-0 text-purple-700 dark:text-purple-400" aria-hidden />,
+      icon: <FileCode className="h-4 w-4 shrink-0 text-md-sys-tertiary" aria-hidden />,
       label: o.statStylesheets,
       value: link.link_stylesheet_count ?? sj.emDash,
     },
     {
       key: 'preload',
-      icon: <Zap className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden />,
+      icon: <Zap className="h-4 w-4 shrink-0 text-md-sys-warning" aria-hidden />,
       label: o.statPreload,
       value: `${pa.preload_count ?? 0} / ${pa.preconnect_count ?? 0}`,
     },
@@ -373,7 +373,7 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
           <CopyBtn text={link.title} />
         </div>
         <div className="text-sm text-md-sys-on-surface">
-          {link.title || <span className="text-red-600 dark:text-red-400">{o.missing}</span>}
+          {link.title || <span className="text-md-sys-error">{o.missing}</span>}
         </div>
         <CharBar len={titleLen} max={60} colorFn={titleCharColor} />
       </div>
@@ -384,7 +384,7 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
           <CopyBtn text={link.meta_description} />
         </div>
         <div className="text-sm text-md-sys-on-surface">
-          {link.meta_description || <span className="text-red-600 dark:text-red-400">{o.missing}</span>}
+          {link.meta_description || <span className="text-md-sys-error">{o.missing}</span>}
         </div>
         <CharBar len={metaLen} max={160} colorFn={metaCharColor} />
       </div>
@@ -396,10 +396,10 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
             <span
               className={`text-xs px-2 py-0.5 rounded ${
                 link.h1_count === 1
-                  ? 'bg-green-500/20 text-green-700 dark:text-green-400'
+                  ? 'bg-md-sys-success-container/30 text-md-sys-success'
                   : link.h1_count === 0
-                    ? 'bg-red-500/20 text-red-600 dark:text-red-400'
-                    : 'bg-yellow-500/20 text-yellow-800 dark:text-yellow-400'
+                    ? 'bg-md-sys-error-container/30 text-md-sys-error'
+                    : 'bg-md-sys-warning-container/30 text-md-sys-warning'
               }`}
             >
               {format(o.h1Count, { n: link.h1_count ?? 0, s: link.h1_count !== 1 ? 's' : '' })}

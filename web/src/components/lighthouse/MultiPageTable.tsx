@@ -29,9 +29,9 @@ function scoreTip(score: number): string {
 
 function scoreRowBg(perf: number | null): string {
   if (perf == null) return '';
-  if (perf >= 90) return 'bg-green-500/5 hover:bg-green-500/10';
-  if (perf >= 50) return 'bg-yellow-500/5 hover:bg-yellow-500/10';
-  return 'bg-red-500/5 hover:bg-red-500/10';
+  if (perf >= 90) return 'bg-md-sys-success-container/10 hover:bg-md-sys-success-container/20';
+  if (perf >= 50) return 'bg-md-sys-warning-container/10 hover:bg-md-sys-warning-container/20';
+  return 'bg-md-sys-error-container/10 hover:bg-md-sys-error-container/20';
 }
 
 export interface MultiPageTableProps {
@@ -103,7 +103,7 @@ export default function MultiPageTable({ byUrl, selectedUrl, onSelect }: MultiPa
               <tr
                 key={i}
                 onClick={() => onSelect?.(row.url)}
-                className={`cursor-pointer transition-colors ${scoreRowBg(row.performance)} ${isSelected ? 'ring-2 ring-inset ring-blue-500' : ''}`}
+                className={`cursor-pointer transition-colors ${scoreRowBg(row.performance)} ${isSelected ? 'ring-2 ring-inset ring-md-sys-primary' : ''}`}
               >
                 <td className="px-4 py-3 font-mono text-md-sys-primary text-xs max-w-[250px] truncate" title={row.url}>
                   <a
@@ -122,10 +122,10 @@ export default function MultiPageTable({ byUrl, selectedUrl, onSelect }: MultiPa
                   const mStatus = !c.isScore ? metricStatus(c.id, val) : null;
                   const metricColor =
                     mStatus === 'good'
-                      ? 'text-green-700 dark:text-green-400'
+                      ? 'text-md-sys-success'
                       : mStatus === 'warn'
-                        ? 'text-yellow-800 dark:text-yellow-400'
-                        : 'text-red-600 dark:text-red-400';
+                        ? 'text-md-sys-warning'
+                        : 'text-md-sys-error';
                   return (
                     <td
                       key={c.id}

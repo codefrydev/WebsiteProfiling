@@ -246,7 +246,7 @@ function AppContent({ slug }: SlugProps): ReactNode {
       <AppShell showSidebar showSearch={false}>
         <div className="flex-1 flex items-center justify-center p-8 min-h-[50vh]">
           <div className="text-center max-w-md">
-            <p className="text-red-700 dark:text-red-400 font-medium">
+            <p className="text-md-sys-error font-medium">
               {isDomainError ? strings.app.noReportForDomainTitle : strings.app.failedTitle}
             </p>
             <p className="text-md-sys-on-surface-variant text-sm mt-2">{error}</p>

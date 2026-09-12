@@ -329,8 +329,8 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
         <span
           className={`text-xs font-semibold uppercase tracking-wide px-2 py-1 rounded ${
             dataSource === 'live'
-              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-              : 'bg-blue-500/15 text-blue-700 dark:text-blue-300'
+              ? 'bg-md-sys-success-container/20 text-md-sys-success'
+              : 'bg-md-sys-primary-container/20 text-md-sys-primary'
           }`}
         >
           {dataSource === 'live' ? sr.badgeLive : sr.badgeSnapshot}
@@ -394,7 +394,7 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
       </div>
 
       {liveError && (
-        <p className="text-sm text-rose-600 dark:text-rose-400">{liveError}</p>
+        <p className="text-sm text-md-sys-error">{liveError}</p>
       )}
 
       {!hasGoogleData && (
@@ -529,9 +529,9 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
                 <span
                   className={`text-[10px] uppercase font-bold mr-2 ${
                     h.severity === 'high'
-                      ? 'text-rose-600 dark:text-rose-400'
+                      ? 'text-md-sys-error'
                       : h.severity === 'medium'
-                        ? 'text-amber-600 dark:text-amber-400'
+                        ? 'text-md-sys-warning'
                         : 'text-md-sys-on-surface-variant'
                   }`}
                 >
@@ -576,14 +576,14 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
       <section className="border border-md-sys-outline-variant/40 rounded-xl p-4 bg-md-sys-surface-container-low/40">
         <div className="flex flex-wrap items-center gap-3 mb-3">
           <h3 className="text-sm font-semibold text-md-sys-on-surface flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-violet-400" />
+            <Sparkles className="h-4 w-4 text-md-sys-tertiary" />
             {sr.coachHeading}
           </h3>
           <button
             type="button"
             disabled={coachBusy || !hasGoogleData}
             onClick={() => void runCoach(false)}
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full bg-md-sys-tertiary hover:brightness-105 active:scale-[0.98] text-md-sys-on-tertiary disabled:opacity-50"
           >
             {coachBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {sr.coachGenerate}
@@ -601,7 +601,7 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
           )}
         </div>
         <p className="text-xs text-md-sys-on-surface-variant mb-3">{sr.coachHint}</p>
-        {coachError && <p className="text-sm text-rose-600 dark:text-rose-400 mb-2">{coachError}</p>}
+        {coachError && <p className="text-sm text-md-sys-error mb-2">{coachError}</p>}
         {coachCached && coach && (
           <p className="text-xs text-md-sys-on-surface-variant mb-2">{sr.coachCached}</p>
         )}
@@ -657,7 +657,7 @@ function CoachList({
       <h4 className="font-medium text-md-sys-on-surface mb-1">{title}</h4>
       <ul className="space-y-2">
         {items.map((item, i) => (
-          <li key={i} className="border-l-2 border-violet-500/50 pl-3">
+          <li key={i} className="border-l-2 border-md-sys-tertiary/50 pl-3">
             <span className="font-medium">{item.title}</span>
             {item.priority && (
               <span className="ml-2 text-[10px] uppercase text-md-sys-on-surface-variant">{item.priority}</span>

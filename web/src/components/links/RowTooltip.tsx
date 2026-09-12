@@ -33,7 +33,7 @@ export default function RowTooltip({ link, style }: RowTooltipProps) {
           {kws.map((kw, i) => {
             const { word } = normaliseKw(kw);
             return (
-              <span key={i} className="text-xs bg-blue-500/20 text-md-sys-primary-soft px-1.5 py-0.5 rounded font-mono">
+              <span key={i} className="text-xs bg-md-sys-primary-container/40 text-md-sys-primary px-1.5 py-0.5 rounded-full font-mono">
                 {word}
               </span>
             );

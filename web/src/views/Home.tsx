@@ -126,14 +126,14 @@ export default function Home({ onNavigate }: ViewProps) {
           value={filterQuery}
           onChange={(e) => setFilterQuery(e.target.value)}
           placeholder={vh.searchPlaceholder}
-          className="w-full rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 px-10 py-2.5 text-sm text-md-sys-on-surface outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 px-10 py-2.5 text-sm text-md-sys-on-surface outline-none transition-all focus:border-md-sys-primary focus:ring-2 focus:ring-md-sys-primary/20"
         />
       </div>
 
       <PortfolioStatsRow />
 
       {deleteError ? (
-        <p className="mt-3 text-center text-sm text-red-700 dark:text-red-400" role="alert">
+        <p className="mt-3 text-center text-sm text-md-sys-error font-medium" role="alert">
           {deleteError}
         </p>
       ) : null}

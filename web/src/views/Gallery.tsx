@@ -83,7 +83,7 @@ function GalleryTile({
     <button
       type="button"
       onClick={() => onOpen(item)}
-      className={`group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 ${
+      className={`group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-md-sys-primary/60 ${
         masonry
           ? 'block w-full mb-3 break-inside-avoid rounded-xl overflow-hidden border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60'
           : 'relative rounded-xl overflow-hidden border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60'
@@ -347,9 +347,9 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
               key={id}
               type="button"
               onClick={() => setKindFilter(id)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                 kindFilter === id
-                  ? 'bg-blue-500/15 border-blue-500/40 text-md-sys-primary-soft'
+                  ? 'bg-md-sys-primary-container/30 border-md-sys-primary/40 text-md-sys-primary font-medium'
                   : 'border-md-sys-outline-variant/40 text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container'
               }`}
             >
@@ -365,7 +365,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
                   type="button"
                   title="Grid layout"
                   onClick={() => setLayoutMode('grid')}
-                  className={`p-2 ${layoutMode === 'grid' ? 'bg-violet-500/20 text-violet-700 dark:text-violet-300' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
+                  className={`p-2 ${layoutMode === 'grid' ? 'bg-md-sys-tertiary-container/30 text-md-sys-tertiary' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </button>
@@ -373,7 +373,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
                   type="button"
                   title="Masonry layout"
                   onClick={() => setLayoutMode('masonry')}
-                  className={`p-2 border-l border-md-sys-outline-variant/40 ${layoutMode === 'masonry' ? 'bg-violet-500/20 text-violet-700 dark:text-violet-300' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
+                  className={`p-2 border-l border-md-sys-outline-variant/40 ${layoutMode === 'masonry' ? 'bg-md-sys-tertiary-container/30 text-md-sys-tertiary' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
                 >
                   <Columns className="h-4 w-4" />
                 </button>
@@ -386,7 +386,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
                   type="button"
                   title={vg.titleDense}
                   onClick={() => setDensity('sm')}
-                  className={`p-2 ${density === 'sm' ? 'bg-blue-500/20 text-md-sys-primary-soft' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
+                  className={`p-2 ${density === 'sm' ? 'bg-md-sys-primary-container/30 text-md-sys-primary' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
                 >
                   <Grid3X3 className="h-4 w-4" />
                 </button>
@@ -394,7 +394,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
                   type="button"
                   title={vg.titleBalanced}
                   onClick={() => setDensity('md')}
-                  className={`p-2 border-l border-md-sys-outline-variant/40 ${density === 'md' ? 'bg-blue-500/20 text-md-sys-primary-soft' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
+                  className={`p-2 border-l border-md-sys-outline-variant/40 ${density === 'md' ? 'bg-md-sys-primary-container/30 text-md-sys-primary' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </button>
@@ -402,7 +402,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
                   type="button"
                   title={vg.titleLarge}
                   onClick={() => setDensity('lg')}
-                  className={`p-2 border-l border-md-sys-outline-variant/40 ${density === 'lg' ? 'bg-blue-500/20 text-md-sys-primary-soft' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
+                  className={`p-2 border-l border-md-sys-outline-variant/40 ${density === 'lg' ? 'bg-md-sys-primary-container/30 text-md-sys-primary' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
                 >
                   <Maximize2 className="h-4 w-4" />
                 </button>

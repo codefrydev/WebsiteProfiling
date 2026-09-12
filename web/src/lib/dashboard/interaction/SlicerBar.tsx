@@ -79,7 +79,7 @@ export function SlicerBar({
       {crossFilter && (
         <button
           onClick={onClearCrossFilter}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs active:scale-[0.98] transition-all"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-md-sys-warning-container/30 border border-md-sys-warning/30 text-md-sys-warning text-xs active:scale-[0.98] transition-all"
           title="Clear cross-filter"
         >
           {crossFilter.field} = {crossFilter.value}

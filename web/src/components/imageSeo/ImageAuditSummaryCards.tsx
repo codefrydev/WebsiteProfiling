@@ -28,13 +28,13 @@ function StatCard({
 }) {
   const toneClass =
     tone === 'ok'
-      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+      ? 'border-md-sys-success/30 bg-md-sys-success-container/15 text-md-sys-success'
       : tone === 'warn'
-        ? 'border-amber-500/30 bg-amber-500/10 text-amber-100'
+        ? 'border-md-sys-warning/30 bg-md-sys-warning-container/15 text-md-sys-warning'
         : 'border-md-sys-outline-variant/40 bg-md-sys-surface-container/40 text-md-sys-on-surface';
 
   return (
-    <div className={`rounded-lg border px-3 py-2.5 ${toneClass}`}>
+    <div className={`rounded-2xl border px-3.5 py-3 ${toneClass}`}>
       <p className="text-[11px] uppercase tracking-wide opacity-80">{label}</p>
       <p className="mt-0.5 text-xl font-semibold tabular-nums">{value.toLocaleString()}</p>
     </div>
@@ -119,7 +119,7 @@ export default function ImageAuditSummaryCards({
           {ib.sizeProbe}:{' '}
           <span
             className={
-              data.inventoryAvailable ? 'font-medium text-emerald-300/90' : 'text-amber-300/90'
+              data.inventoryAvailable ? 'font-medium text-md-sys-success' : 'text-md-sys-warning'
             }
           >
             {data.inventoryAvailable ? ib.probeOn : ib.probeOff}

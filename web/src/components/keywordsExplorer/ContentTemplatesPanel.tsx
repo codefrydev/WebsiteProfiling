@@ -165,7 +165,7 @@ export default function ContentTemplatesPanel({
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <FileText className="h-3.5 w-3.5" aria-hidden />}
                 {loading ? s.loading : s.buttonLabel}
               </Button>
-              {error ? <p className="text-red-700 dark:text-red-400 text-xs">{error}</p> : null}
+              {error ? <p className="text-md-sys-error font-medium text-xs">{error}</p> : null}
               {brief?.summary ? (
                 <>
                   <pre className="whitespace-pre-wrap text-xs text-md-sys-on-surface-variant leading-relaxed font-sans">

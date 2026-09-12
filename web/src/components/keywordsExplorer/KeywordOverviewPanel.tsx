@@ -163,7 +163,7 @@ export default function KeywordOverviewPanel({
             <Card devData={topQuickWinsDevData}>
               <div className="flex items-center justify-between gap-2 mb-3">
                 <h3 className="text-sm font-bold text-md-sys-on-surface flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-500" aria-hidden />
+                  <Zap className="w-4 h-4 text-md-sys-warning" aria-hidden />
                   {o.topQuickWins}
                 </h3>
                 <button
@@ -185,7 +185,7 @@ export default function KeywordOverviewPanel({
             <Card devData={topOpportunitiesDevData}>
               <div className="flex items-center justify-between gap-2 mb-3">
                 <h3 className="text-sm font-bold text-md-sys-on-surface flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-violet-400" aria-hidden />
+                  <Lightbulb className="w-4 h-4 text-md-sys-tertiary" aria-hidden />
                   {o.topOpportunities}
                 </h3>
                 <button

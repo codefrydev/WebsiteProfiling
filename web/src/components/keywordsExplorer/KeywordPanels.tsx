@@ -75,9 +75,9 @@ export function CannibalisationPanel({ items }: CannibalisationPanelProps) {
   return (
     <div className="relative group/dev-card p-4 sm:p-5">
       <DevCopyJsonButton data={devData} />
-      <div className="mb-4 p-3 rounded-xl border border-red-500/25 bg-red-500/5">
+      <div className="mb-4 p-3 rounded-xl border border-md-sys-error/25 bg-md-sys-error-container/10">
         <p className="text-sm text-md-sys-on-surface font-medium flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" aria-hidden />
+          <AlertTriangle className="w-4 h-4 text-md-sys-error shrink-0" aria-hidden />
           {format(c.intro, { count: items.length })}
         </p>
       </div>
@@ -116,7 +116,7 @@ export function CannibalisationPanel({ items }: CannibalisationPanelProps) {
       ) : (
         <div className="space-y-3">
           {filtered.map((item, i) => (
-            <Card key={i} className="border-red-500/30 !bg-red-500/5">
+            <Card key={i} className="border-md-sys-error/30 !bg-md-sys-error-container/10">
               <p className="font-semibold text-md-sys-on-surface mb-3">&ldquo;{item.query}&rdquo;</p>
               <ul className="space-y-2">
                 {(item.pages || []).map((p, j) => (
@@ -188,9 +188,9 @@ export function QueryPageMisalignmentPanel({ items }: QueryPageMisalignmentPanel
   return (
     <div className="relative group/dev-card p-4 sm:p-5">
       <DevCopyJsonButton data={devData} />
-      <div className="mb-4 p-3 rounded-xl border border-amber-500/25 bg-amber-500/5">
+      <div className="mb-4 p-3 rounded-xl border border-md-sys-warning/25 bg-md-sys-warning-container/10">
         <p className="text-sm text-md-sys-on-surface font-medium flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden />
+          <AlertTriangle className="w-4 h-4 text-md-sys-warning shrink-0" aria-hidden />
           {format(a.intro, { count: items.length })}
         </p>
       </div>
@@ -208,7 +208,7 @@ export function QueryPageMisalignmentPanel({ items }: QueryPageMisalignmentPanel
       </div>
       <div className="space-y-3">
         {filtered.map((item, i) => (
-          <Card key={`${item.keyword}-${item.current_url}-${i}`} className="border-amber-500/25 !bg-amber-500/5">
+          <Card key={`${item.keyword}-${item.current_url}-${i}`} className="border-md-sys-warning/25 !bg-md-sys-warning-container/10">
             <p className="font-semibold text-md-sys-on-surface mb-2">&ldquo;{item.keyword}&rdquo;</p>
             <p className="text-xs text-md-sys-on-surface-variant mb-2 tabular-nums">
               {format(a.metrics, {
@@ -490,7 +490,7 @@ export function ByPagePanel({ rows, ke, brandQuery = null }: ByPagePanelProps) {
                 {format(bp.keywordCount, { count: pageKws.keyword_count ?? 0 })}
               </p>
               {(pageKws.cannibalisation?.length ?? 0) > 0 && (
-                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-sm text-red-700 dark:text-red-300 flex items-start gap-2">
+                <div className="p-3 bg-md-sys-error-container/20 border border-md-sys-error/30 rounded-xl text-sm text-md-sys-error flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />
                   <span>{format(bp.cannibWarning, { count: pageKws.cannibalisation!.length })}</span>
                 </div>
@@ -566,7 +566,7 @@ export function BulkSeedPanel({ brandQuery = null }: { brandQuery?: string | nul
         {loading ? s.expanding : s.expand}
       </button>
       {error && (
-        <div className="mt-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-1">
+        <div className="mt-3 text-sm text-md-sys-error flex items-center gap-1">
           <AlertCircle className="w-4 h-4 shrink-0" />
           {error}
         </div>

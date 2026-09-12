@@ -56,7 +56,7 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
             {link.canonical_url}
           </a>
         ) : (
-          <span className="text-xs text-red-600 dark:text-red-400">{s.notSet}</span>
+          <span className="text-xs text-md-sys-error">{s.notSet}</span>
         )}
       </div>
 
@@ -65,9 +65,9 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
           <div key={label} className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-3 flex flex-col items-center gap-2">
             <div className="text-xs text-md-sys-on-surface-variant">{label}</div>
             {value
-              ? bad ? <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" /> : <CheckCircle className="h-6 w-6 text-green-700 dark:text-green-400" />
-              : bad ? <CheckCircle className="h-6 w-6 text-green-700 dark:text-green-400" /> : <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />}
-            <span className={`text-xs font-semibold ${value === bad ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
+              ? bad ? <XCircle className="h-6 w-6 text-md-sys-error" /> : <CheckCircle className="h-6 w-6 text-md-sys-success" />
+              : bad ? <CheckCircle className="h-6 w-6 text-md-sys-success" /> : <XCircle className="h-6 w-6 text-md-sys-error" />}
+            <span className={`text-xs font-semibold ${value === bad ? 'text-md-sys-error' : 'text-md-sys-success'}`}>
               {value ? sj.yes : sj.no}
             </span>
           </div>
@@ -90,7 +90,7 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
                   <span className="text-xs font-mono text-md-sys-on-surface-variant">{label}</span>
                   {value && <CopyBtn text={value} />}
                 </div>
-                <span className={`text-xs ${value ? 'text-md-sys-on-surface' : 'text-red-600 dark:text-red-400'}`}>
+                <span className={`text-xs ${value ? 'text-md-sys-on-surface' : 'text-md-sys-error'}`}>
                   {value || s.missingValue}
                 </span>
               </div>
@@ -105,12 +105,12 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
           {twitterFields.map(({ label, value }) => (
             <div
               key={label}
-              className={`border rounded-xl p-3 ${value ? 'border-green-700/40 bg-green-500/5' : 'border-red-700/40 bg-red-500/5'}`}
+              className={`border rounded-xl p-3 ${value ? 'border-md-sys-success/40 bg-md-sys-success-container/5' : 'border-md-sys-error/40 bg-md-sys-error-container/5'}`}
             >
               <div className="text-xs font-mono text-md-sys-on-surface-variant mb-1">{label}</div>
               <div className="flex items-center gap-2">
-                {value ? <CheckCircle className="h-3.5 w-3.5 text-green-700 dark:text-green-400 shrink-0" /> : <XCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 shrink-0" />}
-                <span className={`text-xs ${value ? 'text-md-sys-on-surface' : 'text-red-600 dark:text-red-400'}`}>
+                {value ? <CheckCircle className="h-3.5 w-3.5 text-md-sys-success shrink-0" /> : <XCircle className="h-3.5 w-3.5 text-md-sys-error shrink-0" />}
+                <span className={`text-xs ${value ? 'text-md-sys-on-surface' : 'text-md-sys-error'}`}>
                   {value || s.missingValue}
                 </span>
               </div>

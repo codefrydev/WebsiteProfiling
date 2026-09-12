@@ -227,7 +227,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
       )}
 
       {showStaticHint && (
-        <Card className="border-amber-500/30 bg-amber-500/5 p-4 text-sm text-md-sys-on-surface-variant">
+        <Card className="border-md-sys-warning/30 bg-md-sys-warning-container/20 p-4 text-sm text-md-sys-on-surface-variant">
           {vr.staticCrawlHint}
         </Card>
       )}

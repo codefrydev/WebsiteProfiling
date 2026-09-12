@@ -413,7 +413,7 @@ export default function PortfolioPropertyCard({
                     </p>
                   </div>
                   {trends.urgentCount > 0 ? (
-                    <p className="text-[10px] text-rose-600 dark:text-rose-400 mt-1 tabular-nums">
+                    <p className="text-[10px] text-md-sys-error font-medium mt-1 tabular-nums">
                       {vh.trendUrgentLabel}: {trends.urgentCount}
                     </p>
                   ) : null}

@@ -20,10 +20,10 @@ export default function SerpPreview({ link, domain }: SerpPreviewProps) {
 
   return (
     <div className="rounded-xl border border-md-sys-outline-variant/40 bg-white dark:bg-md-sys-surface-container-lowest p-4 max-w-xl">
-      <p className="text-[#1a0dab] dark:text-blue-400 text-lg leading-snug hover:underline cursor-default truncate">
+      <p className="text-[#1a0dab] dark:text-md-sys-primary text-lg leading-snug hover:underline cursor-default truncate">
         {title}
       </p>
-      <p className="text-sm text-[#006621] dark:text-emerald-500 truncate mt-0.5">{displayUrl}</p>
+      <p className="text-sm text-[#006621] dark:text-md-sys-success truncate mt-0.5">{displayUrl}</p>
       <p className="text-sm text-[#4d5156] dark:text-md-sys-on-surface-variant mt-1 line-clamp-2">{desc}</p>
     </div>
   );

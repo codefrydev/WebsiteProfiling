@@ -87,7 +87,7 @@ export default function PageImprovePanel({ url, inspectorDetails }: PageImproveP
           {coachLoading ? pi.coachLoading : pi.coachButton}
         </Button>
       ) : null}
-      {coachError ? <p className="text-xs text-red-700 dark:text-red-400">{coachError}</p> : null}
+      {coachError ? <p className="text-xs text-md-sys-error font-medium">{coachError}</p> : null}
       {coach?.summary ? (
         <div className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 p-3 space-y-2">
           <p className="text-xs font-semibold text-md-sys-on-surface">{pi.coachTitle}</p>

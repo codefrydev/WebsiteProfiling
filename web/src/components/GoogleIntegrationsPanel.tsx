@@ -107,7 +107,7 @@ function SetupStep({
 }
 
 function selectClassName() {
-  return 'w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2.5 text-sm text-md-sys-on-surface focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
+  return 'w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2.5 text-sm text-md-sys-on-surface focus:border-md-sys-primary/50 focus:outline-none focus:ring-2 focus:ring-md-sys-primary/20';
 }
 
 type PropertiesSaveState =
@@ -214,7 +214,7 @@ function InputField({
         placeholder={placeholder}
         disabled={disabled}
         autoComplete="off"
-        className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2.5 text-sm text-md-sys-on-surface font-mono focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+        className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2.5 text-sm text-md-sys-on-surface font-mono focus:border-md-sys-primary/50 focus:outline-none focus:ring-2 focus:ring-md-sys-primary/20 disabled:opacity-50"
       />
       {helper && <p className="mt-1 text-xs text-md-sys-on-surface-variant">{helper}</p>}
     </div>
@@ -934,7 +934,7 @@ export default function GoogleIntegrationsPanel({
               Loading sites…
             </div>
           ) : propertyRows.length === 0 && effectivePropertyId == null ? (
-            <p className="text-sm text-amber-800 dark:text-amber-200">{s.googlePropertySelectorEmpty}</p>
+            <p className="text-sm text-md-sys-warning font-medium">{s.googlePropertySelectorEmpty}</p>
           ) : propertyRows.length === 0 && startUrl.trim() ? (
             <p className="text-sm text-md-sys-on-surface-variant">
               Site: <span className="font-mono text-md-sys-on-surface">{startUrl.trim()}</span>

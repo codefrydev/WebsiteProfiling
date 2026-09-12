@@ -37,7 +37,7 @@ export default function LandingPathStrip() {
                   href={`#${id}`}
                   className="press group flex items-center gap-3 rounded-full px-4 py-2 text-sm transition-all hover:bg-md-sys-surface-container/80 active:scale-[0.99]"
                 >
-                  <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-blue-500/30 bg-blue-500/10 text-xs font-bold text-md-sys-primary">
+                  <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-md-sys-primary/30 bg-md-sys-primary-container/20 text-xs font-bold text-md-sys-primary">
                     {step}
                   </span>
                   <span className="font-medium text-md-sys-on-surface group-hover:text-md-sys-primary">{label}</span>
@@ -57,10 +57,10 @@ export default function LandingPathStrip() {
               <a
                 key={id}
                 href={`#${id}`}
-                className="group flex min-h-[7.5rem] flex-col rounded-xl border border-md-sys-outline-variant/40 px-4 py-4 transition-colors hover:border-blue-500/25 @sm:min-h-[8.25rem] @sm:px-5 @sm:py-5"
+                className="group flex min-h-[7.5rem] flex-col rounded-xl border border-md-sys-outline-variant/40 px-4 py-4 transition-colors hover:border-md-sys-primary/30 @sm:min-h-[8.25rem] @sm:px-5 @sm:py-5"
               >
                 <span className="flex items-center justify-between gap-2">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-md-sys-primary">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-md-sys-primary/20 bg-md-sys-primary-container/20 text-md-sys-primary">
                     <Icon className="h-4 w-4" aria-hidden />
                   </span>
                   <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-md-sys-outline-variant/40 text-xs font-bold text-md-sys-primary">
@@ -80,7 +80,7 @@ export default function LandingPathStrip() {
       <div className={`flex justify-center border-t border-md-sys-outline-variant/40 pt-5 ${landingGutterClass}`}>
         <a
           href="#quick-start"
-          className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs font-medium text-md-sys-primary transition-colors hover:bg-blue-500/20 @sm:text-sm"
+          className="inline-flex items-center gap-1.5 rounded-full border border-md-sys-primary/30 bg-md-sys-primary-container/20 px-4 py-1.5 text-xs font-medium text-md-sys-primary transition-colors hover:bg-md-sys-primary-container/35 @sm:text-sm"
         >
           {vl.pathCtaLabel}
           <ChevronRight className="h-3.5 w-3.5" aria-hidden />

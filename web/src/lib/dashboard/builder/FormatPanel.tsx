@@ -13,7 +13,7 @@ const FORMATS = [
 ];
 
 const labelCls = 'block text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant mb-1';
-const inputCls = 'w-full px-2 py-1.5 text-sm bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg text-md-sys-on-surface focus:outline-none focus:ring-1 focus:ring-blue-500';
+const inputCls = 'w-full px-2 py-1.5 text-sm bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg text-md-sys-on-surface focus:outline-none focus:ring-1 focus:ring-md-sys-primary';
 
 export function FormatPanel({ widget, onChange }: { widget: Widget; onChange: (w: Widget) => void }) {
   const o = widget.vizOptions ?? {};

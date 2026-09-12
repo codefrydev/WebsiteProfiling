@@ -51,12 +51,12 @@ function PositionBadge({ pos }: { pos?: number | string | null }) {
   const p = (Number.isFinite(n) ? n : 0).toFixed(1);
   const color =
     n <= 3
-      ? 'text-green-700 dark:text-green-400'
+      ? 'text-md-sys-success'
       : n <= 10
-        ? 'text-yellow-700 dark:text-yellow-400'
+        ? 'text-md-sys-warning'
         : n <= 20
-          ? 'text-orange-700 dark:text-orange-400'
-          : 'text-red-700 dark:text-red-400';
+          ? 'text-md-sys-warning'
+          : 'text-md-sys-error';
   return <span className={`font-mono font-bold tabular-nums ${color}`}>{p}</span>;
 }
 
@@ -452,7 +452,7 @@ export default function SearchPerformance() {
       {errors.length > 0 && (
         <AlertBanner
           variant="warning"
-          icon={<AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0" aria-hidden />}
+          icon={<AlertCircle className="h-4 w-4 text-md-sys-warning shrink-0" aria-hidden />}
         >
           {errors.map((e: string, i: number) => (
             <p key={i}>{e}</p>

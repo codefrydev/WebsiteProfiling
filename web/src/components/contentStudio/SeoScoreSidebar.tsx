@@ -23,11 +23,11 @@ interface SeoScoreSidebarProps {
 /** Color the letter grade by its leading letter so the full A++…F scale is covered. */
 function gradeColor(label: string): string {
   const head = (label || '').charAt(0).toUpperCase();
-  if (head === 'A') return 'text-green-600 dark:text-green-400';
-  if (head === 'B') return 'text-emerald-600 dark:text-emerald-400';
-  if (head === 'C') return 'text-amber-600 dark:text-amber-400';
-  if (head === 'D') return 'text-orange-600 dark:text-orange-400';
-  return 'text-red-600 dark:text-red-400';
+  if (head === 'A') return 'text-md-sys-success';
+  if (head === 'B') return 'text-md-sys-success';
+  if (head === 'C') return 'text-md-sys-warning';
+  if (head === 'D') return 'text-md-sys-warning';
+  return 'text-md-sys-error';
 }
 
 /** A term is "covered" once it hits its recommended count. */
@@ -44,10 +44,10 @@ function termRank(t: ContentScoreTerm): number {
 }
 
 function termTone(t: ContentScoreTerm): { text: string; bar: string } {
-  if (isCovered(t)) return { text: 'text-green-700 dark:text-green-400', bar: 'bg-green-500' };
-  if (t.status === 'included') return { text: 'text-amber-700 dark:text-amber-400', bar: 'bg-amber-500' };
-  if (t.status === 'partial') return { text: 'text-amber-700 dark:text-amber-400', bar: 'bg-amber-400' };
-  return { text: 'text-red-700 dark:text-red-400', bar: 'bg-red-500' };
+  if (isCovered(t)) return { text: 'text-md-sys-success', bar: 'bg-md-sys-success' };
+  if (t.status === 'included') return { text: 'text-md-sys-warning', bar: 'bg-md-sys-warning' };
+  if (t.status === 'partial') return { text: 'text-md-sys-warning', bar: 'bg-md-sys-warning/70' };
+  return { text: 'text-md-sys-error', bar: 'bg-md-sys-error' };
 }
 
 export default function SeoScoreSidebar({ score, loading, error, keyword }: SeoScoreSidebarProps) {
@@ -68,7 +68,7 @@ export default function SeoScoreSidebar({ score, loading, error, keyword }: SeoS
       {loading && !score ? (
         <p className="text-md-sys-on-surface-variant">{s.scoring}</p>
       ) : null}
-      {error ? <p className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
+      {error ? <p className="text-xs text-md-sys-error">{error}</p> : null}
 
       {score ? (
         <>
@@ -89,7 +89,7 @@ export default function SeoScoreSidebar({ score, loading, error, keyword }: SeoS
             <ul className="space-y-2">
               {score.checks.map((c) => (
                 <li key={c.id} className="text-xs">
-                  <span className={c.pass ? 'text-green-700 dark:text-green-400' : 'text-amber-800 dark:text-amber-300'}>
+                  <span className={c.pass ? 'text-md-sys-success' : 'text-md-sys-warning'}>
                     {c.pass ? '✓' : '○'} {c.hint}
                   </span>
                 </li>
@@ -109,7 +109,7 @@ function WordCountTile({ score }: { score: ContentScoreResult }) {
   const target = score.word_count_target || 0;
   const pct = target > 0 ? Math.min(100, Math.round((score.word_count / target) * 100)) : 0;
   const inRange = score.word_count >= score.word_count_min && score.word_count <= score.word_count_max;
-  const bar = inRange ? 'bg-green-500' : score.word_count > score.word_count_max ? 'bg-amber-500' : 'bg-blue-500';
+  const bar = inRange ? 'bg-md-sys-success' : score.word_count > score.word_count_max ? 'bg-md-sys-warning' : 'bg-md-sys-primary';
 
   return (
     <div>
@@ -138,13 +138,13 @@ function ReadingLevelTile({ score }: { score: ContentScoreResult }) {
   if (grade > 0) {
     if (grade <= target) {
       label = s.readabilityClear;
-      tone = 'text-green-700 dark:text-green-400';
+      tone = 'text-md-sys-success';
     } else if (grade <= target + 2) {
       label = s.readabilityModerate;
-      tone = 'text-amber-700 dark:text-amber-400';
+      tone = 'text-md-sys-warning';
     } else {
       label = s.readabilityComplex;
-      tone = 'text-red-700 dark:text-red-400';
+      tone = 'text-md-sys-error';
     }
   }
   return (
@@ -183,7 +183,7 @@ function TermRow({ t }: { t: ContentScoreTerm }) {
       <div className="flex items-start justify-between gap-2">
         <span className="flex min-w-0 items-start gap-1.5">
           {covered ? (
-            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
+            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-md-sys-success" aria-hidden />
           ) : (
             <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-md-sys-on-surface-variant/50" aria-hidden />
           )}
@@ -195,7 +195,7 @@ function TermRow({ t }: { t: ContentScoreTerm }) {
           </span>
         </span>
         {t.importance === 'high' ? (
-          <span className="shrink-0 text-[9px] uppercase tracking-wide text-amber-500" title="High importance">
+          <span className="shrink-0 text-[9px] uppercase tracking-wide text-md-sys-warning" title="High importance">
             ★
           </span>
         ) : null}

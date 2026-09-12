@@ -47,7 +47,7 @@ function AnchorBar({ anchor, count, max, index }: { anchor: string; count: numbe
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-md-sys-surface-container">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-emerald-500/80 to-blue-500/80"
+          className="h-full rounded-full bg-gradient-to-r from-md-sys-success/80 to-md-sys-primary/80"
           style={{
             width: mounted ? `${pct}%` : '0%',
             transition: reduced ? 'none' : `width 600ms var(--ease-out) ${index * 70}ms`,
@@ -99,13 +99,13 @@ export default function ConnectionInsights({ inboundCount, outboundCount, topAnc
         <StatTile
           label={ct.inboundShort}
           value={inboundCount}
-          accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+          accent="bg-md-sys-success-container/30 text-md-sys-success"
           icon={<ArrowDownLeft className="h-4 w-4" />}
         />
         <StatTile
           label={ct.outboundShort}
           value={outboundCount}
-          accent="bg-blue-500/15 text-blue-600 dark:text-blue-400"
+          accent="bg-md-sys-primary-container/30 text-md-sys-primary"
           icon={<ArrowUpRight className="h-4 w-4" />}
         />
       </div>
@@ -117,14 +117,14 @@ export default function ConnectionInsights({ inboundCount, outboundCount, topAnc
           </div>
           <div className="flex h-3 w-full overflow-hidden rounded-full bg-md-sys-surface-container">
             <div
-              className="h-full bg-emerald-500/80"
+              className="h-full bg-md-sys-success/80"
               style={{
                 width: mounted ? `${inPct}%` : '0%',
                 transition: reduced ? 'none' : 'width 700ms var(--ease-out)',
               }}
             />
             <div
-              className="h-full bg-blue-500/80"
+              className="h-full bg-md-sys-primary/80"
               style={{
                 width: mounted ? `${100 - inPct}%` : '0%',
                 transition: reduced ? 'none' : 'width 700ms var(--ease-out)',

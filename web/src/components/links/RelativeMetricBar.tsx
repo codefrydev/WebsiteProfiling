@@ -21,7 +21,7 @@ export default function RelativeMetricBar({
   pct,
   value,
   valueClassName = 'text-md-sys-on-surface font-medium',
-  barClassName = 'bg-slate-500/80 dark:bg-slate-400/80',
+  barClassName = 'bg-md-sys-outline/70',
   title,
 }: RelativeMetricBarProps) {
   const widthPct = widthScale(pct);

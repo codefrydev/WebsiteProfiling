@@ -38,8 +38,8 @@ const vo = strings.views.overview;
 const sj = strings.common;
 
 function bandBadgeClassName(band: MetricBand | 'neutral'): string {
-  if (band === 'good') return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400';
-  if (band === 'fair') return 'bg-amber-500/15 text-amber-700 dark:text-amber-400';
+  if (band === 'good') return 'bg-md-sys-success-container/20 text-md-sys-success';
+  if (band === 'fair') return 'bg-md-sys-warning-container/20 text-md-sys-warning';
   if (band === 'critical') return 'bg-md-sys-error-container/30 text-md-sys-error';
   return 'bg-md-sys-primary-container/40 text-md-sys-primary';
 }
@@ -282,9 +282,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
                 <Link
                   key={concern.id}
                   to={concern.href}
-                  className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-md-sys-on-surface transition-colors hover:border-red-500/40 hover:bg-red-500/15"
+                  className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-md-sys-error/25 bg-md-sys-error-container/15 px-3 py-1.5 text-xs font-medium text-md-sys-on-surface transition-colors hover:border-md-sys-error/40 hover:bg-md-sys-error-container/25"
                 >
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden />
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-md-sys-error" aria-hidden />
                   <span className="truncate">{concern.label}</span>
                   <ChevronRight className="h-3.5 w-3.5 shrink-0 text-md-sys-on-surface-variant" />
                 </Link>
@@ -343,7 +343,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             band={brokenCount > 0 ? vo.metricBandCritical : vo.metricBandGood}
             bandClassName={brokenCount > 0 ? bandClassName('critical') : bandClassName('good')}
             valueClassName={brokenCount > 0 ? bandClassName('critical') : bandClassName('good')}
-            className={brokenCount > 0 ? 'border-red-900/30 ring-1 ring-inset ring-red-500/20' : ''}
+            className={brokenCount > 0 ? 'border-md-sys-error/30 ring-1 ring-inset ring-md-sys-error/20' : ''}
             hint={metricHelpHint('views.overview.brokenLinks')}
             fillHeight
           />

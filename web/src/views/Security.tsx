@@ -40,34 +40,34 @@ const SEVERITY_CONFIG: Record<SeverityKey, {
 }> = {
   Critical: {
     icon: Flame,
-    text: 'text-red-600 dark:text-red-400',
-    bg: 'bg-red-500/10',
-    border: 'border-red-500/40',
-    ring: 'ring-1 ring-red-500/20 border-red-900/30',
-    rowBorder: 'border-l-red-500',
-    recBg: 'bg-red-500/5 border-red-500/20',
+    text: 'text-md-sys-error',
+    bg: 'bg-md-sys-error-container/20',
+    border: 'border-md-sys-error/40',
+    ring: 'ring-1 ring-md-sys-error/20 border-md-sys-error/30',
+    rowBorder: 'border-l-[color:var(--md-sys-color-error)]',
+    recBg: 'bg-md-sys-error-container/10 border-md-sys-error/20',
     order: 0,
     chartColor: '#EF4444',
   },
   High: {
     icon: AlertTriangle,
-    text: 'text-orange-600 dark:text-orange-400',
-    bg: 'bg-orange-500/10',
-    border: 'border-orange-500/40',
-    ring: 'ring-1 ring-orange-500/20 border-orange-900/30',
-    rowBorder: 'border-l-orange-500',
-    recBg: 'bg-orange-500/5 border-orange-500/20',
+    text: 'text-md-sys-warning',
+    bg: 'bg-md-sys-warning-container/20',
+    border: 'border-md-sys-warning/40',
+    ring: 'ring-1 ring-md-sys-warning/20 border-md-sys-warning/30',
+    rowBorder: 'border-l-[color:var(--md-sys-color-warning)]',
+    recBg: 'bg-md-sys-warning-container/10 border-md-sys-warning/20',
     order: 1,
     chartColor: '#F97316',
   },
   Medium: {
     icon: AlertCircle,
-    text: 'text-yellow-700 dark:text-yellow-400',
-    bg: 'bg-yellow-500/10',
-    border: 'border-yellow-500/40',
+    text: 'text-md-sys-warning',
+    bg: 'bg-md-sys-warning-container/10',
+    border: 'border-md-sys-warning/30',
     ring: '',
-    rowBorder: 'border-l-yellow-500',
-    recBg: 'bg-yellow-500/5 border-yellow-500/20',
+    rowBorder: 'border-l-[color:var(--md-sys-color-warning)]',
+    recBg: 'bg-md-sys-warning-container/5 border-md-sys-warning/20',
     order: 2,
     chartColor: '#EAB308',
   },
@@ -382,7 +382,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
                 <div
                   key={sev}
                   className={`cursor-pointer transition-all select-none rounded-2xl active:scale-[0.98] ${
-                    isActive ? `${cfg.ring || `ring-1 ring-neutral-500/20`} ring-2` : ''
+                    isActive ? `${cfg.ring || `ring-1 ring-md-sys-outline-variant/40`} ring-2` : ''
                   }`}
                   onClick={() => setSeverityFilter((prev) => (prev === sev ? 'All' : sev))}
                   onKeyDown={(e) => {

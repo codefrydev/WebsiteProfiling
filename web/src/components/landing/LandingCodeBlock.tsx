@@ -26,7 +26,7 @@ export default function LandingCodeBlock({ label, command, prominent = false }: 
 
   return (
     <div
-      className={`group border border-md-sys-outline-variant/40 transition-colors hover:border-blue-500/25 ${
+      className={`group border border-md-sys-outline-variant/40 transition-colors hover:border-md-sys-primary/30 ${
         prominent ? 'rounded-xl p-4 @sm:p-5' : 'rounded-lg p-3'
       }`}
     >
@@ -45,11 +45,11 @@ export default function LandingCodeBlock({ label, command, prominent = false }: 
         <button
           type="button"
           onClick={() => { void handleCopy(); }}
-          className={`inline-flex items-center gap-1 rounded-md border border-md-sys-outline-variant/40 font-medium text-md-sys-on-surface-variant opacity-0 transition-all group-hover:opacity-100 hover:border-blue-500/25 hover:text-md-sys-on-surface focus:opacity-100 ${
+          className={`press inline-flex items-center gap-1 rounded-full border border-md-sys-outline-variant/40 font-medium text-md-sys-on-surface-variant opacity-0 transition-all group-hover:opacity-100 hover:border-md-sys-primary/30 hover:text-md-sys-on-surface focus:opacity-100 active:scale-95 ${
             prominent ? 'px-2.5 py-1.5 text-xs' : 'px-2 py-1 text-[11px]'
           }`}
         >
-          {copied ? <Check className="h-3 w-3 text-emerald-500" aria-hidden /> : <Copy className="h-3 w-3" aria-hidden />}
+          {copied ? <Check className="h-3 w-3 text-md-sys-success" aria-hidden /> : <Copy className="h-3 w-3" aria-hidden />}
           {copied ? vl.copyCommandDone : vl.copyCommand}
         </button>
       </div>

@@ -35,7 +35,7 @@ export default function LandingLimitations() {
               <ul className="mt-4 flex flex-1 flex-col gap-3">
                 {vl.limitationsIsItems.map((item) => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-md-sys-on-surface-variant @sm:text-base">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500/90" aria-hidden />
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-md-sys-success" aria-hidden />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -61,7 +61,7 @@ export default function LandingLimitations() {
           href={vl.githubReadmeUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs font-medium text-md-sys-primary transition-colors hover:bg-blue-500/20 @sm:text-sm"
+          className="inline-flex items-center gap-1.5 rounded-full border border-md-sys-primary/30 bg-md-sys-primary-container/20 px-4 py-1.5 text-xs font-medium text-md-sys-primary transition-colors hover:bg-md-sys-primary-container/30 @sm:text-sm"
         >
           {vl.limitationsReadmeLink}
           <ExternalLink className="h-3.5 w-3.5" aria-hidden />

@@ -9,10 +9,10 @@ import LhDetailsTable from './LhDetailsTable';
 function severityBg(s: string | undefined): string {
   if (!s) return 'bg-md-sys-surface-container-high text-md-sys-on-surface';
   const sl = s.toLowerCase();
-  if (sl === 'critical') return 'bg-red-500/20 text-red-800 dark:text-red-300';
-  if (sl === 'high') return 'bg-orange-500/20 text-orange-800 dark:text-orange-300';
-  if (sl === 'medium') return 'bg-yellow-500/20 text-yellow-900 dark:text-yellow-300';
-  return 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface-variant';
+  if (sl === 'critical') return 'bg-md-sys-error-container/25 text-md-sys-error border border-md-sys-error/30';
+  if (sl === 'high') return 'bg-md-sys-warning-container/25 text-md-sys-warning border border-md-sys-warning/30';
+  if (sl === 'medium') return 'bg-md-sys-warning-container/15 text-md-sys-warning border border-md-sys-warning/20';
+  return 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface-variant border border-md-sys-outline-variant/30';
 }
 
 export interface DiagnosticItemProps {
@@ -29,7 +29,7 @@ export default function DiagnosticItem({ d }: DiagnosticItemProps) {
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-start gap-3 px-4 py-3 bg-md-sys-surface-container hover:bg-md-sys-surface-container-high transition-colors text-left"
       >
-        <span className={`text-xs px-2 py-0.5 rounded font-semibold shrink-0 mt-0.5 ${severityBg(d.severity)}`}>
+        <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold shrink-0 mt-0.5 ${severityBg(d.severity)}`}>
           {d.severity || 'Medium'}
         </span>
         <div className="flex-1 min-w-0">
