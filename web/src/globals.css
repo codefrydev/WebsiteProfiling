@@ -26,9 +26,9 @@
   --app-overlay: color-mix(in srgb, var(--md-sys-color-on-surface) 45%, transparent);
   --scrollbar-track: var(--app-bg-muted);
   --scrollbar-thumb: var(--md-sys-color-outline-variant);
-  --chart-grid: rgba(148, 163, 184, 0.4);
-  --chart-legend: var(--md-sys-color-on-surface-variant);
-  --chart-title: var(--md-sys-color-on-surface-variant);
+  --chart-grid: rgba(148, 163, 184, 0.3);
+  --chart-legend: #475569;
+  --chart-title: #475569;
   --code-bg: var(--md-sys-color-surface-container-lowest);
   --shadow-elevated:
     rgba(15, 23, 42, 0.06) 0 10px 15px -3px, rgba(15, 23, 42, 0.04) 0 4px 6px -2px;
@@ -182,9 +182,9 @@ html.dark {
   --app-overlay: color-mix(in srgb, black 55%, transparent);
   --scrollbar-track: var(--app-bg);
   --scrollbar-thumb: var(--md-sys-color-outline-variant);
-  --chart-grid: rgba(100, 116, 139, 0.45);
-  --chart-legend: var(--md-sys-color-on-surface-variant);
-  --chart-title: var(--md-sys-color-on-surface-variant);
+  --chart-grid: rgba(100, 116, 139, 0.3);
+  --chart-legend: #94a3b8;
+  --chart-title: #94a3b8;
   --code-bg: var(--md-sys-color-surface-container-lowest);
   --shadow-elevated:
     rgba(0, 0, 0, 0.35) 0 10px 15px -3px, rgba(0, 0, 0, 0.22) 0 4px 6px -2px;
