@@ -66,7 +66,9 @@ COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 ENV NODE_ENV=production
 
 # Persisted data directory (secrets + shadow config)
-RUN mkdir -p /data && chmod +x /app/docker-entrypoint.sh
+RUN mkdir -p /data \
+  && sed -i 's/\r$//' /app/docker-entrypoint.sh \
+  && chmod +x /app/docker-entrypoint.sh
 
 EXPOSE 8096
 

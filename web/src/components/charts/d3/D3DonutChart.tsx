@@ -109,7 +109,7 @@ export function D3DonutChart({
                       key={filteredLabels[i]}
                       d={pathD}
                       fill={color}
-                      stroke="var(--background, #0f172a)"
+                      stroke="var(--md-sys-color-surface, #0b0f19)"
                       strokeWidth={2}
                       style={{ cursor: 'default', transition: 'all 0.1s' }}
                       onMouseEnter={(e) => {
@@ -157,10 +157,10 @@ export function D3DonutChart({
                     width={Math.max(tooltip.label.length * 6 + 60, 100)}
                     height={24}
                     rx={4}
-                    fill="var(--popover, #1e293b)"
+                    fill="var(--md-sys-color-surface-container-highest, #1f2937)"
                     opacity={0.92}
                   />
-                  <text x={4} y={-6} fontSize={11} fill="var(--popover-foreground, #f1f5f9)">
+                  <text x={4} y={-6} fontSize={11} fill="var(--md-sys-color-on-surface, #f1f5f9)">
                     {tooltip.label}: {tooltip.value.toLocaleString()} ({tooltip.pct}%)
                   </text>
                 </g>

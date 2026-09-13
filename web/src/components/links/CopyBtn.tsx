@@ -24,10 +24,10 @@ export default function CopyBtn({ text, className = '' }: CopyBtnProps) {
       type="button"
       onClick={copy}
       title={c.title}
-      className={`inline-flex items-center gap-1 text-muted-foreground hover:text-bright transition-colors ${className}`}
+      className={`inline-flex items-center gap-1 text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-colors ${className}`}
     >
       {copied
-        ? <Check className="h-3 w-3 text-green-700 dark:text-green-400" />
+        ? <Check className="h-3 w-3 text-md-sys-success" />
         : <Copy className="h-3 w-3" />}
     </button>
   );

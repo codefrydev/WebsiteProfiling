@@ -87,7 +87,7 @@ export default function GoogleDataRefreshButton({ variant = 'gsc' }: Props) {
         loading={refreshing}
         disabled={disabled}
         title={title}
-        className="border-green-700/40 text-green-800 hover:bg-green-500/10 dark:text-green-300"
+        className="border-md-sys-success/40 text-md-sys-success hover:bg-md-sys-success-container/20"
         onClick={() => void handleClick()}
       >
         {refreshing ? (
@@ -102,14 +102,14 @@ export default function GoogleDataRefreshButton({ variant = 'gsc' }: Props) {
           role="status"
           className={`max-w-xs text-right text-xs ${
             toast.type === 'success'
-              ? 'text-green-700 dark:text-green-400'
-              : 'text-red-700 dark:text-red-400'
+              ? 'text-md-sys-success'
+              : 'text-md-sys-error'
           }`}
         >
           {toast.message}
         </p>
       ) : stale && propertyId != null ? (
-        <p className="max-w-xs text-right text-xs text-muted-foreground">{copy.label} — data may be outdated</p>
+        <p className="max-w-xs text-right text-xs text-md-sys-on-surface-variant">{copy.label} — data may be outdated</p>
       ) : null}
     </div>
   );

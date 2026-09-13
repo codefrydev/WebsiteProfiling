@@ -42,7 +42,7 @@ export default function DraftsTable({
 
   if (drafts.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-8 text-center">{t.empty}</p>
+      <p className="text-sm text-md-sys-on-surface-variant py-8 text-center">{t.empty}</p>
     );
   }
 
@@ -50,27 +50,27 @@ export default function DraftsTable({
     <div className="overflow-x-auto">
       <Table>
         <TableHead>
-          <TableRow>
+          <tr>
             <TableHeadCell>{t.colTitle}</TableHeadCell>
             <TableHeadCell>{t.colKeyword}</TableHeadCell>
             <TableHeadCell>{t.colGrade}</TableHeadCell>
             <TableHeadCell>{t.colStatus}</TableHeadCell>
             <TableHeadCell>{t.colUpdated}</TableHeadCell>
             {!readOnly ? <TableHeadCell>{t.colActions}</TableHeadCell> : null}
-          </TableRow>
+          </tr>
         </TableHead>
         <TableBody>
           {drafts.map((d) => (
             <TableRow key={d.id}>
               <TableCell className="font-medium max-w-[200px] truncate">{d.title}</TableCell>
-              <TableCell className="max-w-[160px] truncate text-muted-foreground">
+              <TableCell className="max-w-[160px] truncate text-md-sys-on-surface-variant">
                 {d.target_keyword || t.noKeyword}
               </TableCell>
               <TableCell className="tabular-nums">
                 {d.grade_score != null ? `${d.grade_score}` : t.noGrade}
               </TableCell>
               <TableCell className="capitalize">{d.status}</TableCell>
-              <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+              <TableCell className="text-xs text-md-sys-on-surface-variant whitespace-nowrap">
                 {formatDate(d.updated_at)}
               </TableCell>
               {!readOnly ? (
@@ -88,7 +88,7 @@ export default function DraftsTable({
                     <Button
                       type="button"
                       variant="ghost"
-                      className="!px-2 !py-1 text-red-700 dark:text-red-400"
+                      className="!px-2 !py-1 text-md-sys-error hover:bg-md-sys-error/10"
                       onClick={() => onDelete(d.id)}
                       loading={deletingId === d.id}
                       title={t.delete}

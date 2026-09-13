@@ -136,7 +136,7 @@ export function OverviewSummaryTab({
         </SectionLoadingGate>
         {provenanceSources.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-muted-foreground">{vo.dataSourcesLabel}:</span>
+            <span className="text-md-sys-on-surface-variant">{vo.dataSourcesLabel}:</span>
             <DataSourceBadgeRow sources={provenanceSources} />
             <LlmDisclosure llmMeta={data.report_meta?.llm} />
           </div>
@@ -150,7 +150,7 @@ export function OverviewSummaryTab({
         <div className="print:hidden">
           <Link
             to={exportHref}
-            className="inline-flex items-center gap-2 text-sm font-medium text-link hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-medium text-md-sys-primary hover:underline"
           >
             <FileDown className="h-4 w-4" />
             {vo.openExportPage}
@@ -160,42 +160,44 @@ export function OverviewSummaryTab({
           {!googleData ? (
             <AlertBanner
               variant="info"
-              icon={<TrendingUp className="h-4 w-4 text-link shrink-0" aria-hidden />}
+              icon={<TrendingUp className="h-4 w-4 text-md-sys-primary shrink-0" aria-hidden />}
               title={vo.googleConnectTitle}
             >
-              <p className="text-xs text-muted-foreground">{vo.googleConnectSubtitle}</p>
+              <p className="text-xs text-md-sys-on-surface-variant">{vo.googleConnectSubtitle}</p>
             </AlertBanner>
           ) : (
-            <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="relative group/dev-card">
               {googleTrafficDevData ? <DevCopyJsonButton data={googleTrafficDevData} /> : null}
-              {googleData.gsc ? (
-                <>
-                  <StatCard
-                    label={vo.gscClicksCard}
-                    value={googleData.gsc.summary?.clicks?.toLocaleString()}
-                    hint={metricHelpHint('shared.clicks')}
-                  />
-                  <StatCard
-                    label={vo.gscImpressionsCard}
-                    value={googleData.gsc.summary?.impressions?.toLocaleString()}
-                    hint={metricHelpHint('shared.impressions')}
-                  />
-                </>
-              ) : null}
-              {googleData.ga4 ? (
-                <>
-                  <StatCard
-                    label={vo.ga4SessionsCard}
-                    value={googleData.ga4.summary?.sessions?.toLocaleString()}
-                    hint={metricHelpHint('shared.sessions')}
-                  />
-                  <StatCard
-                    label={vo.ga4UsersCard}
-                    value={googleData.ga4.summary?.activeUsers?.toLocaleString()}
-                    hint={metricHelpHint('shared.activeUsers')}
-                  />
-                </>
-              ) : null}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {googleData.gsc ? (
+                  <>
+                    <StatCard
+                      label={vo.gscClicksCard}
+                      value={googleData.gsc.summary?.clicks?.toLocaleString()}
+                      hint={metricHelpHint('shared.clicks')}
+                    />
+                    <StatCard
+                      label={vo.gscImpressionsCard}
+                      value={googleData.gsc.summary?.impressions?.toLocaleString()}
+                      hint={metricHelpHint('shared.impressions')}
+                    />
+                  </>
+                ) : null}
+                {googleData.ga4 ? (
+                  <>
+                    <StatCard
+                      label={vo.ga4SessionsCard}
+                      value={googleData.ga4.summary?.sessions?.toLocaleString()}
+                      hint={metricHelpHint('shared.sessions')}
+                    />
+                    <StatCard
+                      label={vo.ga4UsersCard}
+                      value={googleData.ga4.summary?.activeUsers?.toLocaleString()}
+                      hint={metricHelpHint('shared.activeUsers')}
+                    />
+                  </>
+                ) : null}
+              </div>
             </div>
           )}
         </SectionLoadingGate>
@@ -230,18 +232,18 @@ export function OverviewSummaryTab({
       </SectionLoadingGate>
 
       {reportCount >= 2 ? (
-        <Card shadow className="mb-8 border border-cyan-600/35 dark:border-cyan-900/40 bg-cyan-100/45 dark:bg-cyan-950/10">
+        <Card shadow className="mb-8 border border-md-sys-primary/30 bg-md-sys-primary-container/15">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <ArrowLeftRight className="h-5 w-5 text-cyan-700 dark:text-cyan-400 shrink-0" />
-                <h2 className="text-lg font-bold text-bright">{vo.reportComparison}</h2>
+                <ArrowLeftRight className="h-5 w-5 text-md-sys-primary shrink-0" />
+                <h2 className="text-lg font-bold text-md-sys-on-surface">{vo.reportComparison}</h2>
               </div>
-              <p className="text-xs text-muted-foreground max-w-2xl">{vo.reportComparisonTeaser}</p>
+              <p className="text-xs text-md-sys-on-surface-variant max-w-2xl">{vo.reportComparisonTeaser}</p>
             </div>
             <Link
               to={compareHref}
-              className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
+              className="press shrink-0 inline-flex items-center gap-2 rounded-full bg-md-sys-primary px-5 py-2.5 text-sm font-medium text-md-sys-on-primary hover:brightness-105 active:scale-[0.98] transition-all duration-200 shadow-sm"
             >
               {strings.views.compare.title}
               <ChevronRight className="h-4 w-4" />

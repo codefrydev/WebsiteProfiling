@@ -22,14 +22,14 @@ function Toggle({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${
-        checked ? 'bg-[var(--accent)]' : 'bg-[var(--app-bg-sunken)]'
+      className={`press relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-sys-primary ${
+        checked ? 'bg-md-sys-primary border-md-sys-primary' : 'bg-md-sys-surface-container-highest border-md-sys-outline'
       }`}
     >
       <span
         aria-hidden
-        className={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow ring-0 transition-transform ${
-          checked ? 'translate-x-4' : 'translate-x-0'
+        className={`pointer-events-none block h-5 w-5 rounded-full shadow-xs ring-0 transition-transform ${
+          checked ? 'translate-x-5 bg-md-sys-on-primary' : 'translate-x-0 bg-md-sys-outline'
         }`}
       />
     </button>
@@ -58,20 +58,20 @@ export default function WritingPanel() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-bright">{s.writingSection}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{s.writingSubtitle}</p>
+        <h1 className="text-xl font-semibold text-md-sys-on-surface">{s.writingSection}</h1>
+        <p className="mt-1 text-sm text-md-sys-on-surface-variant">{s.writingSubtitle}</p>
       </div>
 
-      <section className="rounded-2xl border border-default bg-[var(--app-bg-elevated)] divide-y divide-[var(--app-border-muted)]">
+      <section className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container divide-y divide-md-sys-outline-variant/40">
         <div className="flex items-start justify-between gap-6 px-5 py-4">
           <div className="min-w-0 flex-1">
             <label
               htmlFor="content-studio-ai-toggle"
-              className="block text-sm font-medium text-bright cursor-pointer"
+              className="block text-sm font-medium text-md-sys-on-surface cursor-pointer"
             >
               {s.contentStudioAiLabel}
             </label>
-            <p className="mt-0.5 text-xs text-muted-foreground">{s.contentStudioAiHelp}</p>
+            <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">{s.contentStudioAiHelp}</p>
           </div>
           <div className="flex-shrink-0 pt-0.5">
             <Toggle
@@ -83,9 +83,9 @@ export default function WritingPanel() {
         </div>
       </section>
 
-      <p className="mt-4 text-[11px] text-muted-foreground">
+      <p className="mt-4 text-[11px] text-md-sys-on-surface-variant">
         This preference syncs across browsers. The server-side AI gate for Content Studio is on the{' '}
-        <Link to="/pipeline?group=content-ai" className="text-link hover:underline underline-offset-2">
+        <Link to="/pipeline?group=content-ai" className="text-md-sys-primary hover:underline underline-offset-2">
           Pipeline → Content & AI
         </Link>{' '}
         page.

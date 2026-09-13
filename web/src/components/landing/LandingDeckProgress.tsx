@@ -9,7 +9,7 @@ export default function LandingDeckProgress() {
 
   return (
     <div
-      className="landing-deck-progress relative z-20 w-full shrink-0 border-t border-muted/50 bg-brand-900/80 backdrop-blur-sm"
+      className="landing-deck-progress relative z-20 w-full shrink-0 border-t border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/80 backdrop-blur-sm"
       role="progressbar"
       aria-valuemin={1}
       aria-valuemax={total}
@@ -25,7 +25,7 @@ export default function LandingDeckProgress() {
             style={{ transform: `scaleX(${progress})` }}
           />
         </div>
-        <span className="shrink-0 text-[10px] font-medium tabular-nums text-muted-foreground sm:text-xs">
+        <span className="shrink-0 text-[10px] font-medium tabular-nums text-md-sys-on-surface-variant sm:text-xs">
           {activeIndex + 1} / {total}
         </span>
       </div>

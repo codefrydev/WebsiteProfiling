@@ -72,7 +72,7 @@ export default function ChatComposer({
       className={`mx-auto w-full ${isHero || isCompact ? '' : 'max-w-3xl px-4 pb-4 pt-2'} ${isCompact ? 'px-3 pb-3 pt-2' : ''}`}
     >
       <div
-        className={`mx-auto flex items-end gap-1 rounded-3xl bg-[var(--chat-surface)] px-3 py-2 transition-shadow ${
+        className={`mx-auto flex items-end gap-1 rounded-3xl bg-md-sys-surface-container px-3 py-2 transition-shadow ${
           isHero
             ? 'chat-hero-input min-h-[3.5rem] sm:px-4'
             : isCompact
@@ -84,7 +84,7 @@ export default function ChatComposer({
           <button
             type="button"
             disabled={disabled || busy}
-            className={`mb-0.5 flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground disabled:opacity-40 ${
+            className={`mb-0.5 flex shrink-0 items-center justify-center rounded-full text-md-sys-on-surface-variant transition-colors hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface disabled:opacity-40 ${
               isHero ? 'h-10 w-10' : 'h-9 w-9'
             }`}
             aria-label={c.composerAttach}
@@ -103,7 +103,7 @@ export default function ChatComposer({
           placeholder={placeholder ?? c.inputPlaceholder}
           rows={1}
           disabled={disabled || busy}
-          className={`max-h-40 flex-1 resize-none border-0 bg-transparent py-2 text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:ring-0 disabled:opacity-50 ${
+          className={`max-h-40 flex-1 resize-none border-0 bg-transparent py-2 text-md-sys-on-surface placeholder:text-md-sys-on-surface-variant/60/80 focus:outline-none focus:ring-0 disabled:opacity-50 ${
             isHero ? 'min-h-[2.5rem] text-[15px]' : 'min-h-[2.25rem] text-sm'
           }`}
           onKeyDown={(e) => {
@@ -121,7 +121,7 @@ export default function ChatComposer({
           <button
             type="submit"
             disabled={submitDisabled}
-            className={`flex items-center justify-center rounded-full text-foreground transition-colors disabled:opacity-40 ${
+            className={`flex items-center justify-center rounded-full text-md-sys-on-surface transition-colors disabled:opacity-40 ${
               isHero
                 ? 'h-10 w-10 bg-foreground/12 hover:bg-foreground/18'
                 : 'h-9 w-9 bg-foreground/10 hover:bg-foreground/15'

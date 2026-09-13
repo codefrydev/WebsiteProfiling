@@ -9,10 +9,10 @@ interface CompareUrlMetadataTableProps {
 
 export default function CompareUrlMetadataTable({ rows, emptyLabel }: CompareUrlMetadataTableProps) {
   if (!rows.length) {
-    return <p className="text-sm text-muted-foreground py-4">{emptyLabel}</p>;
+    return <p className="text-sm text-md-sys-on-surface-variant py-4">{emptyLabel}</p>;
   }
   return (
-    <div className="max-h-[min(480px,55vh)] overflow-y-auto border border-default rounded-lg">
+    <div className="max-h-[min(480px,55vh)] overflow-y-auto border border-md-sys-outline-variant/40 rounded-lg">
       <Table>
         <TableHead sticky>
           <TableRow>

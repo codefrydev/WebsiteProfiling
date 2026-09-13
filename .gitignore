@@ -29,7 +29,8 @@ input.txt
 pipeline-config.txt
 *__pycache__*
 .coverage
-.agents/
+.agents/*
+!.agents/rules/
 skills-lock.json
 crawl_results.csv
 commit.*

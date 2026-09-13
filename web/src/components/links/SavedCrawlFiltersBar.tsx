@@ -78,7 +78,7 @@ export default function SavedCrawlFiltersBar({ propertyId, view, onLoad }: Saved
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            className="rounded border border-default bg-background px-2 py-1 text-xs"
+            className="rounded border border-md-sys-outline-variant/40 bg-background px-2 py-1 text-xs"
           >
             <option value="">Load saved…</option>
             {names.map((n) => (
@@ -90,7 +90,7 @@ export default function SavedCrawlFiltersBar({ propertyId, view, onLoad }: Saved
           </Button>
         </>
       ) : null}
-      {status ? <span className="text-muted-foreground">{status}</span> : null}
+      {status ? <span className="text-md-sys-on-surface-variant">{status}</span> : null}
     </div>
   );
 }

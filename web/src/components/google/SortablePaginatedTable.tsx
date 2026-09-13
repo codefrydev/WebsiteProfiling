@@ -71,7 +71,7 @@ export default function SortablePaginatedTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-default">
+            <tr className="border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-low">
               {columns.map((col) => {
                 const hintContent = normalizeHintContent(
                   col.hint == null
@@ -85,7 +85,7 @@ export default function SortablePaginatedTable({
                   key={col.key}
                   onClick={() => toggle(col.key)}
                   aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-                  className="px-3 py-2 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer select-none hover:text-foreground whitespace-nowrap"
+                  className="px-3 py-2 text-left text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider cursor-pointer select-none hover:text-md-sys-on-surface whitespace-nowrap"
                 >
                   <span className="inline-flex items-center gap-1 normal-case">
                     {col.label}
@@ -120,10 +120,10 @@ export default function SortablePaginatedTable({
             {visible.map((row: Record<string, unknown>, i: number) => (
               <tr
                 key={rowKeyField && row[rowKeyField] ? String(row[rowKeyField]) : `row-${safePage}-${i}`}
-                className="border-b border-default/50 hover:bg-brand-800/60 transition-colors"
+                className="border-b border-md-sys-outline-variant/30 hover:bg-md-sys-surface-container-high/60 transition-colors"
               >
                 {columns.map((col) => (
-                  <td key={col.key} className="px-3 py-2 text-foreground">
+                  <td key={col.key} className="px-3 py-2 text-md-sys-on-surface">
                     {col.render ? col.render(row[col.key], row) : String(row[col.key] ?? '—')}
                   </td>
                 ))}
@@ -131,7 +131,7 @@ export default function SortablePaginatedTable({
             ))}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-6 text-center text-muted-foreground text-sm">
+                <td colSpan={columns.length} className="px-3 py-6 text-center text-md-sys-on-surface-variant text-sm">
                   {emptyMessage}
                 </td>
               </tr>
@@ -140,14 +140,14 @@ export default function SortablePaginatedTable({
         </table>
       </div>
       {total > 0 && (
-        <div className="mt-3 pt-3 border-t border-default flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-          <div className="text-sm text-muted-foreground space-y-0.5">
+        <div className="mt-3 pt-3 border-t border-md-sys-outline-variant/40 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+          <div className="text-sm text-md-sys-on-surface-variant space-y-0.5">
             <div>{format(pl.showingSlice, { from, to, total })}</div>
             <div className="text-xs">
               {pl.pageOf}{' '}
-              <span className="font-bold text-bright tabular-nums">{safePage}</span> {pl.of}{' '}
-              <span className="font-bold text-bright tabular-nums">{totalPages}</span>
-              <span className="text-muted-foreground ml-2">
+              <span className="font-bold text-md-sys-on-surface tabular-nums">{safePage}</span> {pl.of}{' '}
+              <span className="font-bold text-md-sys-on-surface tabular-nums">{totalPages}</span>
+              <span className="text-md-sys-on-surface-variant ml-2">
                 ({format(pl.rowsPerPage, { n: PAGE_SIZE })})
               </span>
             </div>
@@ -158,7 +158,7 @@ export default function SortablePaginatedTable({
                 variant="secondary"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={safePage <= 1}
-                className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
               >
                 {pl.previous}
               </Button>
@@ -166,7 +166,7 @@ export default function SortablePaginatedTable({
                 variant="secondary"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={safePage >= totalPages}
-                className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
               >
                 {pl.next}
               </Button>

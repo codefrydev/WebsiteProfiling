@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { X } from 'lucide-react';
 import { strings } from '@/lib/strings';
 import { Button } from '@/components';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 export interface NewDraftModalProps {
   open: boolean;
@@ -28,6 +29,11 @@ export default function NewDraftModal({
   const [keyword, setKeyword] = useState(initialKeyword);
   const [landingUrl, setLandingUrl] = useState('');
 
+  useModalDismiss({
+    onDismiss: onClose,
+    enabled: open,
+  });
+
   if (!open) return null;
 
   const handleSubmit = (e: FormEvent) => {
@@ -43,54 +49,58 @@ export default function NewDraftModal({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-[color:var(--app-overlay)] backdrop-blur-xs p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="new-draft-title"
+      onClick={onClose}
     >
-      <div className="w-full max-w-md rounded-xl border border-default bg-brand-800 shadow-xl">
-        <div className="flex items-center justify-between border-b border-default px-4 py-3">
-          <h3 id="new-draft-title" className="text-sm font-semibold text-bright">
+      <div
+        className="w-full max-w-md rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-md-sys-outline-variant/40 px-4 py-3">
+          <h3 id="new-draft-title" className="text-sm font-semibold text-md-sys-on-surface">
             {s.title}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+            className="press rounded-full p-1.5 text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all"
             aria-label={s.close}
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="px-4 py-4 space-y-3">
-          <label className="block text-xs text-muted-foreground">
+          <label className="block text-xs text-md-sys-on-surface-variant">
             {s.targetKeyword}
             <input
               type="text"
               required
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-default bg-brand-900 px-3 py-2 text-sm text-foreground"
+              className="mt-1 w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface"
               placeholder={s.keywordPlaceholder}
             />
           </label>
-          <label className="block text-xs text-muted-foreground">
+          <label className="block text-xs text-md-sys-on-surface-variant">
             {s.draftTitle}
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 w-full rounded-md border border-default bg-brand-900 px-3 py-2 text-sm text-foreground"
+              className="mt-1 w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface"
               placeholder={s.titlePlaceholder}
             />
           </label>
-          <label className="block text-xs text-muted-foreground">
+          <label className="block text-xs text-md-sys-on-surface-variant">
             {s.landingUrl}
             <input
               type="url"
               value={landingUrl}
               onChange={(e) => setLandingUrl(e.target.value)}
-              className="mt-1 w-full rounded-md border border-default bg-brand-900 px-3 py-2 text-sm text-foreground"
+              className="mt-1 w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface"
               placeholder="https://"
             />
           </label>

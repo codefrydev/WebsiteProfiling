@@ -16,12 +16,12 @@ export function KpiViz({ data, opts }: VizRenderProps) {
 export function StatCardViz({ data, opts }: VizRenderProps) {
   const color = thresholdColor(data.kpiValue, opts.thresholds);
   return (
-    <div className="rounded-lg border border-default/80 bg-brand-900/50 px-3 py-2 h-full flex flex-col justify-center">
+    <div className="rounded-lg border border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/50 px-3 py-2 h-full flex flex-col justify-center">
       <p className="text-2xl font-bold tabular-nums" style={color ? { color } : undefined}>
         {formatValue(data.kpiValue, opts.format)}
       </p>
       {opts.subtitle ? (
-        <p className="text-xs text-muted-foreground mt-1 truncate">{opts.subtitle}</p>
+        <p className="text-xs text-md-sys-on-surface-variant mt-1 truncate">{opts.subtitle}</p>
       ) : null}
     </div>
   );

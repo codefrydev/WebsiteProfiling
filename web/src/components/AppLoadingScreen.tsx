@@ -6,7 +6,7 @@ const app = strings.app;
 export default function AppLoadingScreen() {
   return (
     <div
-      className="relative flex min-h-screen flex-col items-center justify-center bg-brand-900 text-foreground"
+      className="relative flex min-h-screen flex-col items-center justify-center bg-md-sys-surface-container-low text-md-sys-on-surface"
       role="status"
       aria-live="polite"
       aria-busy="true"
@@ -18,11 +18,11 @@ export default function AppLoadingScreen() {
         <p className="landing-gradient-text text-center text-lg font-bold tracking-tight sm:text-xl">
           {app.productName}
         </p>
-        <p className="mt-1 text-center text-xs text-muted-foreground">{app.productSubtitle}</p>
+        <p className="mt-1 text-center text-xs text-md-sys-on-surface-variant">{app.productSubtitle}</p>
 
         <div
           aria-hidden
-          className="mt-8 space-y-3 rounded-xl border border-default/60 bg-brand-900/40 p-4 sm:p-5"
+          className="mt-8 space-y-3 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 p-4 sm:p-5"
         >
           <div className="flex items-center justify-between gap-3">
             <Skeleton className="h-3 w-20" />
@@ -38,7 +38,7 @@ export default function AppLoadingScreen() {
         </div>
 
         <p className="shimmer-text mt-8 text-center text-sm font-semibold sm:text-base">{app.loading}</p>
-        <p className="mt-1.5 text-center text-xs text-muted-foreground sm:text-sm">{app.loadingSubtitle}</p>
+        <p className="mt-1.5 text-center text-xs text-md-sys-on-surface-variant sm:text-sm">{app.loadingSubtitle}</p>
       </div>
     </div>
   );

@@ -55,8 +55,8 @@ export function CompactBarChart({
     .range([innerHeight, 0]);
 
   const wrapperClass = isChubby
-    ? `rounded-xl border border-default/50 bg-brand-950/35 px-3 py-3 ${className}`.trim()
-    : `rounded-md bg-brand-950/30 px-1 pb-1 pt-2 ${heightClass} ${className}`.trim();
+    ? `rounded-xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container-lowest/35 px-3 py-3 ${className}`.trim()
+    : `rounded-md bg-md-sys-surface-container-lowest/30 px-1 pb-1 pt-2 ${heightClass} ${className}`.trim();
 
   return (
     <div ref={containerRef} className={wrapperClass} role="img" aria-hidden="true">
@@ -103,7 +103,7 @@ export function CompactBarChart({
                     fontSize={10}
                     fontFamily="ui-monospace, monospace"
                     fontWeight={600}
-                    fill="var(--muted-foreground, #94a3b8)"
+                    fill="var(--md-sys-color-on-surface-variant, #94a3b8)"
                   >
                     {labels[i]}
                   </text>

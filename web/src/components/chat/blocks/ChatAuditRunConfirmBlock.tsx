@@ -137,19 +137,19 @@ export default function ChatAuditRunConfirmBlock({ block }: { block: AuditRunCon
   const showRunControls = jobStatus !== 'running' && jobStatus !== 'done';
 
   return (
-    <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 space-y-3">
+    <div className="rounded-2xl border border-md-sys-primary/30 bg-md-sys-primary-container/10 p-4 space-y-3">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="text-xs font-medium uppercase tracking-wide text-md-sys-on-surface-variant">
           {c.title}
         </p>
-        <p className="mt-1 text-sm font-medium text-foreground">{block.startUrl}</p>
-        <p className="text-xs text-muted-foreground">
+        <p className="mt-1 text-sm font-medium text-md-sys-on-surface">{block.startUrl}</p>
+        <p className="text-xs text-md-sys-on-surface-variant">
           {c.presetLabel}: {block.crawlPreset} · {pipelineLabel}
         </p>
       </div>
 
       {block.highlights.length > 0 ? (
-        <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+        <ul className="text-xs text-md-sys-on-surface-variant space-y-0.5 list-disc list-inside">
           {block.highlights.map((line) => (
             <li key={line}>{line}</li>
           ))}
@@ -179,7 +179,7 @@ export default function ChatAuditRunConfirmBlock({ block }: { block: AuditRunCon
             </Button>
             <Link
               to="/pipeline"
-              className="text-xs text-link hover:underline"
+              className="press rounded-full px-2.5 py-1 text-xs font-medium text-md-sys-primary hover:bg-md-sys-surface-container-high hover:underline active:scale-[0.98]"
             >
               {c.editInRunner}
             </Link>
@@ -188,24 +188,24 @@ export default function ChatAuditRunConfirmBlock({ block }: { block: AuditRunCon
       ) : null}
 
       {jobStatus === 'running' ? (
-        <p className="text-xs text-muted-foreground flex items-center gap-2">
+        <p className="text-xs text-md-sys-on-surface-variant flex items-center gap-2">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
           {c.running}
         </p>
       ) : null}
 
       {jobStatus === 'done' ? (
-        <p className="text-xs text-green-700 dark:text-green-400">{c.done}</p>
+        <p className="text-xs text-md-sys-success">{c.done}</p>
       ) : null}
 
       {error ? (
-        <p className="text-xs text-red-700 dark:text-red-400" role="alert">
+        <p className="text-xs text-md-sys-error" role="alert">
           {error}
         </p>
       ) : null}
 
       {jobLog && jobStatus === 'running' ? (
-        <pre className="max-h-32 overflow-auto rounded border border-default bg-brand-900/80 p-2 text-[10px] font-mono text-muted-foreground whitespace-pre-wrap">
+        <pre className="max-h-32 overflow-auto rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/80 p-2.5 text-[10px] font-mono text-md-sys-on-surface-variant whitespace-pre-wrap">
           {jobLog.slice(-2000)}
         </pre>
       ) : null}

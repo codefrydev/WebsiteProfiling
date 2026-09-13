@@ -72,7 +72,7 @@ function MockLineChart({ label }: { label?: string }) {
           stroke="currentColor"
           strokeWidth="1.5"
           strokeLinecap="round"
-          className="text-link"
+          className="text-md-sys-primary"
           points={coords}
         />
         <polyline fill={`url(#${fillId})`} stroke="none" points={`0,100 ${coords} 100,100`} />
@@ -83,7 +83,7 @@ function MockLineChart({ label }: { label?: string }) {
           </linearGradient>
         </defs>
       </svg>
-      <div className="mt-1 flex justify-between text-[8px] text-muted-foreground">
+      <div className="mt-1 flex justify-between text-[8px] text-md-sys-on-surface-variant">
         <span>Week 1</span>
         <span>Week 4</span>
       </div>
@@ -92,15 +92,15 @@ function MockLineChart({ label }: { label?: string }) {
 }
 
 const SCORE_RING_STROKE: Record<string, string> = {
-  'text-link': 'stroke-blue-400',
-  'text-amber-400': 'stroke-amber-400',
-  'text-emerald-400': 'stroke-emerald-400',
+  'text-md-sys-primary': 'stroke-md-sys-primary',
+  'text-md-sys-warning': 'stroke-md-sys-warning',
+  'text-md-sys-success': 'stroke-md-sys-success',
 };
 
 function MockScoreRing({
   score,
   label,
-  color = 'text-link',
+  color = 'text-md-sys-primary',
 }: {
   score: number;
   label: string;
@@ -108,13 +108,13 @@ function MockScoreRing({
 }) {
   const circumference = 2 * Math.PI * 18;
   const offset = circumference - (score / 100) * circumference;
-  const strokeClass = SCORE_RING_STROKE[color] ?? SCORE_RING_STROKE['text-link'];
+  const strokeClass = SCORE_RING_STROKE[color] ?? SCORE_RING_STROKE['text-md-sys-primary'];
 
   return (
     <div className="flex flex-col items-center">
       <div className="relative h-12 w-12">
         <svg viewBox="0 0 44 44" className="h-full w-full -rotate-90" aria-hidden>
-          <circle cx="22" cy="22" r="18" fill="none" className="stroke-brand-700/80" strokeWidth="4" />
+          <circle cx="22" cy="22" r="18" fill="none" className="stroke-md-sys-surface-container-high/80" strokeWidth="4" />
           <circle
             cx="22"
             cy="22"
@@ -127,11 +127,11 @@ function MockScoreRing({
             strokeDashoffset={offset}
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular-nums text-bright">
+        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular-nums text-md-sys-on-surface">
           {score}
         </span>
       </div>
-      <span className="mt-1 text-[8px] font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="mt-1 text-[8px] font-medium uppercase tracking-wide text-md-sys-on-surface-variant">{label}</span>
     </div>
   );
 }
@@ -139,26 +139,26 @@ function MockScoreRing({
 function MockIssueRow({ severity, title }: { severity: string; title: string }) {
   const severityClass =
     severity === 'Critical'
-      ? 'bg-red-500/20 text-red-400'
+      ? 'bg-md-sys-error-container text-md-sys-on-error-container'
       : severity === 'High'
-        ? 'bg-amber-500/20 text-amber-400'
-        : 'bg-blue-500/15 text-link';
+        ? 'bg-md-sys-warning-container text-md-sys-on-warning-container'
+        : 'bg-md-sys-primary-container text-md-sys-on-primary-container';
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-default/50 bg-brand-900/30 px-2 py-1.5">
-      <span className={`shrink-0 rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase ${severityClass}`}>
+    <div className="flex items-center gap-2 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container-low/30 px-2.5 py-1.5">
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[8px] font-semibold uppercase ${severityClass}`}>
         {severity}
       </span>
-      <span className="min-w-0 truncate text-[10px] text-foreground">{title}</span>
+      <span className="min-w-0 truncate text-[10px] text-md-sys-on-surface">{title}</span>
     </div>
   );
 }
 
 function MockUrlRow({ path, status }: { path: string; status: number }) {
-  const statusClass = status >= 400 ? 'text-red-400' : status >= 300 ? 'text-amber-400' : 'text-emerald-400';
+  const statusClass = status >= 400 ? 'text-md-sys-error font-medium' : status >= 300 ? 'text-md-sys-warning font-medium' : 'text-md-sys-success font-medium';
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-default/50 bg-brand-900/30 px-2 py-1.5">
-      <span className={`shrink-0 text-[9px] font-mono font-semibold tabular-nums ${statusClass}`}>{status}</span>
-      <span className="min-w-0 truncate text-[10px] text-muted-foreground">{path}</span>
+    <div className="flex items-center gap-2 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container-low/30 px-2.5 py-1.5">
+      <span className={`shrink-0 text-[9px] font-mono tabular-nums ${statusClass}`}>{status}</span>
+      <span className="min-w-0 truncate text-[10px] text-md-sys-on-surface-variant">{path}</span>
     </div>
   );
 }
@@ -213,8 +213,8 @@ function IssuesPanel() {
   return (
     <>
       <div className="mb-2.5 grid grid-cols-[auto_1fr_1fr] gap-2">
-        <div className="flex items-center justify-center rounded-lg border border-default/60 bg-brand-900/40 px-2">
-          <MockScoreRing score={78} label="Health" color="text-link" />
+        <div className="flex items-center justify-center rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 px-2">
+          <MockScoreRing score={78} label="Health" color="text-md-sys-primary" />
         </div>
         <CompactKpi label="Open issues" value="234" />
         <CompactKpi label="Critical" value="12" accent />
@@ -232,13 +232,13 @@ function IssuesPanel() {
         </CompactWidget>
         <CompactWidget title="Issue trend">
           <CompactAreaSparkline points={[42, 38, 35, 40, 32, 28, 26, 24]} />
-          <p className="mt-1 text-[8px] text-emerald-400">↓ 18% vs last crawl</p>
+          <p className="mt-1 text-[8px] text-md-sys-success">↓ 18% vs last crawl</p>
         </CompactWidget>
       </div>
-      <div className="mb-2.5 grid grid-cols-3 gap-1.5 rounded-lg border border-default/60 bg-brand-900/40 p-2">
-        <MockScoreRing score={72} label="Perf" color="text-amber-400" />
-        <MockScoreRing score={91} label="SEO" color="text-emerald-400" />
-        <MockScoreRing score={88} label="A11y" color="text-link" />
+      <div className="mb-2.5 grid grid-cols-3 gap-1.5 rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 p-2">
+        <MockScoreRing score={72} label="Perf" color="text-md-sys-warning" />
+        <MockScoreRing score={91} label="SEO" color="text-md-sys-success" />
+        <MockScoreRing score={88} label="A11y" color="text-md-sys-primary" />
       </div>
       <CompactWidget title="Top issues">
         <div className="space-y-1">
@@ -277,8 +277,8 @@ function OverviewPanel() {
         <MockLineChart label="Organic trend" />
         <CompactWidget title="Lighthouse">
           <div className="flex justify-around px-1">
-            <MockScoreRing score={84} label="Perf" color="text-emerald-400" />
-            <MockScoreRing score={96} label="SEO" color="text-link" />
+            <MockScoreRing score={84} label="Perf" color="text-md-sys-success" />
+            <MockScoreRing score={96} label="SEO" color="text-md-sys-primary" />
           </div>
         </CompactWidget>
       </div>
@@ -324,17 +324,17 @@ function GooglePanel() {
 
 function MockTermRow({ term, count, target, tone }: { term: string; count: number; target: number; tone: 'ok' | 'warn' | 'bad' }) {
   const toneClass =
-    tone === 'ok' ? 'bg-emerald-500' : tone === 'warn' ? 'bg-amber-500' : 'bg-red-500';
+    tone === 'ok' ? 'bg-md-sys-success' : tone === 'warn' ? 'bg-md-sys-warning' : 'bg-md-sys-error';
   const pct = Math.min(100, Math.round((count / Math.max(target, 1)) * 100));
   return (
     <div className="space-y-0.5">
       <div className="flex items-center justify-between gap-2 text-[9px]">
-        <span className="truncate text-foreground">{term}</span>
-        <span className="shrink-0 tabular-nums text-muted-foreground">
+        <span className="truncate text-md-sys-on-surface">{term}</span>
+        <span className="shrink-0 tabular-nums text-md-sys-on-surface-variant">
           {count}/{target}
         </span>
       </div>
-      <div className="h-1 overflow-hidden rounded-full bg-brand-700/80">
+      <div className="h-1 overflow-hidden rounded-full bg-md-sys-surface-container-high/80">
         <div className={`h-full rounded-full ${toneClass}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -345,24 +345,24 @@ function ContentStudioPanel() {
   return (
     <div className="flex h-full min-h-0 gap-2">
       <div className="min-w-0 flex-1 space-y-2">
-        <div className="rounded-lg border border-default/60 bg-brand-900/40 p-2">
-          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Title</p>
-          <p className="mt-0.5 truncate text-[10px] font-medium text-foreground">SEO Audit Guide 2026</p>
+        <div className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 p-2.5">
+          <p className="text-[9px] font-semibold uppercase tracking-wide text-md-sys-on-surface-variant">Title</p>
+          <p className="mt-0.5 truncate text-[10px] font-medium text-md-sys-on-surface">SEO Audit Guide 2026</p>
         </div>
-        <div className="rounded-lg border border-default/60 bg-brand-900/40 p-2">
-          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Body</p>
+        <div className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 p-2.5">
+          <p className="text-[9px] font-semibold uppercase tracking-wide text-md-sys-on-surface-variant">Body</p>
           <div className="mt-1 space-y-1">
-            <span className="block h-1.5 w-full rounded bg-brand-700/80" />
-            <span className="block h-1.5 w-[92%] rounded bg-brand-700/80" />
-            <span className="block h-1.5 w-[78%] rounded bg-blue-500/40" />
-            <span className="block h-1.5 w-[85%] rounded bg-brand-700/80" />
+            <span className="block h-1.5 w-full rounded-full bg-md-sys-surface-container-high/80" />
+            <span className="block h-1.5 w-[92%] rounded-full bg-md-sys-surface-container-high/80" />
+            <span className="block h-1.5 w-[78%] rounded-full bg-md-sys-primary/40" />
+            <span className="block h-1.5 w-[85%] rounded-full bg-md-sys-surface-container-high/80" />
           </div>
         </div>
       </div>
-      <aside className="w-[38%] shrink-0 rounded-lg border border-default/60 bg-brand-900/50 p-2">
-        <p className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground">SEO grade</p>
-        <p className="mt-0.5 text-lg font-bold text-emerald-400">B+</p>
-        <p className="mt-2 text-[8px] font-semibold uppercase tracking-wide text-muted-foreground">Terms</p>
+      <aside className="w-[38%] shrink-0 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 p-2.5">
+        <p className="text-[8px] font-semibold uppercase tracking-wide text-md-sys-on-surface-variant">SEO grade</p>
+        <p className="mt-0.5 text-lg font-bold text-md-sys-success">B+</p>
+        <p className="mt-2 text-[8px] font-semibold uppercase tracking-wide text-md-sys-on-surface-variant">Terms</p>
         <div className="mt-1.5 space-y-2">
           <MockTermRow term="seo audit" count={4} target={3} tone="ok" />
           <MockTermRow term="site audit" count={1} target={2} tone="warn" />
@@ -376,11 +376,11 @@ function ContentStudioPanel() {
 function AiChatPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
-      <div className="ml-auto max-w-[88%] rounded-lg rounded-tr-sm border border-blue-500/30 bg-blue-500/15 px-2 py-1.5">
-        <p className="text-[9px] text-foreground">Summarize site health and export a PDF report.</p>
+      <div className="ml-auto max-w-[88%] rounded-2xl rounded-tr-xs border border-md-sys-primary/30 bg-md-sys-primary/15 px-2.5 py-1.5">
+        <p className="text-[9px] text-md-sys-on-surface">Summarize site health and export a PDF report.</p>
       </div>
-      <div className="max-w-[92%] rounded-lg rounded-tl-sm border border-default/60 bg-brand-900/50 px-2 py-1.5">
-        <p className="text-[9px] text-muted-foreground">Health score 82 (+4). 12 critical issues remain…</p>
+      <div className="max-w-[92%] rounded-2xl rounded-tl-xs border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-2.5 py-1.5">
+        <p className="text-[9px] text-md-sys-on-surface-variant">Health score 82 (+4). 12 critical issues remain…</p>
         <div className="mt-2 grid grid-cols-3 gap-1">
           <CompactKpi label="Health" value="82" accent />
           <CompactKpi label="Issues" value="89" delta="-11" />
@@ -388,10 +388,10 @@ function AiChatPanel() {
         </div>
       </div>
       <div className="mt-auto flex flex-wrap gap-1.5">
-        <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[8px] font-medium text-link">
+        <span className="rounded-full border border-md-sys-primary/30 bg-md-sys-primary/10 px-2.5 py-0.5 text-[8px] font-medium text-md-sys-primary">
           Download PDF
         </span>
-        <span className="rounded-full border border-default/60 px-2 py-0.5 text-[8px] text-muted-foreground">
+        <span className="rounded-full border border-md-sys-outline-variant/40 px-2.5 py-0.5 text-[8px] text-md-sys-on-surface-variant">
           View issues table
         </span>
       </div>
@@ -403,27 +403,27 @@ function PromptGeneratorPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[9px] font-semibold text-foreground">Issues</p>
-        <span className="rounded-md border border-default/60 bg-brand-900/60 px-2 py-0.5 text-[8px] font-semibold text-link">
+        <p className="text-[9px] font-semibold text-md-sys-on-surface">Issues</p>
+        <span className="rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/60 px-2 py-0.5 text-[8px] font-semibold text-md-sys-primary">
           Generate prompt
         </span>
       </div>
-      <div className="rounded-lg border border-default/60 bg-brand-950/50 p-2">
-        <p className="text-[8px] font-semibold text-foreground">Audit issues prompt</p>
-        <p className="mt-0.5 text-[7px] text-muted-foreground">31 unique issues from 47 findings</p>
-        <div className="mt-2 space-y-1 rounded-md border border-default/40 bg-brand-900/40 p-1.5">
-          <span className="block h-1 w-[95%] rounded bg-brand-700/80" />
-          <span className="block h-1 w-[88%] rounded bg-brand-700/80" />
-          <span className="block h-1 w-[72%] rounded bg-blue-500/30" />
-          <span className="block h-1 w-[90%] rounded bg-brand-700/80" />
-          <span className="block h-1 w-[65%] rounded bg-brand-700/80" />
+      <div className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-lowest/50 p-2">
+        <p className="text-[8px] font-semibold text-md-sys-on-surface">Audit issues prompt</p>
+        <p className="mt-0.5 text-[7px] text-md-sys-on-surface-variant">31 unique issues from 47 findings</p>
+        <div className="mt-2 space-y-1 rounded-md border border-md-sys-outline-variant/30 bg-md-sys-surface-container-low/40 p-1.5">
+          <span className="block h-1 w-[95%] rounded bg-md-sys-surface-container-high/80" />
+          <span className="block h-1 w-[88%] rounded bg-md-sys-surface-container-high/80" />
+          <span className="block h-1 w-[72%] rounded bg-md-sys-primary/30" />
+          <span className="block h-1 w-[90%] rounded bg-md-sys-surface-container-high/80" />
+          <span className="block h-1 w-[65%] rounded bg-md-sys-surface-container-high/80" />
         </div>
         <div className="mt-2 flex flex-wrap gap-1">
-          <span className="rounded border border-default/60 px-1.5 py-0.5 text-[7px] text-foreground">Copy prompt</span>
-          <span className="rounded border border-fuchsia-500/30 bg-fuchsia-500/10 px-1.5 py-0.5 text-[7px] text-fuchsia-300">
+          <span className="rounded-full border border-md-sys-outline-variant/40 px-1.5 py-0.5 text-[7px] text-md-sys-on-surface">Copy prompt</span>
+          <span className="rounded-full border border-md-sys-tertiary/30 bg-md-sys-tertiary-container/20 px-1.5 py-0.5 text-[7px] text-md-sys-tertiary font-medium">
             Get AI plan
           </span>
-          <span className="rounded border border-default/60 px-1.5 py-0.5 text-[7px] text-foreground">Open in Chat</span>
+          <span className="rounded-full border border-md-sys-outline-variant/40 px-1.5 py-0.5 text-[7px] text-md-sys-on-surface">Open in Chat</span>
         </div>
       </div>
       <CompactWidget title="Also on Security & JS errors" className="mb-0 mt-auto">
@@ -466,10 +466,10 @@ function CompareExportPanel() {
         </CompactWidget>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        <span className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-2.5 py-1 text-[9px] font-semibold text-link">
+        <span className="rounded-full border border-md-sys-primary/30 bg-md-sys-primary/10 px-3 py-1 text-[9px] font-semibold text-md-sys-primary">
           Export PDF
         </span>
-        <span className="rounded-lg border border-default/60 px-2.5 py-1 text-[9px] font-semibold text-foreground">
+        <span className="rounded-full border border-md-sys-outline-variant/40 px-3 py-1 text-[9px] font-semibold text-md-sys-on-surface">
           Export HTML
         </span>
       </div>
@@ -514,26 +514,26 @@ export default function LandingProductMock({
   return (
     <div
       aria-hidden
-      className={`overflow-hidden rounded-2xl border border-default bg-brand-800/70 ${
+      className={`overflow-hidden rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/70 ${
         elevated ? 'shadow-[var(--shadow-elevated)]' : 'shadow-[var(--shadow-elevated)]'
       } ${fillHeight ? 'flex h-full min-h-0 flex-col' : ''} ${className}`.trim()}
     >
-      <div className={`flex items-center gap-2 border-b border-default/80 bg-brand-900/90 px-3 ${compact ? 'py-1.5' : 'py-2.5'}`}>
+      <div className={`flex items-center gap-2 border-b border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/90 px-3 ${compact ? 'py-1.5' : 'py-2.5'}`}>
         <span className="flex gap-1.5">
-          <span className={`rounded-full bg-red-500/80 ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
-          <span className={`rounded-full bg-amber-500/80 ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
-          <span className={`rounded-full bg-emerald-500/80 ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
+          <span className={`rounded-full bg-md-sys-error ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
+          <span className={`rounded-full bg-md-sys-warning ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
+          <span className={`rounded-full bg-md-sys-success ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
         </span>
-        <span className="min-w-0 flex-1 truncate rounded-md border border-default/60 bg-brand-950/60 px-2 py-0.5 text-center text-[9px] text-muted-foreground @sm:text-[10px]">
+        <span className="min-w-0 flex-1 truncate rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-lowest/60 px-3 py-0.5 text-center text-[9px] text-md-sys-on-surface-variant @sm:text-[10px]">
           https://site-audit.local/{MOCK_PATHS[variant]}
         </span>
       </div>
 
       <div className={`flex ${bodyMinH}`}>
-        <aside className={`hidden shrink-0 border-r border-default/60 bg-brand-900/60 p-2 @sm:block ${compact ? 'w-20' : 'w-28 p-2.5'}`}>
+        <aside className={`hidden shrink-0 border-r border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/60 p-2 @sm:block ${compact ? 'w-20' : 'w-28 p-2.5'}`}>
           <div className={`flex items-center gap-1.5 ${compact ? 'mb-2' : 'mb-3'}`}>
-            <span className={`rounded-md bg-blue-500/20 ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
-            <span className={`rounded bg-brand-700/80 ${compact ? 'h-1.5 w-10' : 'h-2 w-14'}`} />
+            <span className={`rounded-full bg-md-sys-primary/20 ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
+            <span className={`rounded-full bg-md-sys-surface-container-high/80 ${compact ? 'h-1.5 w-10' : 'h-2 w-14'}`} />
           </div>
           <ul className="space-y-0.5">
             {NAV_ITEMS.map(({ label, activeFor }) => {
@@ -541,8 +541,8 @@ export default function LandingProductMock({
               return (
                 <li
                   key={label}
-                  className={`rounded-md px-1.5 py-1 text-[9px] @sm:text-[10px] ${
-                    active ? 'bg-blue-500/15 font-semibold text-link' : 'text-muted-foreground'
+                  className={`rounded-full px-2 py-1 text-[9px] @sm:text-[10px] ${
+                    active ? 'bg-md-sys-primary/15 font-semibold text-md-sys-primary' : 'text-md-sys-on-surface-variant'
                   }`}
                 >
                   {label}

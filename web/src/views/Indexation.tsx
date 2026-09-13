@@ -40,7 +40,7 @@ function gapStatProps(
   if (n <= 0) return {};
   return {
     band: bandLabel,
-    bandClassName: 'text-amber-700 dark:text-amber-400',
+    bandClassName: 'text-md-sys-warning font-medium',
     href: tabHref(searchParams, tab),
   };
 }
@@ -181,16 +181,16 @@ export default function Indexation({ searchQuery = '' }: ViewProps) {
       <PageHeader
         title={vi.title}
         subtitle={vi.subtitle}
-        icon={<FileSearch className="h-7 w-7 text-link shrink-0" />}
+        icon={<FileSearch className="h-7 w-7 text-md-sys-primary shrink-0" />}
         actions={
           <>
             <Link
               to={searchPerformanceCoverageHref(searchParams)}
-              className="text-sm text-link hover:underline"
+              className="text-sm text-md-sys-primary hover:underline"
             >
               {vi.viewSearchPerformance}
             </Link>
-            <Link to={`/subdomains${querySuffix}`} className="text-sm text-link hover:underline">
+            <Link to={`/subdomains${querySuffix}`} className="text-sm text-md-sys-primary hover:underline">
               {vi.viewSubdomains}
             </Link>
           </>
@@ -216,29 +216,31 @@ export default function Indexation({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'summary' ? (
         <ViewTabPanel idPrefix="indexation" tabId="summary" className="space-y-6">
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="relative group/dev-card">
             <DevCopyJsonButton data={statsDevData} />
-            <StatCard label={vi.crawled} value={counts?.crawled ?? '—'} hint={metricHelpHint('views.indexation.crawled')} />
-            <StatCard label={vi.sitemap} value={counts?.sitemap ?? '—'} hint={metricHelpHint('views.indexation.sitemap')} />
-            <StatCard label={vi.gscPages} value={counts?.gsc_pages ?? '—'} hint={metricHelpHint('views.indexation.gscPages')} />
-            <StatCard
-              label={vi.sitemapOnly}
-              value={counts?.sitemap_only ?? '—'}
-              hint={metricHelpHint('views.indexation.sitemapOnly')}
-              {...gapStatProps(counts?.sitemap_only, 'sitemapGaps', searchParams, vi.gapBandLabel)}
-            />
-            <StatCard
-              label={vi.gscNotCrawled}
-              value={counts?.gsc_not_crawled ?? '—'}
-              hint={metricHelpHint('views.indexation.gscNotCrawled')}
-              {...gapStatProps(counts?.gsc_not_crawled, 'gscGaps', searchParams, vi.gapBandLabel)}
-            />
-            <StatCard
-              label={vi.crawledNotInSitemap}
-              value={counts?.crawled_not_in_sitemap ?? '—'}
-              hint={metricHelpHint('views.indexation.crawledNotInSitemap')}
-              {...gapStatProps(counts?.crawled_not_in_sitemap, 'sitemapGaps', searchParams, vi.gapBandLabel)}
-            />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <StatCard label={vi.crawled} value={counts?.crawled ?? '—'} hint={metricHelpHint('views.indexation.crawled')} />
+              <StatCard label={vi.sitemap} value={counts?.sitemap ?? '—'} hint={metricHelpHint('views.indexation.sitemap')} />
+              <StatCard label={vi.gscPages} value={counts?.gsc_pages ?? '—'} hint={metricHelpHint('views.indexation.gscPages')} />
+              <StatCard
+                label={vi.sitemapOnly}
+                value={counts?.sitemap_only ?? '—'}
+                hint={metricHelpHint('views.indexation.sitemapOnly')}
+                {...gapStatProps(counts?.sitemap_only, 'sitemapGaps', searchParams, vi.gapBandLabel)}
+              />
+              <StatCard
+                label={vi.gscNotCrawled}
+                value={counts?.gsc_not_crawled ?? '—'}
+                hint={metricHelpHint('views.indexation.gscNotCrawled')}
+                {...gapStatProps(counts?.gsc_not_crawled, 'gscGaps', searchParams, vi.gapBandLabel)}
+              />
+              <StatCard
+                label={vi.crawledNotInSitemap}
+                value={counts?.crawled_not_in_sitemap ?? '—'}
+                hint={metricHelpHint('views.indexation.crawledNotInSitemap')}
+                {...gapStatProps(counts?.crawled_not_in_sitemap, 'sitemapGaps', searchParams, vi.gapBandLabel)}
+              />
+            </div>
           </div>
           {urlJoin ? (
             <UrlCoverageDoughnut
@@ -255,8 +257,8 @@ export default function Indexation({ searchQuery = '' }: ViewProps) {
       {activeTab === 'gscGaps' ? (
         <ViewTabPanel idPrefix="indexation" tabId="gscGaps">
           <Card devData={gapsDevData}>
-            <h3 className="text-sm font-semibold text-foreground mb-2">{vi.gapsTitle}</h3>
-            <p className="text-sm text-muted-foreground mb-4">{vi.gapsHint}</p>
+            <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{vi.gapsTitle}</h3>
+            <p className="text-sm text-md-sys-on-surface-variant mb-4">{vi.gapsHint}</p>
             {urlJoin ? (
               <UrlGapListsPanel
                 urlJoin={urlJoin}
@@ -267,7 +269,7 @@ export default function Indexation({ searchQuery = '' }: ViewProps) {
                 globalSearch={q}
               />
             ) : (
-              <p className="text-sm text-muted-foreground">{vi.noSearchGaps}</p>
+              <p className="text-sm text-md-sys-on-surface-variant">{vi.noSearchGaps}</p>
             )}
           </Card>
         </ViewTabPanel>
@@ -293,7 +295,7 @@ export default function Indexation({ searchQuery = '' }: ViewProps) {
           />
           {!hasSitemapGapData ? (
             <Card>
-              <p className="text-sm text-muted-foreground">{strings.common.notEnoughData}</p>
+              <p className="text-sm text-md-sys-on-surface-variant">{strings.common.notEnoughData}</p>
             </Card>
           ) : null}
         </ViewTabPanel>

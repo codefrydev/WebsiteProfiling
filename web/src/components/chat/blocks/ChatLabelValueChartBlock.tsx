@@ -34,8 +34,8 @@ export default function ChatLabelValueChartBlock({ block }: { block: Block }) {
   }, [block.items]);
 
   return (
-    <div className="rounded-xl border border-default bg-[var(--chat-bg)]/60 p-4">
-      <p className="mb-3 text-sm font-medium text-bright">{block.title}</p>
+    <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface/60 p-4">
+      <p className="mb-3 text-sm font-medium text-md-sys-on-surface">{block.title}</p>
       {useBar ? (
         <SimpleBarChart
           labels={block.items.map((i) => i.label)}

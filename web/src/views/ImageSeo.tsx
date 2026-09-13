@@ -1,12 +1,12 @@
 
 import { Link } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ImageIcon } from 'lucide-react';
+import { ImageIcon, Loader2 } from 'lucide-react';
 import { useSectionData } from '@/hooks/useSectionData';
 import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
-import { PageLayout, PageHeader, Card, ViewTabs, ViewTabPanel, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '@/components';
+import { PageLayout, PageHeader, Card, ViewTabs, ViewTabPanel, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, EmptyState, AlertBanner } from '@/components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import ImageAuditSummaryCards, { type ImageAuditSummaryData } from '@/components/imageSeo/ImageAuditSummaryCards';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
@@ -189,11 +189,11 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
       <PageHeader
         title={vi.title}
         subtitle={vi.subtitle}
-        icon={<ImageIcon className="h-7 w-7 text-link shrink-0" />}
+        icon={<ImageIcon className="h-7 w-7 text-md-sys-primary shrink-0" />}
       />
-      <p className="text-xs text-muted-foreground mb-4 -mt-2">
+      <p className="text-xs text-md-sys-on-surface-variant mb-4 -mt-2">
         {vi.galleryLinkPrefix}{' '}
-        <Link to="/gallery" className="text-link hover:underline">
+        <Link to="/gallery" className="text-md-sys-primary hover:underline">
           {vi.galleryLinkLabel}
         </Link>
       </p>
@@ -221,7 +221,10 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
             <ImageAuditSummaryCards data={summary} />
           </div>
         ) : (
-          <Card className="p-8 text-center text-sm text-muted-foreground">{strings.app.loading}</Card>
+          <div className="flex items-center justify-center gap-2 p-12 text-sm text-md-sys-on-surface-variant">
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+            {strings.app.loading}
+          </div>
         )}
       </ViewTabPanel>
       ) : null}
@@ -230,23 +233,26 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
         activeTab === tabId ? (
         <ViewTabPanel key={tabId} idPrefix="image-seo" tabId={tabId}>
           {inventoryGated && tabId === activeTab && summary && !summary.inventoryAvailable ? (
-            <Card className="p-6 border-amber-500/30 bg-amber-500/5">
-              <p className="text-sm text-foreground">{vi.inventoryRequiredHint}</p>
-            </Card>
+            <AlertBanner variant="warning" className="mb-4">
+              <p>{vi.inventoryRequiredHint}</p>
+            </AlertBanner>
           ) : loading ? (
-            <Card className="p-8 text-center text-sm text-muted-foreground">{strings.app.loading}</Card>
+            <div className="flex items-center justify-center gap-2 p-12 text-sm text-md-sys-on-surface-variant">
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+              {strings.app.loading}
+            </div>
           ) : error ? (
-            <Card className="p-6 text-sm text-red-400">{error}</Card>
+            <AlertBanner variant="error" className="mb-4">{error}</AlertBanner>
           ) : filteredRows.length === 0 ? (
-            <Card className="p-8 text-center text-sm text-muted-foreground">{vi.emptyList}</Card>
+            <EmptyState icon={ImageIcon} title={vi.title} description={vi.emptyList} />
           ) : (
             <Card className="overflow-hidden" devData={listTableDevData}>
               <Table>
                 <TableHead>
-                  <TableRow>
+                  <tr>
                     <TableHeadCell>{vi.colUrl}</TableHeadCell>
                     <TableHeadCell>{vi.colDetails}</TableHeadCell>
-                  </TableRow>
+                  </tr>
                 </TableHead>
                 <TableBody>
                   {pagination.slice.map((row, i) => {
@@ -263,13 +269,13 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
                             {url ? <UrlInspectorButton url={url} /> : null}
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{detail || '—'}</TableCell>
+                        <TableCell className="text-xs text-md-sys-on-surface-variant">{detail || '—'}</TableCell>
                       </TableRow>
                     );
                   })}
                 </TableBody>
               </Table>
-              <p className="px-4 py-2 text-xs text-muted-foreground border-t border-default">
+              <p className="px-4 py-2 text-xs text-md-sys-on-surface-variant border-t border-md-sys-outline-variant/40">
                 {vi.pageOf} {pagination.from}–{pagination.to} {vi.of} {listTotal}
               </p>
             </Card>

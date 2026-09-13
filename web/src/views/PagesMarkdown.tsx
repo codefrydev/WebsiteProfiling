@@ -103,19 +103,19 @@ export default function PagesMarkdown() {
       <div className="chat-main-panel">
 
         {/* ── Top header bar ── */}
-        <header className="flex shrink-0 items-center gap-3 border-b border-default/60 bg-brand-900/80 px-4 py-3 sm:px-6">
+        <header className="flex shrink-0 items-center gap-3 border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/80 px-4 py-3 sm:px-6">
           <div className="flex-1 min-w-0">
-            <span className="text-sm font-semibold text-foreground">Page Markdown</span>
-            <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
+            <span className="text-sm font-semibold text-md-sys-on-surface">Page Markdown</span>
+            <span className="ml-2 text-xs text-md-sys-on-surface-variant hidden sm:inline">
               Extract &amp; preview per-page markdown from stored HTML
             </span>
           </div>
 
           {/* Property picker */}
           <div className="flex items-center gap-2 shrink-0">
-            <label className="text-xs text-muted-foreground hidden sm:block">Property</label>
+            <label className="text-xs text-md-sys-on-surface-variant hidden sm:block">Property</label>
             <select
-              className="rounded-md border border-default bg-brand-800 px-3 py-1.5 text-sm text-foreground max-w-[220px] truncate"
+              className="rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-3 py-1.5 text-sm text-md-sys-on-surface max-w-[220px] truncate"
               value={propertyId ?? ''}
               onChange={(e) => handlePropertyChange(Number(e.target.value))}
               disabled={loadingProperties || properties.length === 0}
@@ -131,7 +131,7 @@ export default function PagesMarkdown() {
         </header>
 
         {/* ── Tab strip ── */}
-        <div className="shrink-0 border-b border-default/60 bg-brand-900/60 px-4 pt-1 sm:px-6">
+        <div className="shrink-0 border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/60 px-4 pt-1 sm:px-6">
           <ViewTabs
             tabs={[
               { id: 'builder', label: 'Builder / Extractor' },

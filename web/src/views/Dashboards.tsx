@@ -343,7 +343,7 @@ export default function Dashboards(_props: ViewProps) {
               <select
                 value={activeId ?? ''}
                 onChange={(e) => selectDashboard(Number(e.target.value))}
-                className="px-2 py-1.5 text-sm bg-brand-800 border border-default rounded-lg text-bright focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="px-3 py-1.5 text-sm bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-full text-md-sys-on-surface focus:outline-none focus:ring-1 focus:ring-md-sys-primary"
               >
                 {(dashboards ?? []).map((d) => (
                   <option key={d.id} value={d.id}>{d.name}{d.isDefault ? ' ★' : ''}</option>
@@ -352,7 +352,7 @@ export default function Dashboards(_props: ViewProps) {
             )}
             <button
               onClick={() => void handleCreate()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-default hover:bg-white/5 text-sm text-muted-foreground hover:text-bright transition-colors"
+              className="press flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/80 text-sm text-md-sys-on-surface-variant hover:text-md-sys-on-surface active:scale-95 transition-all"
             >
               <Plus className="h-3.5 w-3.5" /> New
             </button>
@@ -366,8 +366,8 @@ export default function Dashboards(_props: ViewProps) {
                     return next;
                   });
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
-                  isEditing ? 'border-blue-500 bg-blue-500/10 text-blue-400' : 'border-default hover:bg-white/5 text-muted-foreground hover:text-bright'
+                className={`press flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-sm font-medium active:scale-95 transition-all ${
+                  isEditing ? 'border-md-sys-primary/40 bg-md-sys-primary-container/20 text-md-sys-primary font-semibold shadow-xs' : 'border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/80 text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                 }`}
               >
                 {isEditing ? <><Eye className="h-3.5 w-3.5" /> View</> : <><Pencil className="h-3.5 w-3.5" /> Edit</>}
@@ -378,7 +378,7 @@ export default function Dashboards(_props: ViewProps) {
               <button
                 onClick={() => window.print()}
                 title="Export to PDF (print)"
-                className="p-1.5 rounded-lg border border-default hover:bg-white/5 text-muted-foreground hover:text-bright transition-colors"
+                className="press p-2 rounded-full border border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/80 text-md-sys-on-surface-variant hover:text-md-sys-on-surface active:scale-95 transition-all"
               >
                 <Printer className="h-4 w-4" />
               </button>
@@ -389,7 +389,7 @@ export default function Dashboards(_props: ViewProps) {
                 <select
                   value=""
                   onChange={(e) => { if (e.target.value) addWidget(e.target.value); e.currentTarget.value = ''; }}
-                  className="px-2 py-1.5 text-sm bg-blue-600 text-white rounded-lg focus:outline-none cursor-pointer"
+                  className="px-3 py-1.5 text-sm bg-md-sys-primary hover:bg-md-sys-primary-hover text-md-sys-on-primary rounded-full font-medium shadow-xs focus:outline-none cursor-pointer transition-colors"
                 >
                   <option value="">+ Add widget…</option>
                   {groups.map((g) => (
@@ -403,7 +403,7 @@ export default function Dashboards(_props: ViewProps) {
                 <button
                   onClick={() => void handleDelete()}
                   title="Delete dashboard"
-                  className="p-1.5 rounded-lg border border-default hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors"
+                  className="press p-2 rounded-full border border-md-sys-outline-variant/40 hover:border-md-sys-error/30 hover:bg-md-sys-error-container/20 text-md-sys-on-surface-variant hover:text-md-sys-error active:scale-95 transition-all"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -411,39 +411,39 @@ export default function Dashboards(_props: ViewProps) {
             )}
 
             {saving && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 text-xs text-md-sys-on-surface-variant">
                 <Save className="h-3.5 w-3.5 animate-pulse" /> Saving…
               </span>
             )}
-            {saveError && <span className="text-xs text-red-400">{saveError}</span>}
+            {saveError && <span className="text-xs text-md-sys-error font-medium">{saveError}</span>}
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center flex-1">
-          <p className="text-muted-foreground text-sm">Loading dashboards…</p>
+          <p className="text-md-sys-on-surface-variant text-sm">Loading dashboards…</p>
         </div>
       ) : loadError ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-3">
-          <p className="text-sm text-red-400">{loadError}</p>
-          <button onClick={() => void loadDashboards()} className="px-4 py-2 rounded-lg border border-default hover:bg-white/5 text-sm text-muted-foreground hover:text-bright transition-colors">Retry</button>
+          <p className="text-sm text-md-sys-error">{loadError}</p>
+          <button onClick={() => void loadDashboards()} className="press px-5 py-2.5 rounded-full border border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high/80 text-sm text-md-sys-on-surface-variant hover:text-md-sys-on-surface active:scale-[0.98] transition-all duration-200">Retry</button>
         </div>
       ) : !activeId ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-6 px-4 py-8 max-w-3xl mx-auto w-full">
           <EmptyState title="No dashboards yet" description="Start from a template or a blank board." />
-          <div className="w-full grid gap-2 sm:grid-cols-2">
+          <div className="w-full grid gap-3 sm:grid-cols-2">
             {DASHBOARD_PRESETS.map((p) => (
               <button
                 key={p.id}
                 onClick={() => void handleCreateFromPreset(p.id)}
-                className="text-left px-4 py-3 rounded-xl border border-default hover:border-blue-500/50 hover:bg-brand-800/40 transition-colors"
+                className="press text-left p-5 rounded-2xl border border-md-sys-outline-variant/40 hover:border-md-sys-primary/50 hover:bg-md-sys-surface-container/60 active:scale-[0.99] transition-all duration-200"
               >
-                <p className="text-sm font-semibold text-bright">{p.name}</p>
-                <p className="text-xs text-blue-400/80 mt-0.5">{p.tagline}</p>
-                <p className="text-xs text-muted-foreground mt-1">{p.description}</p>
+                <p className="text-sm font-semibold text-md-sys-on-surface">{p.name}</p>
+                <p className="text-xs text-md-sys-primary mt-0.5">{p.tagline}</p>
+                <p className="text-xs text-md-sys-on-surface-variant mt-1">{p.description}</p>
               </button>
             ))}
           </div>
-          <button onClick={() => void handleCreate()} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors">
+          <button onClick={() => void handleCreate()} className="press flex items-center gap-2 px-5 py-2.5 rounded-full bg-md-sys-primary hover:brightness-105 text-md-sys-on-primary text-sm font-medium transition-all duration-200 active:scale-[0.98] shadow-sm">
             <Plus className="h-4 w-4" /> Blank dashboard
           </button>
         </div>
@@ -462,7 +462,7 @@ export default function Dashboards(_props: ViewProps) {
           <div className="flex-1 min-h-0 flex">
             <div ref={containerRef} id="dash-print-root" className="flex-1 min-h-0 overflow-y-auto py-3 px-1">
               {widgets.length === 0 ? (
-                <div className="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-default rounded-xl text-muted-foreground text-sm gap-2 mx-1">
+                <div className="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-md-sys-outline-variant/40 rounded-xl text-md-sys-on-surface-variant text-sm gap-2 mx-1">
                   <p className="font-medium">This dashboard is empty.</p>
                   <p className="text-xs">{isEditing ? 'Use “+ Add widget…” to add a chart.' : 'Switch to Edit to add widgets.'}</p>
                 </div>

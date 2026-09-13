@@ -70,12 +70,12 @@ function barOptsCompare() {
 function qualityBadgeClass(label: string): string {
   const s = label.toLowerCase();
   if (s.includes('missing') || s.includes('no h1')) {
-    return 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30';
+    return 'bg-md-sys-error-container/20 text-md-sys-on-error-container border-md-sys-error/30';
   }
   if (s.includes('short') || s.includes('long') || s.includes('multiple')) {
-    return 'bg-amber-500/15 text-amber-800 dark:text-amber-400 border-amber-500/30';
+    return 'bg-md-sys-warning-container/20 text-md-sys-on-warning-container border-md-sys-warning/30';
   }
-  return 'bg-green-500/15 text-green-800 dark:text-green-400 border-green-500/30';
+  return 'bg-md-sys-success-container/20 text-md-sys-on-success-container border-md-sys-success/30';
 }
 
 function titleQualityIndex(len: number | string | undefined): number {
@@ -116,8 +116,8 @@ function QualityStatusRow({
     <div className="space-y-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-sm font-bold text-foreground">{label}</div>
-          <div className="text-xs text-muted-foreground">{detail}</div>
+          <div className="text-sm font-bold text-md-sys-on-surface">{label}</div>
+          <div className="text-xs text-md-sys-on-surface-variant">{detail}</div>
         </div>
         <span className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${qualityBadgeClass(statusLabel)}`}>
           {statusLabel}
@@ -131,9 +131,9 @@ function QualityStatusRow({
 function SocialCheckItem({ label, present }: { label: string; present: boolean }) {
   const lc = strings.components.linkTabs.content;
   return (
-    <div className="flex items-center justify-between gap-3 py-2 border-b border-muted/50 last:border-0">
-      <span className="text-sm text-foreground">{label}</span>
-      <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${present ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-md-sys-outline-variant/40 last:border-0">
+      <span className="text-sm text-md-sys-on-surface">{label}</span>
+      <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${present ? 'text-md-sys-success' : 'text-md-sys-error'}`}>
         {present ? <Check className="h-3.5 w-3.5" aria-hidden /> : <X className="h-3.5 w-3.5" aria-hidden />}
         {present ? lc.socialPresent : lc.socialMissing}
       </span>
@@ -219,57 +219,57 @@ export default function ContentTab({ link }: ContentTabProps) {
 
   return (
     <div className="space-y-8">
-      <p className="text-xs text-muted-foreground -mt-2">
+      <p className="text-xs text-md-sys-on-surface-variant -mt-2">
         {lc.intro}{' '}
-        <Link to="/content-analytics" className="text-link-soft hover:underline font-medium">
+        <Link to="/content-analytics" className="text-md-sys-primary-soft hover:underline font-medium">
           {lc.viewSiteDistributions}
         </Link>
       </p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <Card shadow className="!p-4">
-          <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+          <div className="text-md-sys-on-surface-variant text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
             <BookOpen className="h-3.5 w-3.5" />
             <LabelWithHint label={lc.kpiWords} helpKey="shared.wordCount" />
           </div>
           <div className={`text-2xl font-bold tabular-nums ${wcInfo.color}`}>{wc.toLocaleString()}</div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">{wcInfo.label}</div>
+          <div className="text-[10px] text-md-sys-on-surface-variant mt-0.5">{wcInfo.label}</div>
           {meanDelta != null && (
-            <div className="text-[10px] text-muted-foreground mt-1">{format(lc.vsSiteMeanDelta, { pct: meanDelta })}</div>
+            <div className="text-[10px] text-md-sys-on-surface-variant mt-1">{format(lc.vsSiteMeanDelta, { pct: meanDelta })}</div>
           )}
           {medianDelta != null && (
-            <div className="text-[10px] text-muted-foreground">{format(lc.vsSiteMedianDelta, { pct: medianDelta })}</div>
+            <div className="text-[10px] text-md-sys-on-surface-variant">{format(lc.vsSiteMedianDelta, { pct: medianDelta })}</div>
           )}
         </Card>
         <Card shadow className="!p-4">
-          <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+          <div className="text-md-sys-on-surface-variant text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
             <FileText className="h-3.5 w-3.5" />
             <LabelWithHint label={lc.kpiReading} helpKey="shared.readingLevel" />
           </div>
           <div className={`text-2xl font-bold tabular-nums ${rlInfo.color}`}>
             {rl > 0 ? format(lo.readingGrade, { n: rl }) : sj.emDash}
           </div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">{rl > 0 ? rlInfo.label : lc.notEnoughText}</div>
+          <div className="text-[10px] text-md-sys-on-surface-variant mt-0.5">{rl > 0 ? rlInfo.label : lc.notEnoughText}</div>
         </Card>
         <Card shadow className="!p-4">
-          <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1">{lc.textHtml}</div>
-          <div className="text-2xl font-bold text-bright tabular-nums">{ratioPct.toFixed(1)}%</div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">{lc.bodyTextShare}</div>
+          <div className="text-md-sys-on-surface-variant text-[10px] font-bold uppercase tracking-wider mb-1">{lc.textHtml}</div>
+          <div className="text-2xl font-bold text-md-sys-on-surface tabular-nums">{ratioPct.toFixed(1)}%</div>
+          <div className="text-[10px] text-md-sys-on-surface-variant mt-0.5">{lc.bodyTextShare}</div>
         </Card>
         <Card shadow className="!p-4">
-          <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+          <div className="text-md-sys-on-surface-variant text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
             <Layers className="h-3.5 w-3.5" />
             <LabelWithHint label={lc.kpiDepth} helpKey="shared.crawlDepth" />
           </div>
-          <div className="text-2xl font-bold text-bright tabular-nums">{link.depth != null ? link.depth : sj.emDash}</div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">{lc.crawlDepth}</div>
+          <div className="text-2xl font-bold text-md-sys-on-surface tabular-nums">{link.depth != null ? link.depth : sj.emDash}</div>
+          <div className="text-[10px] text-md-sys-on-surface-variant mt-0.5">{lc.crawlDepth}</div>
         </Card>
-        <Card shadow className={`!p-4 ${wc < 300 && wc > 0 ? 'ring-1 ring-amber-500/30' : ''}`}>
-          <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1">{lc.thinQ}</div>
-          <div className={`text-2xl font-bold tabular-nums ${wc < 300 ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
+        <Card shadow className={`!p-4 ${wc < 300 && wc > 0 ? 'ring-1 ring-md-sys-warning/30' : ''}`}>
+          <div className="text-md-sys-on-surface-variant text-[10px] font-bold uppercase tracking-wider mb-1">{lc.thinQ}</div>
+          <div className={`text-2xl font-bold tabular-nums ${wc < 300 ? 'text-md-sys-warning' : 'text-md-sys-success'}`}>
             {wc <= 0 ? sj.emDash : wc < 300 ? sj.yes : sj.no}
           </div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">{lc.under300Words}</div>
+          <div className="text-[10px] text-md-sys-on-surface-variant mt-0.5">{lc.under300Words}</div>
         </Card>
       </div>
 
@@ -290,13 +290,13 @@ export default function ContentTab({ link }: ContentTabProps) {
                   options={barOptsCompare()}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
+                <div className="flex items-center justify-center h-full text-md-sys-on-surface-variant text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-1">{lc.textVsMarkup}</h3>
-            <p className="text-xs text-muted-foreground mb-4">{lc.textVsMarkupDesc}</p>
+            <h3 className="text-sm font-bold text-md-sys-on-surface mb-1">{lc.textVsMarkup}</h3>
+            <p className="text-xs text-md-sys-on-surface-variant mb-4">{lc.textVsMarkupDesc}</p>
             <RatioBar
               label={lc.textVsMarkup}
               primaryLabel={lc.doughnutBodyText}
@@ -328,7 +328,7 @@ export default function ContentTab({ link }: ContentTabProps) {
 
       <div className="space-y-4">
         <SectionHeader icon={Tag} title={lc.onPageSignalsTitle} description={lc.onPageSignalsDesc} size="sm" />
-        <Card padding="tight" className="divide-y divide-muted/50 space-y-0">
+        <Card padding="tight" className="divide-y divide-md-sys-outline-variant/40 space-y-0">
           <div className="py-4 first:pt-0 last:pb-0">
             <QualityStatusRow
               label={lc.titleTag}
@@ -366,7 +366,7 @@ export default function ContentTab({ link }: ContentTabProps) {
                 }
               />
             ) : (
-              <div className="text-sm text-muted-foreground">{lc.noH1Data}</div>
+              <div className="text-sm text-md-sys-on-surface-variant">{lc.noH1Data}</div>
             )}
           </div>
         </Card>
@@ -376,7 +376,7 @@ export default function ContentTab({ link }: ContentTabProps) {
         <div className="space-y-4">
           <SectionHeader icon={FileText} title={lc.contentExcerpt} description={lc.contentExcerptHint} size="sm" />
           <Card padding="tight">
-            <p className="text-xs text-foreground whitespace-pre-wrap break-words max-h-72 overflow-y-auto leading-relaxed">
+            <p className="text-xs text-md-sys-on-surface whitespace-pre-wrap break-words max-h-72 overflow-y-auto leading-relaxed">
               {String(link.content_excerpt).trim()}
             </p>
           </Card>
@@ -393,15 +393,15 @@ export default function ContentTab({ link }: ContentTabProps) {
       </div>
 
       {link.heading_sequence && (
-        <div className="bg-brand-900 border border-default rounded-xl p-4">
-          <div className="text-xs text-muted-foreground mb-3">{lc.headingStructure}</div>
+        <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-4">
+          <div className="text-xs text-md-sys-on-surface-variant mb-3">{lc.headingStructure}</div>
           <HeadingPills sequence={link.heading_sequence} />
         </div>
       )}
 
       {keywords.length > 0 && (
-        <div className="bg-brand-900 border border-default rounded-xl p-4">
-          <div className="text-xs text-muted-foreground mb-3">{lc.keywordsQuick}</div>
+        <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-4">
+          <div className="text-xs text-md-sys-on-surface-variant mb-3">{lc.keywordsQuick}</div>
           <div className="flex flex-wrap gap-2">
             {keywords.map((kw, i) => {
               const { word, count } = normaliseKw(kw);
@@ -411,12 +411,12 @@ export default function ContentTab({ link }: ContentTabProps) {
                     type="button"
                     onMouseEnter={() => setKwHover(i)}
                     onMouseLeave={() => setKwHover(null)}
-                    className="text-xs bg-blue-500/10 text-link-soft border border-blue-500/20 px-2.5 py-1 rounded-full font-mono hover:bg-blue-500/20 transition-colors"
+                    className="text-xs bg-md-sys-primary-container/20 text-md-sys-primary border border-md-sys-primary/20 px-2.5 py-1 rounded-full font-mono hover:bg-md-sys-primary-container/40 transition-colors"
                   >
                     {word}
                   </button>
                   {kwHover === i && count != null && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-brand-800 border border-default text-xs text-foreground px-2 py-1 rounded shadow-lg whitespace-nowrap z-50">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-md-sys-surface-container border border-md-sys-outline-variant/40 text-xs text-md-sys-on-surface px-2 py-1 rounded shadow-lg whitespace-nowrap z-50">
                       {format(lc.occurrences, { n: count })}
                     </div>
                   )}

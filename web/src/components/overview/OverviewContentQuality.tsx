@@ -65,7 +65,7 @@ function LanguageMixVisualization({
   if (donutSegments.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-default/60 bg-brand-950/40 p-4 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-3 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low p-4 sm:flex-row sm:items-center">
       <CompactDonut
         segments={donutSegments}
         centerValue={primaryShare ? `${primaryShare.pct}%` : undefined}
@@ -74,7 +74,7 @@ function LanguageMixVisualization({
         ringClassName="h-16 w-16"
       />
       {singleLanguage ? (
-        <p className="text-sm text-muted-foreground">{vo.contentQualitySingleLanguageSite}</p>
+        <p className="text-sm text-md-sys-on-surface-variant">{vo.contentQualitySingleLanguageSite}</p>
       ) : null}
     </div>
   );
@@ -95,16 +95,16 @@ function ContentQualityColumn({
 }) {
   return (
     <div
-      className={`overflow-hidden rounded-lg border border-default bg-brand-900/40 ${
+      className={`overflow-hidden rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container ${
         devData != null ? 'relative group/dev-card' : ''
       }`}
     >
       {devData != null ? <DevCopyJsonButton data={devData} /> : null}
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-default bg-brand-950/30 px-4 py-2.5">
-        <h3 className="whitespace-nowrap font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-md-sys-outline-variant/30 bg-md-sys-surface-container-high/40 px-4 py-2.5">
+        <h3 className="whitespace-nowrap font-mono text-[10px] font-bold uppercase tracking-widest text-md-sys-on-surface-variant">
           {title}
         </h3>
-        <Link to={viewAllHref} className="whitespace-nowrap text-xs font-medium text-link hover:underline">
+        <Link to={viewAllHref} className="whitespace-nowrap text-xs font-medium text-md-sys-primary hover:underline">
           {viewAllLabel}
         </Link>
       </div>
@@ -369,11 +369,11 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
           </div>
         ) : null}
 
-        <div className="mb-5 overflow-hidden rounded-lg border border-default bg-brand-900/40">
-          <div className="border-b border-default bg-brand-950/30 px-4 py-2">
-            <h3 className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+        <div className="mb-5 overflow-hidden rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40">
+          <div className="border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-lowest/30 px-4 py-2">
+            <h3 className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-md-sys-on-surface-variant">
               <Activity
-                className={`h-3.5 w-3.5 ${concerns.length > 0 ? 'text-rose-500' : 'text-emerald-500'}`}
+                className={`h-3.5 w-3.5 ${concerns.length > 0 ? 'text-md-sys-error' : 'text-md-sys-success'}`}
                 aria-hidden
               />
               {vo.diagnosticLog}
@@ -381,7 +381,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
           </div>
           <div className="space-y-1 p-2">
             {concerns.length === 0 ? (
-              <p className="p-4 text-center font-mono text-xs text-muted-foreground">{vo.noActiveAnomalies}</p>
+              <p className="p-4 text-center font-mono text-xs text-md-sys-on-surface-variant">{vo.noActiveAnomalies}</p>
             ) : (
               concerns.map((concern, i) => (
                 <OverviewTerminalLogRow
@@ -406,7 +406,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
             devData={contentQualityDuplicatesDevData}
           >
             <div>
-              <h4 className="mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              <h4 className="mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-md-sys-on-surface-variant">
                 {vo.contentQualityLargestClusters}
               </h4>
               <ul className="space-y-2">
@@ -417,18 +417,18 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
                     <li key={cluster.id}>
                       <Link
                         to={contentOverviewHref}
-                        className="group flex items-center gap-3 rounded-lg border border-default/60 bg-brand-950/40 px-3 py-2.5 transition-colors hover:border-blue-500/30 hover:bg-brand-900/60"
+                        className="group flex items-center gap-3 rounded-xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container-low px-3 py-2.5 transition-all hover:bg-md-sys-surface-container-high active:scale-[0.99]"
                       >
-                        <span className="pt-0.5 font-mono text-xs text-muted-foreground">{'>_'}</span>
+                        <span className="pt-0.5 font-mono text-xs text-md-sys-on-surface-variant">{'>_'}</span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-foreground" title={cluster.representative_url}>
+                          <p className="truncate text-sm font-medium text-md-sys-on-surface" title={cluster.representative_url}>
                             {label}
                           </p>
-                          <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                          <p className="mt-0.5 font-mono text-xs text-md-sys-on-surface-variant">
                             {format(vo.contentQualityClusterMembers, { count: members.toLocaleString() })}
                           </p>
                         </div>
-                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-link" />
+                        <ChevronRight className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant transition-transform group-hover:translate-x-0.5 group-hover:text-md-sys-primary" />
                       </Link>
                     </li>
                   );
@@ -447,7 +447,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
           >
             <div>
               {mixedLanguage ? (
-                <p className="mb-3 text-xs text-amber-800 dark:text-amber-200/90">
+                <p className="mb-3 text-xs text-md-sys-warning font-medium">
                   {vo.contentQualityMixedLanguageHint}
                 </p>
               ) : null}
@@ -458,9 +458,9 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
       </div>
 
       {showAdvancedInsights ? (
-        <div className="relative group/dev-card mt-5 border-t border-default pt-4">
+        <div className="relative group/dev-card mt-5 border-t border-md-sys-outline-variant/40 pt-4">
           <DevCopyJsonButton data={contentQualityAdvancedDevData} />
-          <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-widest text-md-sys-on-surface-variant">
             {vo.contentQualityAdvancedInsights}
           </p>
           <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">

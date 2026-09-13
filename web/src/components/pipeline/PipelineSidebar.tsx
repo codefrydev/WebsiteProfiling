@@ -63,10 +63,10 @@ function RailButton({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+      className={`press flex h-10 w-10 items-center justify-center rounded-full transition-colors active:scale-95 ${
         active
-          ? 'bg-brand-700/80 text-foreground'
-          : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+          ? 'bg-md-sys-surface-container-high/80 text-md-sys-on-surface'
+          : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
       }`}
     >
       {children}
@@ -76,15 +76,15 @@ function RailButton({
 
 function SettingsMenu({ onClose }: { onClose: () => void }) {
   return (
-    <div className="w-56 rounded-2xl border border-default bg-[var(--chat-surface)] p-3 shadow-xl">
-      <p className="mb-2 text-xs font-medium text-bright">{c.settingsTitle}</p>
+    <div className="w-56 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-3 shadow-xl">
+      <p className="mb-2 text-xs font-medium text-md-sys-on-surface">{c.settingsTitle}</p>
       <div className="flex items-center justify-between gap-2 py-1.5">
-        <span className="text-xs text-muted-foreground">Theme</span>
+        <span className="text-xs text-md-sys-on-surface-variant">Theme</span>
         <ThemeToggle />
       </div>
       <Link
         to="/secrets"
-        className="mt-1 block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
+        className="press mt-1 block rounded-full px-3 py-1.5 text-xs font-medium text-md-sys-primary hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all"
         onClick={onClose}
       >
         {strings.secrets.pageTitle}
@@ -131,19 +131,19 @@ export default function PipelineSidebar({
     <button
       type="button"
       onClick={() => onNavChange('run')}
-      className={`flex w-full items-center gap-2 rounded-lg text-left text-xs transition-colors ${
-        compact ? 'px-2.5 py-2' : 'px-2.5 py-2.5'
+      className={`press flex w-full items-center gap-2 rounded-full text-left text-xs transition-colors active:scale-[0.98] ${
+        compact ? 'px-3 py-2' : 'px-3 py-2.5'
       } ${
         activeNav === 'run'
-          ? 'bg-brand-700/60 text-foreground'
-          : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+          ? 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface'
+          : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
       }`}
     >
       <Play className="h-4 w-4 shrink-0" aria-hidden />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium">{s.tabRun}</span>
         {!compact ? (
-          <span className="truncate text-[11px] text-muted-foreground">{s.tabRunHint}</span>
+          <span className="truncate text-[11px] text-md-sys-on-surface-variant">{s.tabRunHint}</span>
         ) : null}
       </span>
     </button>
@@ -160,17 +160,17 @@ export default function PipelineSidebar({
             <button
               type="button"
               onClick={() => onNavChange(group.id)}
-              className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors ${
+              className={`press flex w-full items-start gap-2 rounded-full px-3 py-2 text-left text-xs transition-colors active:scale-[0.98] ${
                 selected
-                  ? 'bg-brand-700/60 text-foreground'
-                  : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+                  ? 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface'
+                  : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
               }`}
             >
               <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-medium">{settingsGroupLabel(group.labelKey)}</span>
                 {description ? (
-                  <span className="truncate text-[11px] text-muted-foreground">{description}</span>
+                  <span className="truncate text-[11px] text-md-sys-on-surface-variant">{description}</span>
                 ) : null}
               </span>
             </button>
@@ -235,19 +235,19 @@ export default function PipelineSidebar({
         <div className="flex items-center justify-between gap-2 px-3 py-3">
           <Link to="/home" className="flex min-w-0 items-center gap-2">
             <AppLogo size={20} />
-            <span className="truncate text-sm font-medium text-bright">{s.pageTitle}</span>
+            <span className="truncate text-sm font-medium text-md-sys-on-surface">{s.pageTitle}</span>
           </Link>
           <button
             type="button"
             onClick={toggle}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground"
+            className="press rounded-full p-1.5 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98] transition-all"
             aria-label={s.collapseSidebar}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
         </div>
 
-        <nav className="border-b border-muted/30 px-2 py-2">
+        <nav className="border-b border-md-sys-outline-variant/30 px-2 py-2">
           <ul className="space-y-0.5">
             {NAV_LINKS.map(({ href, label, icon: Icon }) => {
               const isActive = isMiniNavLinkActive(href, pathname);
@@ -257,8 +257,8 @@ export default function PipelineSidebar({
                     to={href}
                     className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
                       isActive
-                        ? 'bg-brand-700/60 text-foreground'
-                        : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+                        ? 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface'
+                        : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
                     }`}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
@@ -270,25 +270,25 @@ export default function PipelineSidebar({
           </ul>
         </nav>
 
-        <div className="border-b border-muted/30 px-2 py-2">
-          <p className="px-1 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="border-b border-md-sys-outline-variant/30 px-2 py-2">
+          <p className="px-1 pb-1 text-[10px] font-medium uppercase tracking-wide text-md-sys-on-surface-variant">
             {s.sidebarRunSection}
           </p>
           {runButton(false)}
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <p className="px-3 pb-1 pt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="px-3 pb-1 pt-2 text-[10px] font-medium uppercase tracking-wide text-md-sys-on-surface-variant">
             {s.sidebarSettingsSection}
           </p>
           <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">{settingsList}</div>
         </div>
 
-        <div className="relative border-t border-muted/30 p-2" ref={settingsRef}>
+        <div className="relative border-t border-md-sys-outline-variant/30 p-2" ref={settingsRef}>
           <button
             type="button"
             onClick={() => setSettingsOpen((v) => !v)}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground"
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-md-sys-on-surface-variant transition-colors hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface"
             aria-expanded={settingsOpen}
           >
             <Settings className="h-4 w-4" />

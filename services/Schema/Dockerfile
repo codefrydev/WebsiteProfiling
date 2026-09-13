@@ -8,7 +8,7 @@ COPY Shared/WebsiteProfiling.Shared/ Shared/WebsiteProfiling.Shared/
 COPY Schema/src/ Schema/src/
 RUN dotnet publish Schema/src/Schema.Migrator/Schema.Migrator.csproj -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/runtime:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 # Npgsql probes for libgssapi_krb5 (GSSAPI auth support) even when unused; the slim runtime image
 # doesn't ship it, which logs a scary-looking (but harmless) load failure on every connection attempt.

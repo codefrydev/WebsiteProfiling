@@ -67,10 +67,10 @@ function ToolbarButton({
       title={title}
       disabled={disabled}
       onClick={onClick}
-      className={`rounded p-1.5 transition-colors disabled:opacity-40 ${
+      className={`press rounded-full p-1.5 transition-colors disabled:opacity-40 active:scale-95 ${
         active
-          ? 'bg-accent/20 text-foreground'
-          : 'text-muted-foreground hover:text-foreground hover:bg-brand-800'
+          ? 'bg-md-sys-primary-container text-md-sys-on-primary-container'
+          : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container'
       }`}
     >
       {children}
@@ -79,7 +79,7 @@ function ToolbarButton({
 }
 
 function ToolbarDivider() {
-  return <span className="w-px h-5 bg-default mx-0.5" aria-hidden />;
+  return <span className="w-px h-5 bg-md-sys-outline-variant/40 mx-0.5" aria-hidden />;
 }
 
 export default function RichTextEditor({
@@ -113,8 +113,8 @@ export default function RichTextEditor({
     editorProps: {
       attributes: {
         class: fillHeight
-          ? 'tiptap prose prose-base dark:prose-invert max-w-none min-h-full px-4 py-4 focus:outline-none text-foreground'
-          : 'tiptap prose prose-sm dark:prose-invert max-w-none min-h-[320px] px-3 py-2 focus:outline-none text-foreground',
+          ? 'tiptap prose prose-base dark:prose-invert max-w-none min-h-full px-4 py-4 focus:outline-none text-md-sys-on-surface'
+          : 'tiptap prose prose-sm dark:prose-invert max-w-none min-h-[320px] px-3 py-2 focus:outline-none text-md-sys-on-surface',
       },
     },
   });
@@ -168,8 +168,8 @@ export default function RichTextEditor({
       <div
         className={
           fillHeight
-            ? 'min-h-[200px] flex-1 rounded-lg border border-default bg-brand-900 animate-pulse'
-            : 'min-h-[360px] rounded-lg border border-default bg-brand-900 animate-pulse'
+            ? 'min-h-[200px] flex-1 rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low animate-pulse'
+            : 'min-h-[360px] rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low animate-pulse'
         }
       />
     );
@@ -179,12 +179,12 @@ export default function RichTextEditor({
 
   return (
     <div
-      className={`rounded-lg border border-default bg-brand-900 overflow-hidden flex flex-col ${
+      className={`rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low overflow-hidden flex flex-col ${
         fillHeight ? 'flex-1 min-h-0' : ''
       }`}
     >
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-default px-2 py-1.5">
-        <div className="flex items-center rounded-md border border-default p-0.5 mr-1">
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-md-sys-outline-variant/40 px-2 py-1.5">
+        <div className="flex items-center rounded-md border border-md-sys-outline-variant/40 p-0.5 mr-1">
           <button
             type="button"
             title={t.visualMode}
@@ -194,8 +194,8 @@ export default function RichTextEditor({
             }}
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${
               viewMode === 'rich'
-                ? 'bg-brand-800 text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-md-sys-surface-container text-md-sys-on-surface'
+                : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
             }`}
           >
             <PenLine className="h-3.5 w-3.5" aria-hidden />
@@ -210,8 +210,8 @@ export default function RichTextEditor({
             }}
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${
               viewMode === 'markdown'
-                ? 'bg-brand-800 text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-md-sys-surface-container text-md-sys-on-surface'
+                : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
             }`}
           >
             <FileCode2 className="h-3.5 w-3.5" aria-hidden />
@@ -404,7 +404,7 @@ export default function RichTextEditor({
             disabled={disabled}
             placeholder={t.markdownPlaceholder}
             spellCheck
-            className={`w-full resize-none bg-brand-800/50 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none ${
+            className={`w-full resize-none bg-md-sys-surface-container/50 font-mono text-sm text-md-sys-on-surface placeholder:text-md-sys-on-surface-variant/60 focus:outline-none ${
               fillHeight ? 'min-h-full h-full px-4 py-4' : 'min-h-[320px] px-3 py-2'
             }`}
           />
@@ -415,7 +415,7 @@ export default function RichTextEditor({
 
       <style>{`
         .tiptap p.is-editor-empty:first-child::before {
-          color: var(--muted-foreground, #94a3b8);
+          color: var(--md-sys-color-on-surface-variant, #94a3b8);
           content: attr(data-placeholder);
           float: left;
           height: 0;

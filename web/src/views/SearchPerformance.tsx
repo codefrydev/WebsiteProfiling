@@ -14,7 +14,7 @@ import { SEARCH_PERFORMANCE_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { integrationGuideHref } from '@/lib/docs/integrationGuides';
-import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs } from '../components';
+import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs, EmptyState } from '../components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
@@ -46,17 +46,17 @@ type GscTabId = (typeof TABS)[number];
 const DATE_RANGE_LABEL = (s?: string, e?: string) => (s && e ? `${s} to ${e}` : '');
 
 function PositionBadge({ pos }: { pos?: number | string | null }) {
-  if (pos == null) return <span className="text-muted-foreground">—</span>;
+  if (pos == null) return <span className="text-md-sys-on-surface-variant">—</span>;
   const n = Number(pos);
   const p = (Number.isFinite(n) ? n : 0).toFixed(1);
   const color =
     n <= 3
-      ? 'text-green-700 dark:text-green-400'
+      ? 'text-md-sys-success'
       : n <= 10
-        ? 'text-yellow-700 dark:text-yellow-400'
+        ? 'text-md-sys-warning'
         : n <= 20
-          ? 'text-orange-700 dark:text-orange-400'
-          : 'text-red-700 dark:text-red-400';
+          ? 'text-md-sys-warning'
+          : 'text-md-sys-error';
   return <span className={`font-mono font-bold tabular-nums ${color}`}>{p}</span>;
 }
 
@@ -146,7 +146,7 @@ export default function SearchPerformance() {
             target="_blank"
             rel="noreferrer"
             title={String(v ?? '')}
-            className="text-link hover:underline font-mono text-xs truncate block min-w-0 max-w-none"
+            className="text-md-sys-primary hover:underline font-mono text-xs truncate block min-w-0 max-w-none"
           >
             {String(v ?? '')}
           </a>
@@ -395,21 +395,25 @@ export default function SearchPerformance() {
     }
     return (
       <PageLayout className="space-y-6">
-        <div className="max-w-md mx-auto text-center py-16">
-          <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-bright mb-2">{sp.emptyTitle}</h2>
-          <p className="text-muted-foreground text-sm mb-6">{sp.emptyBody}</p>
-          <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 flex-wrap">
-            <Settings2 className="h-3.5 w-3.5 shrink-0" />
-            {sp.emptyIntegrationsHint}{' '}
-            <Link
-              to={integrationGuideHref('google', { from: 'integrations' })}
-              className="text-link hover:underline"
-            >
-              {strings.docs.setupGuideLink}
-            </Link>
-          </p>
-        </div>
+        <EmptyState
+          icon={TrendingUp}
+          title={sp.emptyTitle}
+          description={
+            <>
+              {sp.emptyBody}
+              <span className="mt-3 flex items-center justify-center gap-1 flex-wrap text-xs">
+                <Settings2 className="h-3.5 w-3.5 shrink-0" />
+                {sp.emptyIntegrationsHint}{' '}
+                <Link
+                  to={integrationGuideHref('google', { from: 'integrations' })}
+                  className="text-md-sys-primary hover:underline"
+                >
+                  {strings.docs.setupGuideLink}
+                </Link>
+              </span>
+            </>
+          }
+        />
       </PageLayout>
     );
   }
@@ -434,7 +438,7 @@ export default function SearchPerformance() {
   return (
     <PageLayout className="space-y-6">
       <PageHeader
-        icon={<TrendingUp className="h-7 w-7 text-link shrink-0" />}
+        icon={<TrendingUp className="h-7 w-7 text-md-sys-primary shrink-0" />}
         title={sp.title}
         subtitle={
           <>
@@ -448,7 +452,7 @@ export default function SearchPerformance() {
       {errors.length > 0 && (
         <AlertBanner
           variant="warning"
-          icon={<AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0" aria-hidden />}
+          icon={<AlertCircle className="h-4 w-4 text-md-sys-warning shrink-0" aria-hidden />}
         >
           {errors.map((e: string, i: number) => (
             <p key={i}>{e}</p>
@@ -457,33 +461,35 @@ export default function SearchPerformance() {
       )}
 
       {gsc?.summary && (
-        <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="relative group/dev-card">
           <DevCopyJsonButton data={kpiDevData} />
-          <StatCard
-            label={sp.kpi.clicks}
-            value={gsc.summary.clicks?.toLocaleString()}
-            hint={metricHelpHint('shared.clicks')}
-          />
-          <StatCard
-            label={sp.kpi.impressions}
-            value={gsc.summary.impressions?.toLocaleString()}
-            hint={metricHelpHint('shared.impressions')}
-          />
-          <StatCard
-            label={sp.kpi.ctr}
-            value={gsc.summary.ctr != null ? `${gsc.summary.ctr}%` : null}
-            hint={metricHelpHint('shared.ctr')}
-          />
-          <StatCard
-            label={sp.kpi.position}
-            value={gsc.summary.position}
-            hint={metricHelpHint('shared.position')}
-          />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard
+              label={sp.kpi.clicks}
+              value={gsc.summary.clicks?.toLocaleString()}
+              hint={metricHelpHint('shared.clicks')}
+            />
+            <StatCard
+              label={sp.kpi.impressions}
+              value={gsc.summary.impressions?.toLocaleString()}
+              hint={metricHelpHint('shared.impressions')}
+            />
+            <StatCard
+              label={sp.kpi.ctr}
+              value={gsc.summary.ctr != null ? `${gsc.summary.ctr}%` : null}
+              hint={metricHelpHint('shared.ctr')}
+            />
+            <StatCard
+              label={sp.kpi.position}
+              value={gsc.summary.position}
+              hint={metricHelpHint('shared.position')}
+            />
+          </div>
         </div>
       )}
 
       {!gsc ? (
-        <p className="text-sm text-muted-foreground">{sp.emptyBody}</p>
+        <EmptyState icon={TrendingUp} title={sp.title} description={sp.emptyBody} />
       ) : (
         <>
           <ViewTabs
@@ -507,13 +513,13 @@ export default function SearchPerformance() {
               {urlJoin && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <UrlCoverageDoughnut urlJoin={urlJoin} devData={urlCoverageOverviewDevData} />
-                  <div className="relative group/dev-card bg-brand-800 border border-default rounded-xl p-4">
+                  <div className="relative group/dev-card bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-2xl p-4">
                     <DevCopyJsonButton data={insightsDevData} />
-                    <h3 className="text-sm font-bold text-foreground mb-3">{sp.coverage.title}</h3>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
+                    <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{sp.coverage.title}</h3>
+                    <ul className="space-y-2 text-sm text-md-sys-on-surface-variant">
                       {insights.map((line, i) => (
                         <li key={i} className="flex gap-2">
-                          <span className="text-link shrink-0">•</span>
+                          <span className="text-md-sys-primary shrink-0">•</span>
                           <span>{line}</span>
                         </li>
                       ))}
@@ -525,9 +531,9 @@ export default function SearchPerformance() {
                 </div>
               )}
               {!urlJoin && insights.length > 0 && (
-                <div className="relative group/dev-card bg-brand-800 border border-default rounded-xl p-4">
+                <div className="relative group/dev-card bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-2xl p-4">
                   <DevCopyJsonButton data={insightsDevData} />
-                  <ul className="space-y-2 text-sm text-muted-foreground">
+                  <ul className="space-y-2 text-sm text-md-sys-on-surface-variant">
                     {insights.map((line, i) => (
                       <li key={i}>{line}</li>
                     ))}
@@ -598,7 +604,7 @@ export default function SearchPerformance() {
               aria-labelledby="gsc-tab-btn-opportunities"
               className="space-y-4"
             >
-              <p className="text-xs text-muted-foreground">{sp.opportunities.description}</p>
+              <p className="text-xs text-md-sys-on-surface-variant">{sp.opportunities.description}</p>
               <CtrOpportunityScatter rows={opportunities} devData={scatterDevData} />
               <Card padding="none" className="overflow-hidden" devData={opportunitiesTableDevData}>
                 <div className="flex justify-end p-4 pb-0">
@@ -607,7 +613,7 @@ export default function SearchPerformance() {
                     onClick={() =>
                       exportCsv(opportunities, buildQueryExportColumns(sp), 'gsc-opportunities.csv')
                     }
-                    className="px-3 py-1.5 text-xs bg-brand-900 border border-default rounded-lg text-muted-foreground hover:text-foreground flex items-center gap-1"
+                    className="px-4 py-1.5 text-xs bg-md-sys-surface-container-high border border-md-sys-outline-variant/50 rounded-full text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-highest active:scale-[0.98] transition-all flex items-center gap-1.5"
                   >
                     <Download className="w-3.5 h-3.5" />
                     {sp.opportunities.exportCsv}
@@ -629,37 +635,39 @@ export default function SearchPerformance() {
 
           {activeTab === 'coverage' && (
             <div id="gsc-tab-coverage" role="tabpanel" aria-labelledby="gsc-tab-btn-coverage" className="space-y-6">
-              <p className="text-sm text-muted-foreground">{sp.coverage.description}</p>
+              <p className="text-sm text-md-sys-on-surface-variant">{sp.coverage.description}</p>
               {urlJoin ? (
                 <>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <UrlCoverageDoughnut urlJoin={urlJoin} devData={coverageDoughnutDevData} />
-                    <div className="relative group/dev-card grid grid-cols-2 gap-3">
+                    <div className="relative group/dev-card">
                       <DevCopyJsonButton data={coverageStatsDevData} />
-                      <StatCard
-                        label={sp.urlJoin.matched}
-                        value={urlJoin.matched}
-                        sub={sp.urlJoin.matchedSub}
-                        hint={metricHelpHint('views.overview.urlJoinMatched')}
-                      />
-                      <StatCard
-                        label={sp.urlJoin.crawlOnly}
-                        value={urlJoin.crawl_only}
-                        sub={sp.urlJoin.crawlOnlySub}
-                        hint={metricHelpHint('views.overview.urlJoinCrawlOnly')}
-                      />
-                      <StatCard
-                        label={sp.urlJoin.gscOnly}
-                        value={urlJoin.gsc_only}
-                        sub={sp.urlJoin.gscOnlySub}
-                        hint={metricHelpHint('views.overview.urlJoinGscOnly')}
-                      />
-                      <StatCard
-                        label={sp.urlJoin.ga4Only}
-                        value={urlJoin.ga4_only}
-                        sub={sp.urlJoin.ga4OnlySub}
-                        hint={metricHelpHint('views.overview.urlJoinGa4Only')}
-                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <StatCard
+                          label={sp.urlJoin.matched}
+                          value={urlJoin.matched}
+                          sub={sp.urlJoin.matchedSub}
+                          hint={metricHelpHint('views.overview.urlJoinMatched')}
+                        />
+                        <StatCard
+                          label={sp.urlJoin.crawlOnly}
+                          value={urlJoin.crawl_only}
+                          sub={sp.urlJoin.crawlOnlySub}
+                          hint={metricHelpHint('views.overview.urlJoinCrawlOnly')}
+                        />
+                        <StatCard
+                          label={sp.urlJoin.gscOnly}
+                          value={urlJoin.gsc_only}
+                          sub={sp.urlJoin.gscOnlySub}
+                          hint={metricHelpHint('views.overview.urlJoinGscOnly')}
+                        />
+                        <StatCard
+                          label={sp.urlJoin.ga4Only}
+                          value={urlJoin.ga4_only}
+                          sub={sp.urlJoin.ga4OnlySub}
+                          hint={metricHelpHint('views.overview.urlJoinGa4Only')}
+                        />
+                      </div>
                     </div>
                   </div>
                   {(urlJoin.lists?.gsc_only?.length ?? 0) > 0 || (urlJoin.lists?.crawl_only?.length ?? 0) > 0 ? (
@@ -672,13 +680,13 @@ export default function SearchPerformance() {
                       devData={gapListsDevData}
                     />
                   ) : (
-                    <p className="text-xs text-muted-foreground border border-default/60 rounded-lg px-3 py-2 bg-brand-800/50">
+                    <p className="text-xs text-md-sys-on-surface-variant border border-md-sys-outline-variant/40 rounded-xl px-3 py-2 bg-md-sys-surface-container-low">
                       {sp.coverage.urlListNote}
                     </p>
                   )}
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">{sp.coverage.noData}</p>
+                <p className="text-sm text-md-sys-on-surface-variant">{sp.coverage.noData}</p>
               )}
             </div>
           )}

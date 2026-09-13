@@ -18,6 +18,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  EmptyState,
 } from '../components';
 import type { ContactIntelligenceEntry, ViewProps } from '@/types';
 
@@ -52,22 +53,22 @@ function ContactSectionTable({
   if (rows.length === 0) {
     return (
       <Card className="mb-6" devData={devData}>
-        <h3 className="text-sm font-semibold text-foreground mb-2">{title}</h3>
-        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+        <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{title}</h3>
+        <p className="text-sm text-md-sys-on-surface-variant">{emptyLabel}</p>
       </Card>
     );
   }
   return (
     <Card className="mb-6" devData={devData}>
-      <h3 className="text-sm font-semibold text-foreground mb-4">{title}</h3>
+      <h3 className="text-sm font-semibold text-md-sys-on-surface mb-4">{title}</h3>
       <div className="overflow-x-auto">
         <Table>
           <TableHead>
-            <TableRow>
+            <tr>
               <TableHeadCell>{vc.colValue}</TableHeadCell>
               <TableHeadCell hint={metricHelpHint('views.contacts.sources')}>{vc.colSources}</TableHeadCell>
               <TableHeadCell>{vc.colPages}</TableHeadCell>
-            </TableRow>
+            </tr>
           </TableHead>
           <TableBody>
             {rows.map((row) => (
@@ -88,7 +89,7 @@ function ContactSectionTable({
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-link text-xs hover:underline break-all inline-flex items-center gap-1"
+                          className="text-md-sys-primary text-xs hover:underline break-all inline-flex items-center gap-1"
                         >
                           {url}
                           <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
@@ -96,7 +97,7 @@ function ContactSectionTable({
                       </li>
                     ))}
                     {(row.urls?.length ?? 0) > 3 ? (
-                      <li className="text-xs text-muted-foreground">
+                      <li className="text-xs text-md-sys-on-surface-variant">
                         {format(vc.morePages, { count: (row.urls?.length ?? 0) - 3 })}
                       </li>
                     ) : null}
@@ -198,10 +199,8 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
   if (!intel || totalSignals === 0) {
     return (
       <PageLayout>
-        <PageHeader title={vc.title} subtitle={vc.subtitle} icon={<Contact2 className="h-7 w-7 text-link shrink-0" />} />
-        <Card>
-          <p className="text-sm text-muted-foreground">{vc.emptyHint}</p>
-        </Card>
+        <PageHeader title={vc.title} subtitle={vc.subtitle} icon={<Contact2 className="h-7 w-7 text-md-sys-primary shrink-0" />} />
+        <EmptyState icon={Contact2} title={vc.title} description={vc.emptyHint} />
       </PageLayout>
     );
   }
@@ -214,11 +213,11 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
 
   return (
     <PageLayout>
-      <PageHeader title={vc.title} subtitle={vc.subtitle} icon={<Contact2 className="h-7 w-7 text-link shrink-0" />} />
+      <PageHeader title={vc.title} subtitle={vc.subtitle} icon={<Contact2 className="h-7 w-7 text-md-sys-primary shrink-0" />} />
       {(intel.consistency_notes?.length ?? 0) > 0 ? (
-        <Card className="mb-6 border-amber-500/30 bg-amber-500/5" devData={consistencyNotesDevData}>
-          <h3 className="text-sm font-semibold text-foreground mb-2">{vc.notesTitle}</h3>
-          <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+        <Card className="mb-6 border-md-sys-warning/30 bg-md-sys-warning-container/20" devData={consistencyNotesDevData}>
+          <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{vc.notesTitle}</h3>
+          <ul className="list-disc list-inside text-sm text-md-sys-on-surface-variant space-y-1">
             {(intel.consistency_notes || []).map((note) => (
               <li key={note}>{note}</li>
             ))}
@@ -227,12 +226,12 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
       ) : null}
       {intel.primary_contact_page ? (
         <Card className="mb-6" devData={primaryPageDevData}>
-          <h3 className="text-sm font-semibold text-foreground mb-2">{vc.primaryPageTitle}</h3>
+          <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{vc.primaryPageTitle}</h3>
           <a
             href={intel.primary_contact_page}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-link text-sm hover:underline break-all inline-flex items-center gap-1"
+            className="text-md-sys-primary text-sm hover:underline break-all inline-flex items-center gap-1"
           >
             {intel.primary_contact_page}
             <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -241,7 +240,7 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
       ) : null}
       {q && filteredTotal === 0 ? (
         <Card className="mb-6">
-          <p className="text-sm text-muted-foreground">{vc.noSearchResults}</p>
+          <p className="text-sm text-md-sys-on-surface-variant">{vc.noSearchResults}</p>
         </Card>
       ) : null}
       <ContactSectionTable title={vc.emailsTitle} rows={sections.emails} emptyLabel={vc.noEmails} devData={emailsDevData} />
@@ -253,7 +252,7 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
         emptyLabel={vc.noOrganizations}
         devData={organizationsDevData}
       />
-      <p className="text-xs text-muted-foreground">{vc.provenanceHint}</p>
+      <p className="text-xs text-md-sys-on-surface-variant">{vc.provenanceHint}</p>
     </PageLayout>
   );
 }

@@ -4,6 +4,7 @@ import { Loader2, Plug, RefreshCw, Sparkles } from 'lucide-react';
 import ConfigField from '@/components/pipeline/ConfigField';
 import McpCopyBlock from '@/components/mcp/McpCopyBlock';
 import ChatShell from '@/components/chat/ChatShell';
+import AlertBanner from '@/components/AlertBanner';
 import { SecretsSaveBar } from '@/components/secrets/SecretsSettingsPanel';
 import ToolPageSidebar from '@/components/shared/ToolPageSidebar';
 import { useMcpSettings } from '@/hooks/useMcpSettings';
@@ -82,37 +83,39 @@ export default function McpSettingsPage() {
       )}
     >
       <div className="chat-main-panel">
-        <header className="chat-context-bar flex items-center gap-3 border-b border-muted/30 bg-[var(--chat-bg)] px-4 py-2.5">
-          <Plug className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <header className="chat-context-bar flex items-center gap-3 border-b border-md-sys-outline-variant/30 bg-md-sys-surface px-4 py-2.5">
+          <Plug className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-bright">{s.pageTitle}</p>
-            <p className="truncate text-xs text-muted-foreground">{s.pageSubtitle}</p>
+            <p className="truncate text-sm font-medium text-md-sys-on-surface">{s.pageTitle}</p>
+            <p className="truncate text-xs text-md-sys-on-surface-variant">{s.pageSubtitle}</p>
           </div>
         </header>
 
         <div className="chat-messages-scroll min-h-0 flex-1">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-20 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-2 py-20 text-sm text-md-sys-on-surface-variant">
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
               {s.loading}
             </div>
           ) : loadError ? (
-            <div className="mx-auto max-w-3xl px-4 py-10 text-sm text-red-700 dark:text-red-400">{loadError}</div>
+            <div className="mx-auto max-w-3xl px-4 py-8">
+              <AlertBanner variant="error">{loadError}</AlertBanner>
+            </div>
           ) : (
             <div className="mx-auto max-w-3xl space-y-8 px-4 py-6 sm:px-6">
               {envHintNames.length ? (
-                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-xs text-emerald-700 dark:text-emerald-300">
+                <div className="rounded-2xl border border-md-sys-success/30 bg-md-sys-success-container/15 px-4 py-3 text-xs text-md-sys-success">
                   {s.envConfigured}: {envHintNames.join(', ')} ({s.envOverrides})
                 </div>
               ) : null}
 
               <section className="space-y-4">
                 <div>
-                  <h2 className="text-base font-semibold text-foreground">{s.accessTitle}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{s.accessSubtitle}</p>
+                  <h2 className="text-base font-semibold text-md-sys-on-surface">{s.accessTitle}</h2>
+                  <p className="mt-1 text-sm text-md-sys-on-surface-variant">{s.accessSubtitle}</p>
                 </div>
 
-                <div className="space-y-4 rounded-2xl border border-muted/30 bg-[var(--chat-surface)] p-5 sm:p-6">
+                <div className="space-y-4 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container p-5 sm:p-6">
                   <div className="flex flex-wrap items-end gap-2">
                     <div className="min-w-0 flex-1">
                       <ConfigField
@@ -132,7 +135,7 @@ export default function McpSettingsPage() {
                       type="button"
                       disabled={readOnly || saving}
                       onClick={generateToken}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-default/60 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-blue-500/30 hover:bg-blue-500/5 disabled:opacity-50"
+                      className="press inline-flex items-center gap-1.5 rounded-full border border-md-sys-outline-variant/40 px-4 py-2 text-sm font-medium text-md-sys-on-surface transition-colors hover:border-md-sys-primary/30 hover:bg-md-sys-primary-container/10 active:scale-95 disabled:opacity-50"
                     >
                       <Sparkles className="h-4 w-4" aria-hidden />
                       {s.generateToken}
@@ -157,14 +160,14 @@ export default function McpSettingsPage() {
                       type="button"
                       disabled={readOnly || saving || !publicUrl}
                       onClick={suggestHostsFromUrl}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-default/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-md-sys-outline-variant/40 px-3 py-1.5 text-xs font-medium text-md-sys-on-surface-variant transition-colors hover:text-md-sys-on-surface disabled:opacity-50"
                     >
                       <RefreshCw className="h-3.5 w-3.5" aria-hidden />
                       {s.syncHosts}
                     </button>
                     {publicUrl ? (
-                      <span className="text-xs text-muted-foreground">
-                        {s.endpointPreview}: <code className="text-foreground">{publicUrl}/mcp</code>
+                      <span className="text-xs text-md-sys-on-surface-variant">
+                        {s.endpointPreview}: <code className="text-md-sys-on-surface">{publicUrl}/mcp</code>
                       </span>
                     ) : null}
                   </div>
@@ -196,13 +199,13 @@ export default function McpSettingsPage() {
                   />
 
                   <label className="block space-y-1.5">
-                    <span className="text-sm font-medium text-foreground">{s.domainLabel}</span>
-                    <p className="text-xs leading-relaxed text-muted-foreground">{s.domainHelp}</p>
+                    <span className="text-sm font-medium text-md-sys-on-surface">{s.domainLabel}</span>
+                    <p className="text-xs leading-relaxed text-md-sys-on-surface-variant">{s.domainHelp}</p>
                     <select
                       value={domain}
                       disabled={readOnly || saving}
                       onChange={(e) => setField('mcp_domain', e.target.value)}
-                      className="w-full rounded-lg border border-default bg-[var(--chat-bg)] px-3 py-2 text-sm text-foreground focus:border-blue-500/50 focus:outline-none"
+                      className="w-full rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface px-3 py-2 text-sm text-md-sys-on-surface focus:border-md-sys-primary/50 focus:outline-none"
                     >
                       {MCP_DOMAIN_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -216,8 +219,8 @@ export default function McpSettingsPage() {
 
               <section className="space-y-4">
                 <div>
-                  <h2 className="text-base font-semibold text-foreground">{s.copyTitle}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{s.copySubtitle}</p>
+                  <h2 className="text-base font-semibold text-md-sys-on-surface">{s.copyTitle}</h2>
+                  <p className="mt-1 text-sm text-md-sys-on-surface-variant">{s.copySubtitle}</p>
                 </div>
 
                 <McpCopyBlock
@@ -244,11 +247,11 @@ export default function McpSettingsPage() {
                 />
               </section>
 
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-md-sys-on-surface-variant">
                 {s.docsHint}{' '}
                 <a
                   href="https://github.com/codefrydev/WebsiteProfiling/blob/master/docs/MCP.md#remote-streamable-http"
-                  className="text-link hover:underline"
+                  className="text-md-sys-primary hover:underline"
                   target="_blank"
                   rel="noreferrer"
                 >

@@ -45,21 +45,21 @@ export default function KeywordTabBanner({ tab, count }: KeywordTabBannerProps) 
   const title = (strings.views.keywordsExplorer.tabs as Record<KeywordTabId, string>)[tab];
 
   return (
-    <div className="px-4 py-3 border-b border-default bg-brand-900/50 flex flex-wrap items-start gap-3">
+    <div className="px-4 py-3 border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 flex flex-wrap items-start gap-3">
       <div className="flex items-start gap-2.5 min-w-0 flex-1">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
           <Icon className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-sm font-semibold text-bright">{title}</h2>
+            <h2 className="text-sm font-semibold text-md-sys-on-surface">{title}</h2>
             {count != null && count > 0 && (
-              <span className="text-[10px] font-bold tabular-nums px-2 py-0.5 rounded-full bg-brand-800 text-muted-foreground">
+              <span className="text-[10px] font-bold tabular-nums px-2 py-0.5 rounded-full bg-md-sys-surface-container text-md-sys-on-surface-variant">
                 {count.toLocaleString()}
               </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-3xl">{help[tab]}</p>
+          <p className="text-xs text-md-sys-on-surface-variant mt-1 leading-relaxed max-w-3xl">{help[tab]}</p>
         </div>
       </div>
     </div>

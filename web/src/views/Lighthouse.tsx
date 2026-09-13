@@ -21,7 +21,7 @@ import {
 } from '../lib/domainSlug';
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Button, ViewTabs, ViewTabPanel, Select, LabelWithHint } from '../components';
+import { PageLayout, PageHeader, Card, Button, ViewTabs, ViewTabPanel, Select, LabelWithHint, EmptyState } from '../components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import type { ViewTabItem } from '../components';
@@ -454,9 +454,9 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
 
   const urlPicker = hasMulti && activeTab !== 'pages' ? (
     <div className="flex items-center gap-2 min-w-0 max-w-md">
-      <Globe className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
+      <Globe className="h-4 w-4 text-md-sys-on-surface-variant shrink-0" aria-hidden />
       {urlPool.length === 0 ? (
-        <span className="text-sm text-muted-foreground">{vlh.noUrlMatch}</span>
+        <span className="text-sm text-md-sys-on-surface-variant">{vlh.noUrlMatch}</span>
       ) : (
         <Select
           value={displayUrl || ''}
@@ -482,24 +482,20 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
     return (
       <PageLayout className="space-y-6">
         <PageHeader
-          icon={<Gauge className="h-7 w-7 text-link shrink-0" />}
+          icon={<Gauge className="h-7 w-7 text-md-sys-primary shrink-0" />}
           title={vlh.emptyTitle}
           subtitle={vlh.emptySubtitle}
         />
-        <Card className="mx-auto max-w-lg p-8 text-center">
-          <span className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
-            <Gauge className="h-6 w-6" aria-hidden />
-          </span>
-          <p className="text-sm text-muted-foreground">{vlh.emptyBody}</p>
-          <Button
-            variant="primary"
-            className="mt-6"
-            onClick={() => goToPipeline(navigate, { preset: 'lighthouse' })}
-          >
-            <Play className="h-4 w-4" aria-hidden />
-            {vlh.runInPipeline}
-          </Button>
-        </Card>
+        <EmptyState
+          icon={Gauge}
+          title={vlh.emptyTitle}
+          description={vlh.emptyBody}
+          primaryAction={{
+            label: vlh.runInPipeline,
+            onClick: () => goToPipeline(navigate, { preset: 'lighthouse' }),
+          }}
+          aurora
+        />
       </PageLayout>
     );
   }
@@ -508,11 +504,11 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
     <PageLayout className="space-y-6">
       <div ref={detailRef}>
         <PageHeader
-          icon={<Gauge className="h-7 w-7 text-link shrink-0" />}
+          icon={<Gauge className="h-7 w-7 text-md-sys-primary shrink-0" />}
           title={vlh.pageSpeedTitle}
           subtitle={
             summary.url ? (
-              <a href={summary.url} target="_blank" rel="noreferrer" className="text-link hover:underline break-all text-sm">
+              <a href={summary.url} target="_blank" rel="noreferrer" className="text-md-sys-primary hover:underline break-all text-sm">
                 {summary.url}
               </a>
             ) : undefined
@@ -522,13 +518,13 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
       </div>
 
       <Card padding="tight" devData={settingsDevData}>
-        <h3 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3">{vlh.analysisSettings}</h3>
+        <h3 className="text-md-sys-on-surface-variant text-xs font-bold uppercase tracking-wider mb-3">{vlh.analysisSettings}</h3>
         <div className="flex flex-wrap gap-6 text-sm">
-          <div><span className="text-muted-foreground block text-xs mb-0.5">{vlh.mode}</span><span className="text-foreground font-medium capitalize">{mode}</span></div>
-          <div><span className="text-muted-foreground block text-xs mb-0.5">{vlh.device}</span><span className="text-foreground font-medium capitalize">{device}</span></div>
+          <div><span className="text-md-sys-on-surface-variant block text-xs mb-0.5">{vlh.mode}</span><span className="text-md-sys-on-surface font-medium capitalize">{mode}</span></div>
+          <div><span className="text-md-sys-on-surface-variant block text-xs mb-0.5">{vlh.device}</span><span className="text-md-sys-on-surface font-medium capitalize">{device}</span></div>
           <div className="min-w-0">
-            <span className="text-muted-foreground block text-xs mb-0.5">{vlh.categories}</span>
-            <span className="text-foreground font-medium">
+            <span className="text-md-sys-on-surface-variant block text-xs mb-0.5">{vlh.categories}</span>
+            <span className="text-md-sys-on-surface font-medium">
               {Array.isArray(categories)
                 ? categories.map((c) => CATEGORY_LABELS[c as keyof typeof CATEGORY_LABELS] || c).join(', ')
                 : vlh.categoriesFallback}
@@ -536,7 +532,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
           </div>
         </div>
         {(runTimestamp || iterations > 0) && (
-          <p className="text-muted-foreground text-xs mt-3 pt-3 border-t border-muted">
+          <p className="text-md-sys-on-surface-variant text-xs mt-3 pt-3 border-t border-md-sys-outline-variant/40">
             {iterations > 0 && <span>{format(vlh.runsMediansFull, { n: iterations })}</span>}
             {runTimestamp && <span className="ml-3">{vlh.generated} {new Date(runTimestamp).toLocaleString()}</span>}
           </p>
@@ -545,7 +541,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
 
       {data?.crux_summary?.ok && (
         <Card padding="tight" devData={cruxDevData}>
-          <h3 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3">
+          <h3 className="text-md-sys-on-surface-variant text-xs font-bold uppercase tracking-wider mb-3">
             Real users (CrUX)
           </h3>
           <div className="flex flex-wrap gap-4 text-sm">
@@ -562,10 +558,10 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
                     : 'views.lighthouse.cruxCls';
               return (
                 <div key={metric}>
-                  <span className="text-muted-foreground uppercase text-xs">
+                  <span className="text-md-sys-on-surface-variant uppercase text-xs">
                     <LabelWithHint label={metric} helpKey={cruxHelpKey} />
                   </span>
-                  <p className={`font-medium ${pass ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  <p className={`font-medium ${pass ? 'text-md-sys-success' : 'text-md-sys-warning'}`}>
                     {p75 != null ? String(p75) : '—'} {pass === false ? '(needs improvement)' : pass ? '(good)' : ''}
                   </p>
                 </div>
@@ -587,7 +583,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
         <div id="lh-tab-overview" role="tabpanel" aria-labelledby="lh-tab-btn-overview" className="space-y-6">
           <div className="relative group/dev-card">
             <DevCopyJsonButton data={overviewScoresDevData} />
-            <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">
+            <h2 className="text-md-sys-on-surface-variant text-xs font-bold uppercase tracking-wider mb-4">
               <LabelWithHint label={vlh.categoriesSection} helpKey="views.lighthouse.categoryScores" />
             </h2>
             <div className="flex flex-wrap gap-6 justify-start items-center">
@@ -595,17 +591,17 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
                 <ScoreRing key={id} label={label} score={cs[id] != null ? Number(cs[id]) : null} />
               ))}
             </div>
-            <div className="flex flex-wrap gap-6 mt-4 text-xs text-muted-foreground">
-              <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />{vlh.scorePoor}</span>
-              <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1" />{vlh.scoreNeeds}</span>
-              <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />{vlh.scoreGood}</span>
+            <div className="flex flex-wrap gap-6 mt-4 text-xs text-md-sys-on-surface-variant">
+              <span><span className="inline-block w-2 h-2 rounded-full bg-md-sys-error mr-1" />{vlh.scorePoor}</span>
+              <span><span className="inline-block w-2 h-2 rounded-full bg-md-sys-warning mr-1" />{vlh.scoreNeeds}</span>
+              <span><span className="inline-block w-2 h-2 rounded-full bg-md-sys-success mr-1" />{vlh.scoreGood}</span>
             </div>
           </div>
 
           {humanSummary ? (
             <Card devData={summaryDevData}>
-              <h2 className="text-foreground text-sm font-bold uppercase tracking-wider mb-3">{vlh.summary}</h2>
-              <pre className="text-muted-foreground text-sm whitespace-pre-wrap font-sans">{humanSummary}</pre>
+              <h2 className="text-md-sys-on-surface text-sm font-bold uppercase tracking-wider mb-3">{vlh.summary}</h2>
+              <pre className="text-md-sys-on-surface-variant text-sm whitespace-pre-wrap font-sans">{humanSummary}</pre>
             </Card>
           ) : null}
         </div>
@@ -613,7 +609,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'pages' && hasMulti && (
         <div id="lh-tab-pages" role="tabpanel" aria-labelledby="lh-tab-btn-pages" className="space-y-4">
-          <p className="text-muted-foreground text-sm">{vlh.multiCompareHint}</p>
+          <p className="text-md-sys-on-surface-variant text-sm">{vlh.multiCompareHint}</p>
           <Card padding="none" overflowHidden devData={pagesTableDevData}>
             <MultiPageTable byUrl={byUrlForTable} selectedUrl={selectedUrl} onSelect={handleSelectUrl} />
           </Card>
@@ -621,7 +617,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
             <div ref={pageDetailRef} className="relative group/dev-card space-y-6">
               <DevCopyJsonButton data={pageDetailDevData} />
               <div>
-                <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">
+                <h2 className="text-md-sys-on-surface-variant text-xs font-bold uppercase tracking-wider mb-4">
                   <LabelWithHint label={vlh.categoriesSection} helpKey="views.lighthouse.categoryScores" />
                 </h2>
                 <div className="flex flex-wrap gap-6 justify-start items-center">
@@ -634,8 +630,8 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
               </div>
               {(selectedPageSummary.human_summary_full || selectedPageSummary.human_summary) ? (
                 <Card>
-                  <h2 className="text-foreground text-sm font-bold uppercase tracking-wider mb-3">{vlh.summary}</h2>
-                  <pre className="text-muted-foreground text-sm whitespace-pre-wrap font-sans">
+                  <h2 className="text-md-sys-on-surface text-sm font-bold uppercase tracking-wider mb-3">{vlh.summary}</h2>
+                  <pre className="text-md-sys-on-surface-variant text-sm whitespace-pre-wrap font-sans">
                     {selectedPageSummary.human_summary_full || selectedPageSummary.human_summary}
                   </pre>
                 </Card>
@@ -647,11 +643,11 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'metrics' && (
         <div id="lh-tab-metrics" role="tabpanel" aria-labelledby="lh-tab-btn-metrics" className="space-y-4">
-          <p className="text-muted-foreground text-sm">
+          <p className="text-md-sys-on-surface-variant text-sm">
             {format(vlh.metricsHint, { runs: iterations || 1 })}
           </p>
           <Card overflowHidden padding="none" devData={metricsDevData}>
-            <div className="divide-y divide-muted">
+            <div className="divide-y divide-md-sys-outline-variant/40">
               {(Object.keys(METRIC_THRESHOLDS) as Array<keyof typeof METRIC_THRESHOLDS>).map((key) => (
                 <ThresholdBar key={key} metricKey={key} value={mm[key] as number | null | undefined} />
               ))}
@@ -662,21 +658,23 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'quick-wins' && (
         <div id="lh-tab-quick-wins" role="tabpanel" aria-labelledby="lh-tab-btn-quick-wins" className="space-y-4">
-          <p className="text-muted-foreground text-sm">{vlh.quickWinsHint}</p>
-          <div className="relative group/dev-card grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <p className="text-md-sys-on-surface-variant text-sm">{vlh.quickWinsHint}</p>
+          <div className="relative group/dev-card">
             <DevCopyJsonButton data={quickWinsDevData} />
-            {QUICK_WINS.map((win) => (
-              <QuickWinCard key={win.id} win={win} passed={quickWinStatus[win.id] ?? false} />
-            ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {QUICK_WINS.map((win) => (
+                <QuickWinCard key={win.id} win={win} passed={quickWinStatus[win.id] ?? false} />
+              ))}
+            </div>
           </div>
         </div>
       )}
 
       {activeTab === 'audits' && (
         <div id="lh-tab-audits" role="tabpanel" aria-labelledby="lh-tab-btn-audits" className="space-y-4">
-          <p className="text-muted-foreground text-sm">{vlh.auditTablesHint}</p>
+          <p className="text-md-sys-on-surface-variant text-sm">{vlh.auditTablesHint}</p>
           {failingAuditsDetailed.length === 0 ? (
-            <Card className="p-6 text-center text-muted-foreground text-sm">{vlh.allChecksPassed}</Card>
+            <Card className="p-6 text-center text-md-sys-on-surface-variant text-sm">{vlh.allChecksPassed}</Card>
           ) : failingAuditsForDisplay.length > 0 ? (
             <div className="relative group/dev-card space-y-2">
               <DevCopyJsonButton data={auditsDevData} />
@@ -687,18 +685,18 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
               </ul>
             </div>
           ) : (
-            <Card className="p-4 text-muted-foreground text-sm">{vlh.noAuditsSearch}</Card>
+            <Card className="p-4 text-md-sys-on-surface-variant text-sm">{vlh.noAuditsSearch}</Card>
           )}
         </div>
       )}
 
       {activeTab === 'diagnostics' && (
         <div id="lh-tab-diagnostics" role="tabpanel" aria-labelledby="lh-tab-btn-diagnostics" className="space-y-4">
-          <p className="text-muted-foreground text-sm">{vlh.diagnosticsHint}</p>
+          <p className="text-md-sys-on-surface-variant text-sm">{vlh.diagnosticsHint}</p>
           {diagnosticsList.length === 0 ? (
-            <Card className="p-6 text-center text-muted-foreground text-sm">{vlh.allChecksPassed}</Card>
+            <Card className="p-6 text-center text-md-sys-on-surface-variant text-sm">{vlh.allChecksPassed}</Card>
           ) : diagnosticsForGroups.length === 0 ? (
-            <Card className="p-6 text-center text-muted-foreground text-sm">{vlh.noDiagnosticsSearch}</Card>
+            <Card className="p-6 text-center text-md-sys-on-surface-variant text-sm">{vlh.noDiagnosticsSearch}</Card>
           ) : (
             <div className="relative group/dev-card space-y-4">
               <DevCopyJsonButton data={diagnosticsDevData} />
@@ -718,13 +716,13 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
               </ViewTabPanel>
               {activeDiagnosticTotal > 0 ? (
                 <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center pt-1">
-                  <div className="text-sm text-muted-foreground space-y-0.5">
+                  <div className="text-sm text-md-sys-on-surface-variant space-y-0.5">
                     <div>{format(vlp.showingSlice, { from: diagnosticFrom, to: diagnosticTo, total: activeDiagnosticTotal })}</div>
                     <div className="text-xs">
                       {vlp.pageOf}{' '}
-                      <span className="font-bold text-bright tabular-nums">{safeDiagnosticPage}</span> {vlp.of}{' '}
-                      <span className="font-bold text-bright tabular-nums">{diagnosticTotalPages}</span>
-                      <span className="text-muted-foreground ml-2">
+                      <span className="font-bold text-md-sys-on-surface tabular-nums">{safeDiagnosticPage}</span> {vlp.of}{' '}
+                      <span className="font-bold text-md-sys-on-surface tabular-nums">{diagnosticTotalPages}</span>
+                      <span className="text-md-sys-on-surface-variant ml-2">
                         ({format(vlp.rowsPerPage, { n: PAGE_SIZE })})
                       </span>
                     </div>
@@ -735,7 +733,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
                         variant="secondary"
                         onClick={() => setDiagnosticPage((p) => Math.max(1, p - 1))}
                         disabled={safeDiagnosticPage <= 1}
-                        className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                        className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
                       >
                         {vlp.previous}
                       </Button>
@@ -743,7 +741,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
                         variant="secondary"
                         onClick={() => setDiagnosticPage((p) => Math.min(diagnosticTotalPages, p + 1))}
                         disabled={safeDiagnosticPage >= diagnosticTotalPages}
-                        className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                        className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
                       >
                         {vlp.next}
                       </Button>

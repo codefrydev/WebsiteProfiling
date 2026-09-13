@@ -51,21 +51,21 @@ export default function SecretsSettingsPanel({
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-6 sm:px-6">
       {activeEnvHints.length ? (
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-xs text-emerald-700 dark:text-emerald-300">
+        <div className="rounded-2xl border border-md-sys-success/30 bg-md-sys-success-container/15 px-4 py-3 text-xs text-md-sys-success">
           {s.envConfigured}: {activeEnvHints.join(', ')}
         </div>
       ) : null}
 
-      <div className="space-y-4 rounded-2xl border border-muted/30 bg-[var(--chat-surface)] p-5 sm:p-6">
+      <div className="space-y-4 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container p-5 sm:p-6">
         {section.fields.map((field) => {
           if (field.key === 'google_service_account_json' && state.google_service_account_json_masked) {
             return (
               <div key={field.key} className="space-y-2">
-                <p className="text-sm font-medium text-foreground">{field.label}</p>
+                <p className="text-sm font-medium text-md-sys-on-surface">{field.label}</p>
                 {field.help ? (
-                  <p className="text-xs leading-relaxed text-muted-foreground">{field.help}</p>
+                  <p className="text-xs leading-relaxed text-md-sys-on-surface-variant">{field.help}</p>
                 ) : null}
-                <p className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400">
+                <p className="flex items-center gap-1.5 text-xs text-md-sys-success">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
                   {s.serviceAccountSaved}
                 </p>
@@ -75,7 +75,7 @@ export default function SecretsSettingsPanel({
                   placeholder={s.serviceAccountReplacePlaceholder}
                   value={String(state[field.key] || '') === '{configured}' ? '' : String(state[field.key] || '')}
                   onChange={(e) => onChange(field.key, e.target.value)}
-                  className="w-full rounded-lg border border-default bg-[var(--chat-bg)] px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:border-blue-500/50 focus:outline-none"
+                  className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface px-3 py-2 font-mono text-sm text-md-sys-on-surface placeholder:text-md-sys-on-surface-variant/60 focus:border-md-sys-primary/50 focus:outline-none"
                 />
               </div>
             );
@@ -95,17 +95,17 @@ export default function SecretsSettingsPanel({
       </div>
 
       {section.id === 'google' ? (
-        <div className="space-y-2 text-xs text-muted-foreground">
+        <div className="space-y-2 text-xs text-md-sys-on-surface-variant">
           <p>
             {s.googleConnectHint}{' '}
-            <Link to="/pipeline?group=google" className="text-link hover:underline">
+            <Link to="/pipeline?group=google" className="text-md-sys-primary hover:underline">
               {s.googleConnectLink}
             </Link>
           </p>
           <p>
             <Link
               to={integrationGuideHref('google', { from: 'secrets', sectionId: 'oauthClient' })}
-              className="text-link hover:underline"
+              className="text-md-sys-primary hover:underline"
             >
               {strings.docs.googleOAuthGuideLink}
             </Link>
@@ -114,33 +114,33 @@ export default function SecretsSettingsPanel({
       ) : null}
 
       {section.id === 'ai' ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-md-sys-on-surface-variant">
           {s.aiProviderHint}{' '}
-          <Link to="/pipeline?group=content-ai" className="text-link hover:underline">
+          <Link to="/pipeline?group=content-ai" className="text-md-sys-primary hover:underline">
             {s.aiProviderLink}
           </Link>
           {' · '}
-          <Link to={integrationGuideHref('ai', { from: 'secrets' })} className="text-link hover:underline">
+          <Link to={integrationGuideHref('ai', { from: 'secrets' })} className="text-md-sys-primary hover:underline">
             {strings.docs.setupGuideLink}
           </Link>
         </p>
       ) : null}
 
       {section.id === 'integrations' ? (
-        <p className="text-xs text-muted-foreground">
-          <Link to={integrationGuideHref('bing', { from: 'secrets' })} className="text-link hover:underline">
+        <p className="text-xs text-md-sys-on-surface-variant">
+          <Link to={integrationGuideHref('bing', { from: 'secrets' })} className="text-md-sys-primary hover:underline">
             {strings.docs.bingGuideLink}
           </Link>
           {' · '}
-          <Link to={integrationGuideHref('serp', { from: 'secrets' })} className="text-link hover:underline">
+          <Link to={integrationGuideHref('serp', { from: 'secrets' })} className="text-md-sys-primary hover:underline">
             {strings.docs.serpGuideLink}
           </Link>
         </p>
       ) : null}
 
       {section.id === 'crawl' ? (
-        <p className="text-xs text-muted-foreground">
-          <Link to={integrationGuideHref('crawl-auth', { from: 'secrets' })} className="text-link hover:underline">
+        <p className="text-xs text-md-sys-on-surface-variant">
+          <Link to={integrationGuideHref('crawl-auth', { from: 'secrets' })} className="text-md-sys-primary hover:underline">
             {strings.docs.setupGuideLink}
           </Link>
         </p>
@@ -174,7 +174,7 @@ export function SecretsSaveBar({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
       <span
-        className={`text-sm ${saveMsg ? (saveFailed ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400') : 'text-xs text-muted-foreground'}`}
+        className={`text-sm ${saveMsg ? (saveFailed ? 'text-md-sys-error' : 'text-md-sys-success') : 'text-xs text-md-sys-on-surface-variant'}`}
       >
         {saveMsg || hint}
       </span>
@@ -182,7 +182,7 @@ export function SecretsSaveBar({
         type="button"
         onClick={onSave}
         disabled={saving || loading || readOnly}
-        className="rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
+        className="press rounded-full bg-md-sys-primary px-5 py-2.5 text-sm font-medium text-md-sys-on-primary transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:opacity-50 shadow-sm"
       >
         {buttonLabel}
       </button>

@@ -31,21 +31,21 @@ export default function LandingQuickStart() {
             compact
           />
 
-          <ul className="mt-6 divide-y divide-default/60 overflow-hidden rounded-xl border border-default/60">
+          <ul className="mt-6 divide-y divide-md-sys-outline-variant/30/60 overflow-hidden rounded-xl border border-md-sys-outline-variant/40">
             {QUICK_START_BULLETS.map((bullet) => (
-              <li key={bullet} className="px-4 py-3.5 text-sm leading-relaxed text-muted-foreground @sm:px-5 @sm:py-4">
+              <li key={bullet} className="px-4 py-3.5 text-sm leading-relaxed text-md-sys-on-surface-variant @sm:px-5 @sm:py-4">
                 {bullet}
               </li>
             ))}
           </ul>
 
           <div className="mt-6 space-y-2">
-            <p className="text-xs leading-relaxed text-muted-foreground @sm:text-sm">{vl.quickStartDocsHint}</p>
+            <p className="text-xs leading-relaxed text-md-sys-on-surface-variant @sm:text-sm">{vl.quickStartDocsHint}</p>
             <a
               href={vl.githubReadmeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-medium text-link transition-colors hover:underline @sm:text-sm"
+              className="inline-flex items-center gap-1 text-xs font-medium text-md-sys-primary transition-colors hover:underline @sm:text-sm"
             >
               {vl.limitationsReadmeLink}
               <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />

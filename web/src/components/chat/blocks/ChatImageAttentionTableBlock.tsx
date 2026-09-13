@@ -21,11 +21,11 @@ export default function ChatImageAttentionTableBlock({ block }: { block: Block }
   const remaining = (block.total ?? block.items.length) - shown.length;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-default bg-[var(--chat-bg)]/60">
-      <p className="border-b border-muted/30 px-3 py-2 text-xs font-medium text-bright">
+    <div className="overflow-hidden rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface/60">
+      <p className="border-b border-md-sys-outline-variant/30 px-3 py-2 text-xs font-medium text-md-sys-on-surface">
         {block.title}
       </p>
-      <ul className="divide-y divide-muted/30">
+      <ul className="divide-y divide-md-sys-outline-variant/30">
         {shown.map((item, i) => {
           const href = item.url || item.pageUrl;
           const label = href ? formatChatUrlDisplay(href) : 'Page-level issue';
@@ -37,16 +37,16 @@ export default function ChatImageAttentionTableBlock({ block }: { block: Block }
                     href={href}
                     target="_blank"
                     rel="noreferrer"
-                    className="min-w-0 flex-1 font-mono text-link hover:underline break-all"
+                    className="min-w-0 flex-1 font-mono text-md-sys-primary hover:underline break-all"
                     title={href}
                   >
                     {label}
                   </a>
                 ) : (
-                  <span className="text-foreground">{label}</span>
+                  <span className="text-md-sys-on-surface">{label}</span>
                 )}
                 {item.sizeBytes != null && Number.isFinite(item.sizeBytes) ? (
-                  <span className="shrink-0 tabular-nums text-muted-foreground">
+                  <span className="shrink-0 tabular-nums text-md-sys-on-surface-variant">
                     {formatBytes(item.sizeBytes)}
                   </span>
                 ) : null}
@@ -56,7 +56,7 @@ export default function ChatImageAttentionTableBlock({ block }: { block: Block }
                   {item.reasons.map((r) => (
                     <span
                       key={r}
-                      className="rounded-full border border-default bg-brand-800/50 px-2 py-0.5 text-[10px] text-muted-foreground"
+                      className="rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container/50 px-2 py-0.5 text-[10px] text-md-sys-on-surface-variant"
                     >
                       {formatReason(r)}
                     </span>
@@ -68,7 +68,7 @@ export default function ChatImageAttentionTableBlock({ block }: { block: Block }
         })}
       </ul>
       {remaining > 0 || block.truncated ? (
-        <p className="border-t border-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        <p className="border-t border-md-sys-outline-variant/30 px-3 py-2 text-xs text-md-sys-on-surface-variant">
           {remaining > 0 ? `${remaining} more not shown` : 'Results truncated'}
         </p>
       ) : null}

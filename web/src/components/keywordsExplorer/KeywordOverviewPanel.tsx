@@ -63,11 +63,11 @@ function MiniKeywordRow({
     suffix = `${(row.gsc_impressions || 0).toLocaleString()} impr.`;
   }
   return (
-    <li className="flex items-center justify-between gap-2 py-2 border-b border-default/60 last:border-0 text-sm">
-      <span className="font-medium text-foreground truncate min-w-0" title={row.keyword}>
+    <li className="flex items-center justify-between gap-2 py-2 border-b border-md-sys-outline-variant/40 last:border-0 text-sm">
+      <span className="font-medium text-md-sys-on-surface truncate min-w-0" title={row.keyword}>
         {row.keyword}
       </span>
-      <span className="text-xs text-muted-foreground tabular-nums shrink-0">{suffix}</span>
+      <span className="text-xs text-md-sys-on-surface-variant tabular-nums shrink-0">{suffix}</span>
     </li>
   );
 }
@@ -125,9 +125,9 @@ export default function KeywordOverviewPanel({
 
   return (
     <div id="kw-tab-overview" role="tabpanel" className="space-y-6 mb-6">
-      <Card padding="default" className="!bg-brand-900/40 relative group/dev-card">
+      <Card padding="default" className="!bg-md-sys-surface-container-low/40 relative group/dev-card">
         {exploreDevData != null ? <DevCopyJsonButton data={exploreDevData} /> : null}
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-md-sys-on-surface-variant mb-3">
           {o.exploreTitle}
         </h3>
         <div className="flex flex-wrap gap-2">
@@ -138,14 +138,14 @@ export default function KeywordOverviewPanel({
                 key={chip.id}
                 type="button"
                 onClick={() => onNavigate(chip.id)}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-default bg-brand-800 hover:border-accent/40 hover:bg-brand-700/80 text-sm text-foreground transition-all group"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container hover:border-accent/40 hover:bg-md-sys-surface-container-high/80 text-sm text-md-sys-on-surface transition-all group"
               >
-                <Icon className="w-4 h-4 text-link shrink-0" aria-hidden />
+                <Icon className="w-4 h-4 text-md-sys-primary shrink-0" aria-hidden />
                 <span className="font-medium">{chip.label}</span>
-                <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full bg-brand-900 text-muted-foreground group-hover:text-accent">
+                <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full bg-md-sys-surface-container-low text-md-sys-on-surface-variant group-hover:text-accent">
                   {chip.count}
                 </span>
-                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-accent" aria-hidden />
+                <ChevronRight className="w-3.5 h-3.5 text-md-sys-on-surface-variant/50 group-hover:text-accent" aria-hidden />
               </button>
             );
           })}
@@ -162,14 +162,14 @@ export default function KeywordOverviewPanel({
           {topQuickWins.length > 0 && (
             <Card devData={topQuickWinsDevData}>
               <div className="flex items-center justify-between gap-2 mb-3">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-500" aria-hidden />
+                <h3 className="text-sm font-bold text-md-sys-on-surface flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-md-sys-warning" aria-hidden />
                   {o.topQuickWins}
                 </h3>
                 <button
                   type="button"
                   onClick={() => onNavigate('quickwins')}
-                  className="text-xs text-link hover:underline"
+                  className="text-xs text-md-sys-primary hover:underline"
                 >
                   {o.viewAll}
                 </button>
@@ -184,14 +184,14 @@ export default function KeywordOverviewPanel({
           {topOpportunities.length > 0 && (
             <Card devData={topOpportunitiesDevData}>
               <div className="flex items-center justify-between gap-2 mb-3">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-violet-400" aria-hidden />
+                <h3 className="text-sm font-bold text-md-sys-on-surface flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-md-sys-tertiary" aria-hidden />
                   {o.topOpportunities}
                 </h3>
                 <button
                   type="button"
                   onClick={() => onNavigate('opportunities')}
-                  className="text-xs text-link hover:underline"
+                  className="text-xs text-md-sys-primary hover:underline"
                 >
                   {o.viewAll}
                 </button>
@@ -208,14 +208,14 @@ export default function KeywordOverviewPanel({
 
       {insights.length > 0 && (
         <Card devData={insightsDevData}>
-          <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-link" aria-hidden />
+          <h3 className="text-sm font-bold text-md-sys-on-surface mb-3 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-md-sys-primary" aria-hidden />
             {strings.views.keywordsExplorer.insights.title}
           </h3>
-          <ul className="space-y-2 text-sm text-muted-foreground">
+          <ul className="space-y-2 text-sm text-md-sys-on-surface-variant">
             {insights.map((line, i) => (
               <li key={i} className="flex gap-2 leading-relaxed">
-                <span className="text-link shrink-0 mt-0.5">•</span>
+                <span className="text-md-sys-primary shrink-0 mt-0.5">•</span>
                 <span>{line}</span>
               </li>
             ))}

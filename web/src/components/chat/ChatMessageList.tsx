@@ -55,7 +55,7 @@ export default function ChatMessageList({ messages, empty }: ChatMessageListProp
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             {msg.role === 'user' ? (
-              <div className="max-w-[90%] rounded-2xl bg-brand-700/50 px-4 py-2.5 text-sm leading-relaxed text-foreground">
+              <div className="max-w-[90%] rounded-2xl bg-md-sys-surface-container-high/50 px-4 py-2.5 text-sm leading-relaxed text-md-sys-on-surface">
                 <p>{msg.content}</p>
               </div>
             ) : (

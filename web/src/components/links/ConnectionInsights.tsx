@@ -38,16 +38,16 @@ function AnchorBar({ anchor, count, max, index }: { anchor: string; count: numbe
   return (
     <li className="space-y-0.5">
       <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="truncate text-foreground" title={label}>
+        <span className="truncate text-md-sys-on-surface" title={label}>
           {label}
         </span>
-        <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
+        <span className="shrink-0 font-mono tabular-nums text-md-sys-on-surface-variant">
           <CountUp value={count} />
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-brand-800">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-md-sys-surface-container">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-emerald-500/80 to-blue-500/80"
+          className="h-full rounded-full bg-gradient-to-r from-md-sys-success/80 to-md-sys-primary/80"
           style={{
             width: mounted ? `${pct}%` : '0%',
             transition: reduced ? 'none' : `width 600ms var(--ease-out) ${index * 70}ms`,
@@ -70,11 +70,11 @@ function StatTile({
   accent: string;
 }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-xl border border-default bg-brand-900 px-3 py-2.5">
+    <div className="flex items-center gap-2.5 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2.5">
       <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${accent}`}>{icon}</span>
       <div className="min-w-0">
-        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className="text-xl font-bold tabular-nums text-bright">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant">{label}</div>
+        <div className="text-xl font-bold tabular-nums text-md-sys-on-surface">
           <CountUp value={value} />
         </div>
       </div>
@@ -92,39 +92,39 @@ export default function ConnectionInsights({ inboundCount, outboundCount, topAnc
   const maxAnchor = topAnchors.reduce((m, a) => Math.max(m, a.count), 0);
 
   return (
-    <div className="rounded-xl border border-default bg-brand-800/40 p-4">
-      <h3 className="mb-3 text-sm font-semibold text-bright">{ct.insightsTitle}</h3>
+    <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/40 p-4">
+      <h3 className="mb-3 text-sm font-semibold text-md-sys-on-surface">{ct.insightsTitle}</h3>
 
       <div className="grid grid-cols-2 gap-3">
         <StatTile
           label={ct.inboundShort}
           value={inboundCount}
-          accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+          accent="bg-md-sys-success-container/30 text-md-sys-success"
           icon={<ArrowDownLeft className="h-4 w-4" />}
         />
         <StatTile
           label={ct.outboundShort}
           value={outboundCount}
-          accent="bg-blue-500/15 text-blue-600 dark:text-blue-400"
+          accent="bg-md-sys-primary-container/30 text-md-sys-primary"
           icon={<ArrowUpRight className="h-4 w-4" />}
         />
       </div>
 
       {total > 0 && (
         <div className="mt-3">
-          <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant">
             {ct.balanceTitle}
           </div>
-          <div className="flex h-3 w-full overflow-hidden rounded-full bg-brand-800">
+          <div className="flex h-3 w-full overflow-hidden rounded-full bg-md-sys-surface-container">
             <div
-              className="h-full bg-emerald-500/80"
+              className="h-full bg-md-sys-success/80"
               style={{
                 width: mounted ? `${inPct}%` : '0%',
                 transition: reduced ? 'none' : 'width 700ms var(--ease-out)',
               }}
             />
             <div
-              className="h-full bg-blue-500/80"
+              className="h-full bg-md-sys-primary/80"
               style={{
                 width: mounted ? `${100 - inPct}%` : '0%',
                 transition: reduced ? 'none' : 'width 700ms var(--ease-out)',
@@ -135,10 +135,10 @@ export default function ConnectionInsights({ inboundCount, outboundCount, topAnc
       )}
 
       <div className="mt-4">
-        <div className="text-sm font-semibold text-bright">{ct.anchorsTitle}</div>
-        <p className="mb-2 text-xs text-muted-foreground">{ct.anchorsHint}</p>
+        <div className="text-sm font-semibold text-md-sys-on-surface">{ct.anchorsTitle}</div>
+        <p className="mb-2 text-xs text-md-sys-on-surface-variant">{ct.anchorsHint}</p>
         {topAnchors.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{ct.noAnchors}</p>
+          <p className="text-xs text-md-sys-on-surface-variant">{ct.noAnchors}</p>
         ) : (
           <ul className="space-y-2">
             {topAnchors.map((a, i) => (

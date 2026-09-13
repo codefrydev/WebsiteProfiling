@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useReport } from '@/context/useReport';
 import { useUrlInspector } from '@/context/UrlInspectorContext';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import InspectorTabs from '@/components/links/InspectorTabs';
 import { shortPath } from '@/lib/linkGraph';
 import { strings } from '@/lib/strings';
@@ -82,21 +83,32 @@ export default function UrlInspectorDrawer({ url, onClose }: UrlInspectorDrawerP
     return buildInspectorDetails(data, url, links);
   }, [url, data, links]);
 
+  useModalDismiss({
+    onDismiss: onClose,
+    enabled: Boolean(url && link),
+    lockScroll: true,
+  });
+
   if (!url || !link) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={ui.label}>
-      <button type="button" className="flex-1 bg-black/40" onClick={onClose} aria-label={ui.close} />
-      <div className="w-full max-w-2xl h-full bg-brand-800 border-l border-default shadow-xl flex flex-col fade-in">
-        <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-b border-default">
-          <div className="flex items-center gap-0.5 shrink-0">
+      <button
+        type="button"
+        className="flex-1 bg-[color:var(--app-overlay)] backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+        aria-label={ui.close}
+      />
+      <div className="w-full max-w-2xl h-full bg-md-sys-surface-container-highest border-l border-md-sys-outline-variant/30 shadow-elevation-3 flex flex-col fade-in">
+        <div className="shrink-0 flex items-center gap-2 px-4 py-3 border-b border-md-sys-outline-variant/30 bg-md-sys-surface-container-high/40">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={back}
               disabled={!canGoBack}
               title={ui.back}
               aria-label={ui.back}
-              className="p-1.5 rounded-lg text-muted-foreground enabled:hover:bg-brand-700 enabled:hover:text-bright disabled:opacity-30 disabled:cursor-not-allowed press"
+              className="p-1.5 rounded-full text-md-sys-on-surface-variant enabled:hover:bg-md-sys-surface-container-highest enabled:hover:text-md-sys-on-surface disabled:opacity-30 disabled:cursor-not-allowed press transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -106,7 +118,7 @@ export default function UrlInspectorDrawer({ url, onClose }: UrlInspectorDrawerP
               disabled={!canGoForward}
               title={ui.forward}
               aria-label={ui.forward}
-              className="p-1.5 rounded-lg text-muted-foreground enabled:hover:bg-brand-700 enabled:hover:text-bright disabled:opacity-30 disabled:cursor-not-allowed press"
+              className="p-1.5 rounded-full text-md-sys-on-surface-variant enabled:hover:bg-md-sys-surface-container-highest enabled:hover:text-md-sys-on-surface disabled:opacity-30 disabled:cursor-not-allowed press transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -118,7 +130,7 @@ export default function UrlInspectorDrawer({ url, onClose }: UrlInspectorDrawerP
                 return (
                   <Fragment key={`${u}-${i}`}>
                     {i > 0 && (
-                      <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/50" aria-hidden />
+                      <ChevronRight className="h-3 w-3 shrink-0 text-md-sys-on-surface-variant/50" aria-hidden />
                     )}
                     <li className="min-w-0">
                       <button
@@ -129,8 +141,8 @@ export default function UrlInspectorDrawer({ url, onClose }: UrlInspectorDrawerP
                         aria-current={isLast ? 'page' : undefined}
                         className={
                           isLast
-                            ? 'font-mono text-xs text-bright truncate max-w-[18rem] block'
-                            : 'font-mono text-xs text-muted-foreground hover:text-foreground truncate max-w-[9rem] block transition-colors'
+                            ? 'font-mono text-xs font-semibold text-md-sys-on-surface truncate max-w-[18rem] block'
+                            : 'font-mono text-xs text-md-sys-on-surface-variant hover:text-md-sys-on-surface truncate max-w-[9rem] block transition-colors'
                         }
                       >
                         {shortPath(u) || u}
@@ -144,7 +156,7 @@ export default function UrlInspectorDrawer({ url, onClose }: UrlInspectorDrawerP
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded hover:bg-brand-700 shrink-0"
+            className="p-1.5 rounded-full hover:bg-md-sys-surface-container-highest text-md-sys-on-surface-variant hover:text-md-sys-on-surface shrink-0 transition-colors"
             aria-label={ui.close}
           >
             <X className="h-5 w-5" />

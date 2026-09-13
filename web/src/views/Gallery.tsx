@@ -83,18 +83,18 @@ function GalleryTile({
     <button
       type="button"
       onClick={() => onOpen(item)}
-      className={`group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 ${
+      className={`group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-md-sys-primary/60 ${
         masonry
-          ? 'block w-full mb-3 break-inside-avoid rounded-xl overflow-hidden border border-default bg-brand-800/60'
-          : 'relative rounded-xl overflow-hidden border border-default bg-brand-800/60'
+          ? 'block w-full mb-3 break-inside-avoid rounded-xl overflow-hidden border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60'
+          : 'relative rounded-xl overflow-hidden border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60'
       }`}
     >
       <div className="relative">
         <div
           className={
             masonry
-              ? 'bg-brand-950'
-              : 'aspect-[4/3] bg-brand-950 flex items-center justify-center'
+              ? 'bg-md-sys-surface-container-lowest'
+              : 'aspect-[4/3] bg-md-sys-surface-container-lowest flex items-center justify-center'
           }
         >
           {!broken ? (
@@ -112,7 +112,7 @@ function GalleryTile({
             />
           ) : (
             <div
-              className={`p-4 text-center text-xs text-muted-foreground ${masonry ? 'min-h-[100px] flex flex-col items-center justify-center' : ''}`}
+              className={`p-4 text-center text-xs text-md-sys-on-surface-variant ${masonry ? 'min-h-[100px] flex flex-col items-center justify-center' : ''}`}
             >
               {vg.previewUnavailable}
               <div className="mt-2 font-mono text-[10px] break-all opacity-70 line-clamp-4">{item.src}</div>
@@ -209,7 +209,7 @@ function VirtualGalleryGrid({
   return (
     <div
       ref={parentRef}
-      className="overflow-auto max-h-[min(72vh,calc(100vh-13rem))] rounded-xl border border-default bg-brand-900/20 -mx-1 px-1"
+      className="overflow-auto max-h-[min(72vh,calc(100vh-13rem))] rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/20 -mx-1 px-1"
     >
       <div
         style={{
@@ -334,7 +334,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
 
       <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
+          <span className="text-xs text-md-sys-on-surface-variant uppercase tracking-wider font-bold flex items-center gap-1.5">
             <Filter className="h-3.5 w-3.5" /> {vg.filterSource}
           </span>
           {[
@@ -347,10 +347,10 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
               key={id}
               type="button"
               onClick={() => setKindFilter(id)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                 kindFilter === id
-                  ? 'bg-blue-500/15 border-blue-500/40 text-link-soft'
-                  : 'border-default text-muted-foreground hover:text-foreground hover:bg-brand-800'
+                  ? 'bg-md-sys-primary-container/30 border-md-sys-primary/40 text-md-sys-primary font-medium'
+                  : 'border-md-sys-outline-variant/40 text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container'
               }`}
             >
               {label}
@@ -359,13 +359,13 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
         </div>
         <div className="flex flex-wrap items-center gap-3 shrink-0 ml-auto">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Layout</span>
-              <div className="flex rounded-lg border border-default overflow-hidden">
+              <span className="text-xs text-md-sys-on-surface-variant uppercase tracking-wider font-bold">Layout</span>
+              <div className="flex rounded-lg border border-md-sys-outline-variant/40 overflow-hidden">
                 <button
                   type="button"
                   title="Grid layout"
                   onClick={() => setLayoutMode('grid')}
-                  className={`p-2 ${layoutMode === 'grid' ? 'bg-violet-500/20 text-violet-700 dark:text-violet-300' : 'text-muted-foreground hover:bg-brand-800'}`}
+                  className={`p-2 ${layoutMode === 'grid' ? 'bg-md-sys-tertiary-container/30 text-md-sys-tertiary' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </button>
@@ -373,20 +373,20 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
                   type="button"
                   title="Masonry layout"
                   onClick={() => setLayoutMode('masonry')}
-                  className={`p-2 border-l border-default ${layoutMode === 'masonry' ? 'bg-violet-500/20 text-violet-700 dark:text-violet-300' : 'text-muted-foreground hover:bg-brand-800'}`}
+                  className={`p-2 border-l border-md-sys-outline-variant/40 ${layoutMode === 'masonry' ? 'bg-md-sys-tertiary-container/30 text-md-sys-tertiary' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
                 >
                   <Columns className="h-4 w-4" />
                 </button>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">{vg.grid}</span>
-              <div className="flex rounded-lg border border-default overflow-hidden">
+              <span className="text-xs text-md-sys-on-surface-variant uppercase tracking-wider font-bold">{vg.grid}</span>
+              <div className="flex rounded-lg border border-md-sys-outline-variant/40 overflow-hidden">
                 <button
                   type="button"
                   title={vg.titleDense}
                   onClick={() => setDensity('sm')}
-                  className={`p-2 ${density === 'sm' ? 'bg-blue-500/20 text-link-soft' : 'text-muted-foreground hover:bg-brand-800'}`}
+                  className={`p-2 ${density === 'sm' ? 'bg-md-sys-primary-container/30 text-md-sys-primary' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
                 >
                   <Grid3X3 className="h-4 w-4" />
                 </button>
@@ -394,7 +394,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
                   type="button"
                   title={vg.titleBalanced}
                   onClick={() => setDensity('md')}
-                  className={`p-2 border-l border-default ${density === 'md' ? 'bg-blue-500/20 text-link-soft' : 'text-muted-foreground hover:bg-brand-800'}`}
+                  className={`p-2 border-l border-md-sys-outline-variant/40 ${density === 'md' ? 'bg-md-sys-primary-container/30 text-md-sys-primary' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </button>
@@ -402,7 +402,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
                   type="button"
                   title={vg.titleLarge}
                   onClick={() => setDensity('lg')}
-                  className={`p-2 border-l border-default ${density === 'lg' ? 'bg-blue-500/20 text-link-soft' : 'text-muted-foreground hover:bg-brand-800'}`}
+                  className={`p-2 border-l border-md-sys-outline-variant/40 ${density === 'lg' ? 'bg-md-sys-primary-container/30 text-md-sys-primary' : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container'}`}
                 >
                   <Maximize2 className="h-4 w-4" />
                 </button>
@@ -416,25 +416,25 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
           <LabelWithHint
             label={vg.statUnique}
             helpKey="views.gallery.uniqueImages"
-            className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5"
+            className="text-xs text-md-sys-on-surface-variant uppercase tracking-wider mb-0.5"
           />
-          <div className="text-2xl font-bold text-bright tabular-nums">{items.length}</div>
+          <div className="text-2xl font-bold text-md-sys-on-surface tabular-nums">{items.length}</div>
         </div>
         <div>
           <LabelWithHint
             label={vg.statShown}
             helpKey="views.gallery.shownFiltered"
-            className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5"
+            className="text-xs text-md-sys-on-surface-variant uppercase tracking-wider mb-0.5"
           />
-          <div className="text-2xl font-bold text-foreground tabular-nums">{filtered.length}</div>
+          <div className="text-2xl font-bold text-md-sys-on-surface tabular-nums">{filtered.length}</div>
         </div>
-        <div className="text-xs text-muted-foreground max-w-xl leading-relaxed">{vg.helpBlurb}</div>
+        <div className="text-xs text-md-sys-on-surface-variant max-w-xl leading-relaxed">{vg.helpBlurb}</div>
       </Card>
 
       {filtered.length === 0 ? (
         <Card className="p-12 text-center">
-          <Images className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">
+          <Images className="h-12 w-12 text-md-sys-on-surface-variant mx-auto mb-4" />
+          <p className="text-md-sys-on-surface-variant">
             {items.length === 0 ? vg.emptyNoImages : vg.emptyNoMatch}
           </p>
         </Card>
@@ -450,7 +450,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
           {masonryLimit < filtered.length && (
             <div
               ref={masonrySentinelRef}
-              className="flex h-14 w-full items-center justify-center gap-2 py-2 text-muted-foreground"
+              className="flex h-14 w-full items-center justify-center gap-2 py-2 text-md-sys-on-surface-variant"
             >
               <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden />
               <span className="text-xs">Loading more…</span>
@@ -471,7 +471,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
             type="button"
             aria-label={vg.ariaClose}
             onClick={closeLightbox}
-            className="absolute top-4 right-4 p-2 rounded-lg bg-brand-800 border border-default text-foreground hover:text-bright hover:bg-brand-700 z-10"
+            className="press absolute top-4 right-4 p-2.5 rounded-full bg-md-sys-surface-container border border-md-sys-outline-variant/40 text-md-sys-on-surface hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all z-10"
           >
             <X className="h-5 w-5" />
           </button>
@@ -479,7 +479,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
             className="max-w-[min(96vw,1200px)] max-h-[min(88vh,900px)] flex flex-col gap-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="rounded-xl overflow-hidden border border-default bg-brand-950 shadow-2xl flex items-center justify-center min-h-[200px]">
+            <div className="rounded-xl overflow-hidden border border-md-sys-outline-variant/40 bg-md-sys-surface-container-lowest shadow-2xl flex items-center justify-center min-h-[200px]">
               <img
                 src={lightbox.src}
                 alt=""
@@ -491,19 +491,19 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
                 href={lightbox.src}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-link hover:underline break-all font-mono flex items-start gap-2"
+                className="text-sm text-md-sys-primary hover:underline break-all font-mono flex items-start gap-2"
               >
                 <ExternalLink className="h-4 w-4 shrink-0 mt-0.5" />
                 {lightbox.src}
               </a>
-              <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">{vg.foundOn}</div>
+              <div className="text-xs text-md-sys-on-surface-variant uppercase tracking-wider font-bold">{vg.foundOn}</div>
               <ul className="space-y-2 max-h-40 overflow-y-auto">
                 {lightbox.refs.map((r, i) => (
                   <li key={`${r.pageUrl}-${r.kind}-${i}`} className="flex flex-wrap items-center gap-2 text-sm">
-                    <a href={r.pageUrl} target="_blank" rel="noreferrer" className="text-link hover:underline truncate max-w-full sm:max-w-md">
+                    <a href={r.pageUrl} target="_blank" rel="noreferrer" className="text-md-sys-primary hover:underline truncate max-w-full sm:max-w-md">
                       {r.pageUrl}
                     </a>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-800 text-muted-foreground border border-default">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-md-sys-surface-container text-md-sys-on-surface-variant border border-md-sys-outline-variant/40">
                       {(vg.kindLabels as Record<string, string>)[r.kind] || r.kind}
                     </span>
                   </li>

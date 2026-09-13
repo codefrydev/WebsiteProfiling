@@ -367,11 +367,11 @@ export function hostOf(url: string): string {
   }
 }
 
-/** HTTP-status → node colour, shared by the link graph, flow diagram and 3D graph. */
+/** HTTP-status → node colour, shared by the link graph, flow diagram and 3D graph (M3 tokens). */
 export function statusColor(status: string | number | null | undefined): string {
   const s = String(status ?? '');
-  if (/^[45]/.test(s)) return '#ef4444'; // red — broken / error
-  if (/^3/.test(s)) return '#f59e0b'; // amber — redirect
-  if (/^2/.test(s)) return '#3b82f6'; // blue — ok
-  return '#64748b'; // slate — unknown
+  if (/^[45]/.test(s)) return 'var(--md-sys-color-error, #d93025)'; // M3 error
+  if (/^3/.test(s)) return 'var(--md-sys-color-warning, #ea8600)'; // M3 warning
+  if (/^2/.test(s)) return 'var(--md-sys-color-success, #137333)'; // M3 success
+  return 'var(--md-sys-color-outline, #74777f)'; // M3 outline
 }

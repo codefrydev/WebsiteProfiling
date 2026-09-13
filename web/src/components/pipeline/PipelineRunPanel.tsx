@@ -210,16 +210,16 @@ export default function PipelineRunPanel() {
       {step > 1 ? (
         <div className="mb-4 space-y-2">
           {step >= 2 ? (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-default bg-brand-800/60 px-3 py-2">
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60 px-4 py-2.5">
               <div className="flex min-w-0 items-center gap-2">
-                <Globe className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                <span className="truncate text-sm text-foreground">{normalizeUrl(startUrl)}</span>
+                <Globe className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />
+                <span className="truncate text-sm text-md-sys-on-surface">{normalizeUrl(startUrl)}</span>
               </div>
               {step > 1 && !disabled ? (
                 <button
                   type="button"
                   onClick={() => goToStep(1)}
-                  className="shrink-0 text-xs font-medium text-link hover:underline"
+                  className="press shrink-0 text-xs font-medium text-md-sys-primary hover:underline active:scale-95"
                 >
                   {s.wizardEdit}
                 </button>
@@ -227,16 +227,16 @@ export default function PipelineRunPanel() {
             </div>
           ) : null}
           {step >= 3 ? (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-default bg-brand-800/60 px-3 py-2">
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60 px-4 py-2.5">
               <div className="flex min-w-0 items-center gap-2">
-                <PresetIcon presetId={presetId} selected className="h-7 w-7 rounded-md" />
-                <span className="truncate text-sm font-medium text-foreground">{presetCopy.label}</span>
+                <PresetIcon presetId={presetId} selected className="h-7 w-7 rounded-lg" />
+                <span className="truncate text-sm font-medium text-md-sys-on-surface">{presetCopy.label}</span>
               </div>
               {!disabled ? (
                 <button
                   type="button"
                   onClick={() => goToStep(2)}
-                  className="shrink-0 text-xs font-medium text-link hover:underline"
+                  className="press shrink-0 text-xs font-medium text-md-sys-primary hover:underline active:scale-95"
                 >
                   {s.wizardEdit}
                 </button>
@@ -249,12 +249,12 @@ export default function PipelineRunPanel() {
       {step === 1 ? (
         <Card className="overflow-hidden">
           <div className="mb-1 flex items-center gap-2">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-md-sys-primary/10 text-md-sys-primary">
               <Globe className="h-4 w-4" aria-hidden />
             </span>
             <div>
-              <h2 className="text-base font-semibold text-foreground">{s.startUrlLabel}</h2>
-              <p className="text-xs text-muted-foreground">{s.wizardUrlHint}</p>
+              <h2 className="text-base font-semibold text-md-sys-on-surface">{s.startUrlLabel}</h2>
+              <p className="text-xs text-md-sys-on-surface-variant">{s.wizardUrlHint}</p>
             </div>
           </div>
           <input
@@ -267,10 +267,10 @@ export default function PipelineRunPanel() {
             onKeyDown={handleUrlKeyDown}
             disabled={disabled}
             placeholder={s.startUrlPlaceholder}
-            className="mt-4 w-full rounded-lg border border-default bg-brand-900 px-3 py-3 text-sm text-foreground transition focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="mt-4 w-full rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-4 py-3 text-sm text-md-sys-on-surface transition focus:border-md-sys-primary focus:outline-none focus:ring-2 focus:ring-md-sys-primary/20"
           />
           <div className="mt-4 space-y-2">
-            <span className="text-xs text-muted-foreground font-medium">Crawl preset</span>
+            <span className="text-xs text-md-sys-on-surface-variant font-medium">Crawl preset</span>
             <div className="flex flex-wrap gap-2">
               {CRAWL_PRESETS.map((preset) => {
                 const selected = crawlPresetId === preset.id;
@@ -281,10 +281,10 @@ export default function PipelineRunPanel() {
                     disabled={disabled}
                     title={preset.description}
                     onClick={() => handleCrawlPresetChange(preset.id as CrawlPresetId)}
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                    className={`press rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all active:scale-[0.98] ${
                       selected
-                        ? 'border-blue-500/60 bg-blue-500/10 text-foreground'
-                        : 'border-default bg-brand-900/80 text-foreground hover:border-blue-500/40'
+                        ? 'border-md-sys-primary bg-md-sys-primary/10 text-md-sys-primary font-medium'
+                        : 'border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/80 text-md-sys-on-surface hover:border-md-sys-primary/40'
                     }`}
                   >
                     {preset.label}
@@ -300,12 +300,12 @@ export default function PipelineRunPanel() {
             title={s.wizardRunExplainerTitle}
             className="mt-4"
           >
-            <ol className="ml-1 list-inside list-decimal space-y-1 text-sm text-muted-foreground">
+            <ol className="ml-1 list-inside list-decimal space-y-1 text-sm text-md-sys-on-surface-variant">
               {s.wizardRunExplainerSteps.map((stepText) => (
                 <li key={stepText}>{stepText}</li>
               ))}
             </ol>
-            <p className="mt-1.5 text-xs text-muted-foreground">{s.wizardRunExplainerNote}</p>
+            <p className="mt-1.5 text-xs text-md-sys-on-surface-variant">{s.wizardRunExplainerNote}</p>
           </AlertBanner>
           <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
             <Button
@@ -324,12 +324,12 @@ export default function PipelineRunPanel() {
       {step === 2 ? (
         <section aria-labelledby="pipe-presets-heading">
           <div className="mb-4">
-            <h2 id="pipe-presets-heading" className="text-base font-semibold text-foreground">
+            <h2 id="pipe-presets-heading" className="text-base font-semibold text-md-sys-on-surface">
               {s.presetsLabel}
             </h2>
-            <p className="mt-1 text-xs text-muted-foreground">{s.wizardWorkflowHint}</p>
+            <p className="mt-1 text-xs text-md-sys-on-surface-variant">{s.wizardWorkflowHint}</p>
             {loading ? (
-              <span className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="mt-2 inline-flex items-center gap-1.5 text-xs text-md-sys-on-surface-variant">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                 {s.loadingSettings}
               </span>
@@ -346,20 +346,20 @@ export default function PipelineRunPanel() {
                   onClick={disabled ? undefined : () => handlePresetChange(preset.id)}
                   className={`relative cursor-pointer transition-all ${
                     selected
-                      ? 'border-blue-500/70 bg-blue-500/5 ring-2 ring-blue-500/20'
-                      : 'hover:border-muted-foreground/30 hover:bg-brand-800/80'
+                      ? 'border-md-sys-primary bg-md-sys-primary/5 ring-2 ring-md-sys-primary/20'
+                      : 'hover:border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container/80'
                   } ${disabled ? 'pointer-events-none opacity-50' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <PresetIcon presetId={preset.id} selected={selected} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground">{copy.label}</p>
-                      <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{copy.description}</p>
+                      <p className="text-sm font-medium text-md-sys-on-surface">{copy.label}</p>
+                      <p className="mt-0.5 text-xs leading-snug text-md-sys-on-surface-variant">{copy.description}</p>
                       <div className="mt-1.5 flex flex-wrap gap-1">
                         {PRESET_INCLUDES[preset.id].map((item) => (
                           <span
                             key={item}
-                            className="rounded bg-brand-700/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                            className="rounded-full bg-md-sys-surface-container-high/60 px-2 py-0.5 text-[10px] font-medium text-md-sys-on-surface-variant"
                           >
                             {item}
                           </span>
@@ -367,7 +367,7 @@ export default function PipelineRunPanel() {
                       </div>
                     </div>
                     {selected ? (
-                      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
+                      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-md-sys-primary text-md-sys-on-primary">
                         <Check className="h-3.5 w-3.5" aria-hidden />
                       </span>
                     ) : null}
@@ -377,7 +377,7 @@ export default function PipelineRunPanel() {
             })}
           </div>
           {crawlOnlyNote ? (
-            <p className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200/90">
+            <p className="mt-3 rounded-2xl border border-md-sys-warning/30 bg-md-sys-warning-container/30 px-3 py-2 text-xs text-md-sys-on-warning-container">
               {crawlOnlyNote}
             </p>
           ) : null}
@@ -397,25 +397,25 @@ export default function PipelineRunPanel() {
       {step === 3 ? (
         <div className="space-y-4">
           <Card>
-            <h2 className="text-base font-semibold text-foreground">{s.wizardReviewTitle}</h2>
-            <p className="mt-1 text-xs text-muted-foreground">{s.wizardReviewHint}</p>
+            <h2 className="text-base font-semibold text-md-sys-on-surface">{s.wizardReviewTitle}</h2>
+            <p className="mt-1 text-xs text-md-sys-on-surface-variant">{s.wizardReviewHint}</p>
 
-            <dl className="mt-5 divide-y divide-[color:var(--app-border-muted)]">
+            <dl className="mt-5 divide-y divide-md-sys-outline-variant/40">
               <div className="py-3 first:pt-0">
-                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <dt className="text-xs font-medium uppercase tracking-wide text-md-sys-on-surface-variant">
                   {s.startUrlLabel}
                 </dt>
-                <dd className="mt-1 truncate text-sm text-foreground">{normalizeUrl(startUrl)}</dd>
+                <dd className="mt-1 truncate text-sm text-md-sys-on-surface">{normalizeUrl(startUrl)}</dd>
               </div>
               <div className="py-3">
-                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <dt className="text-xs font-medium uppercase tracking-wide text-md-sys-on-surface-variant">
                   {s.presetsLabel}
                 </dt>
                 <dd className="mt-2 flex items-start gap-3">
                   <PresetIcon presetId={presetId} selected className="h-9 w-9 rounded-lg" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">{presetCopy.label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{presetCopy.description}</p>
+                    <p className="text-sm font-medium text-md-sys-on-surface">{presetCopy.label}</p>
+                    <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">{presetCopy.description}</p>
                   </div>
                 </dd>
               </div>
@@ -437,10 +437,10 @@ export default function PipelineRunPanel() {
               />
             </div>
             {readOnly ? (
-              <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">{strings.app.readonlyBanner}</p>
+              <p className="mt-3 text-xs text-md-sys-warning">{strings.app.readonlyBanner}</p>
             ) : null}
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-muted pt-5">
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-md-sys-outline-variant/40 pt-5">
               <div>
                 {!busy ? (
                   <Button variant="secondary" onClick={() => goToStep(2)} disabled={disabled} className="py-2.5">
@@ -485,7 +485,7 @@ export default function PipelineRunPanel() {
               </div>
             </div>
             {!crawlAuthorized && !busy && !readOnly ? (
-              <p className="mt-2 text-right text-xs text-muted-foreground">
+              <p className="mt-2 text-right text-xs text-md-sys-on-surface-variant">
                 {strings.components.crawlAuthorize.required}
               </p>
             ) : null}
@@ -495,8 +495,8 @@ export default function PipelineRunPanel() {
             <Card padding="tight" className="overflow-hidden">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Terminal className="h-4 w-4 text-muted-foreground" aria-hidden />
-                  <span className="text-sm font-medium text-foreground">{s.outputLabel}</span>
+                  <Terminal className="h-4 w-4 text-md-sys-on-surface-variant" aria-hidden />
+                  <span className="text-sm font-medium text-md-sys-on-surface">{s.outputLabel}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {busy ? (
@@ -527,7 +527,7 @@ export default function PipelineRunPanel() {
                   <button
                     type="button"
                     onClick={() => setOutputOpen((v) => !v)}
-                    className="flex w-full items-center justify-between rounded-lg border border-default bg-brand-900/80 px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:bg-brand-900"
+                    className="press flex w-full items-center justify-between rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/80 px-4 py-2 text-left text-xs font-medium text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-low active:scale-[0.99] transition-all"
                   >
                     {outputOpen ? 'Hide log' : 'Show log'}
                     {outputOpen ? (
@@ -552,9 +552,9 @@ export default function PipelineRunPanel() {
                   (filter by <span className="font-mono">{strings.pipelineRunner.consoleFilterHint}</span>).
                 </AlertBanner>
               ) : busy ? (
-                <div className="rounded-lg border border-dashed border-default bg-brand-900/50 px-4 py-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin text-link" aria-hidden />
+                <div className="rounded-2xl border border-dashed border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-4 py-4">
+                  <div className="flex items-center gap-2 text-sm text-md-sys-on-surface-variant">
+                    <Loader2 className="h-4 w-4 animate-spin text-md-sys-primary" aria-hidden />
                     Waiting for output…
                   </div>
                   <div className="mt-3 space-y-2">

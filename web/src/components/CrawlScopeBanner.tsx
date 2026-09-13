@@ -50,13 +50,13 @@ export default function CrawlScopeBanner({ data }: { data: ReportPayload | null 
           </span>
         </>
       }
-      icon={<AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />}
+      icon={<AlertTriangle className="h-5 w-5 shrink-0 text-md-sys-warning" aria-hidden />}
     >
       {limited ? <p>{cs.limitedNote}</p> : null}
       {blocked > 0 ? (
         <p>{format(cs.robotsLine, { count: blocked.toLocaleString() })}</p>
       ) : null}
-      <p className="text-xs text-amber-800/90 dark:text-amber-200/80">
+      <p className="text-xs text-md-sys-on-warning-container/90">
         {renderMode === 'javascript'
           ? cs.javascriptNote
           : renderMode === 'auto'
@@ -64,7 +64,7 @@ export default function CrawlScopeBanner({ data }: { data: ReportPayload | null 
             : cs.staticHtmlNote}
       </p>
       {renderMode !== 'static' && jsConcurrency != null && jsConcurrency > 0 ? (
-        <p className="text-xs text-amber-800/90 dark:text-amber-200/80">
+        <p className="text-xs text-md-sys-on-warning-container/80">
           {format(cs.jsConcurrencyLine, { count: jsConcurrency.toLocaleString() })}
         </p>
       ) : null}
@@ -72,7 +72,7 @@ export default function CrawlScopeBanner({ data }: { data: ReportPayload | null 
       pagesStatic != null &&
       pagesRendered != null &&
       (pagesStatic > 0 || pagesRendered > 0) ? (
-        <p className="text-xs text-amber-800/90 dark:text-amber-200/80">
+        <p className="text-xs text-md-sys-on-warning-container/80">
           {format(cs.fetchMethodMixLine, {
             staticCount: pagesStatic.toLocaleString(),
             renderedCount: pagesRendered.toLocaleString(),
@@ -80,7 +80,7 @@ export default function CrawlScopeBanner({ data }: { data: ReportPayload | null 
         </p>
       ) : null}
       {pagesWithConsoleErrors > 0 ? (
-        <p className="text-xs text-amber-800/90 dark:text-amber-200/80">
+        <p className="text-xs text-md-sys-on-warning-container/80">
           {format(cs.browserConsoleErrorsLine, {
             pages: pagesWithConsoleErrors.toLocaleString(),
             errors: totalConsoleErrors.toLocaleString(),
@@ -88,7 +88,7 @@ export default function CrawlScopeBanner({ data }: { data: ReportPayload | null 
         </p>
       ) : null}
       {pagesWithPageErrors > 0 ? (
-        <p className="text-xs text-amber-800/90 dark:text-amber-200/80">
+        <p className="text-xs text-md-sys-on-warning-container/80">
           {format(cs.browserPageErrorsLine, {
             pages: pagesWithPageErrors.toLocaleString(),
           })}
@@ -98,7 +98,7 @@ export default function CrawlScopeBanner({ data }: { data: ReportPayload | null 
         <p className="text-xs pt-1">
           <Link
             to={javascriptErrorsViewHref(trailingQuery)}
-            className="font-medium text-amber-900 underline underline-offset-2 hover:text-amber-950 dark:text-amber-100 dark:hover:text-white"
+            className="font-medium text-md-sys-warning underline underline-offset-2 hover:brightness-125"
           >
             {cs.viewJavaScriptErrors}
           </Link>

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { normalizePriority } from './issuePriority';
+import {
+  PRIORITY_CONFIG,
+  PRIORITY_ORDER,
+  getPriorityChartColor,
+  normalizePriority,
+} from './issuePriority';
 
 describe('normalizePriority', () => {
   it('normalizes mixed-case strings to canonical PriorityKey', () => {
@@ -15,5 +20,21 @@ describe('normalizePriority', () => {
     expect(normalizePriority(null)).toBe('Medium');
     expect(normalizePriority('')).toBe('Medium');
     expect(normalizePriority('urgent')).toBe('Medium');
+  });
+
+  it('provides valid concrete hex colors in PRIORITY_CONFIG for canvas rendering', () => {
+    for (const p of PRIORITY_ORDER) {
+      expect(PRIORITY_CONFIG[p].chartColor).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    }
+  });
+
+  it('returns theme-aware stroke and fill colors from getPriorityChartColor', () => {
+    const darkColors = getPriorityChartColor('Critical', true);
+    expect(darkColors.stroke).toBe('#F87171');
+    expect(darkColors.fill).toContain('rgba');
+
+    const lightColors = getPriorityChartColor('Critical', false);
+    expect(lightColors.stroke).toBe('#EF4444');
+    expect(lightColors.fill).toContain('rgba');
   });
 });

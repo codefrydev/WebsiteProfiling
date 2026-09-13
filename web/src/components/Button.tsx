@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'tonal' | 'outline' | 'ghost' | 'danger' | 'danger-outline' | 'success';
 
 type ButtonProps = {
   children?: ReactNode;
@@ -12,9 +12,9 @@ type ButtonProps = {
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 /**
- * Shared button: primary (Export style), secondary (border), ghost.
- * Same size: px-4 py-2 rounded-lg text-sm font-medium/bold for primary.
- * Includes tactile press feedback (.press) and, for primary, hover elevation.
+ * Shared button adhering strictly to Google Material 3 (M3) Expressive Design:
+ * Pill shape (rounded-full), tactile press feedback (active:scale-[0.98]), M3 color roles,
+ * spring transitions, and accessible focus rings.
  */
 export default function Button({
   children,
@@ -27,11 +27,24 @@ export default function Button({
   ...rest
 }: ButtonProps) {
   const base =
-    'press inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:pointer-events-none';
+    'press inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-sys-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
   const variants: Record<ButtonVariant, string> = {
-    primary: 'bg-blue-600 hover:bg-blue-500 text-white font-bold hover:shadow-[var(--elevation-2)]',
-    secondary: 'border border-default text-foreground hover:bg-brand-700/80',
-    ghost: 'text-muted-foreground hover:text-foreground hover:bg-brand-800/80',
+    primary:
+      'bg-md-sys-primary text-md-sys-on-primary font-semibold hover:brightness-105 hover:shadow-[var(--elevation-2)]',
+    secondary:
+      'bg-md-sys-secondary-container text-md-sys-on-secondary-container hover:brightness-95 border border-transparent',
+    tonal:
+      'bg-md-sys-secondary-container text-md-sys-on-secondary-container hover:brightness-95 border border-transparent',
+    outline:
+      'border border-md-sys-outline text-md-sys-primary hover:bg-md-sys-primary/10 font-medium',
+    ghost:
+      'text-md-sys-primary hover:bg-md-sys-primary/10',
+    danger:
+      'bg-md-sys-error text-md-sys-on-error font-semibold hover:brightness-105 hover:shadow-[var(--elevation-2)]',
+    'danger-outline':
+      'border border-md-sys-error text-md-sys-error hover:bg-md-sys-error/10 font-medium',
+    success:
+      'bg-md-sys-success text-md-sys-on-success font-semibold hover:brightness-105 hover:shadow-[var(--elevation-2)]',
   };
   const combined = `${base} ${variants[variant] || variants.primary} ${className}`.trim();
   return (

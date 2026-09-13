@@ -174,8 +174,8 @@ export function D3StackedHorizontalBarChart({
 
               {tooltip && (
                 <g transform={`translate(${tooltip.x},${tooltip.y})`} style={{ pointerEvents: 'none' }}>
-                  <rect x={-4} y={-22} width={140} height={24} rx={4} fill="var(--popover, #1e293b)" opacity={0.92} />
-                  <text x={4} y={-6} fontSize={11} fill="var(--popover-foreground, #f1f5f9)">
+                  <rect x={-4} y={-22} width={140} height={24} rx={4} fill="var(--md-sys-color-surface-container-highest, #1f2937)" opacity={0.92} />
+                  <text x={4} y={-6} fontSize={11} fill="var(--md-sys-color-on-surface, #f1f5f9)">
                     {tooltip.seriesLabel}: {tooltip.value.toFixed(1)}%
                   </text>
                 </g>

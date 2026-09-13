@@ -1,7 +1,7 @@
 import type { SelectHTMLAttributes, ReactNode } from 'react';
 
 export const SELECT_CLASS =
-  'bg-brand-800 border border-brand-700 text-sm rounded-lg px-3 py-2 text-foreground outline-none focus:border-blue-500 transition-colors';
+  'bg-md-sys-surface-container-high border border-md-sys-outline-variant text-sm rounded-xl px-3.5 py-2 text-md-sys-on-surface outline-none focus:ring-2 focus:ring-md-sys-primary transition-all duration-200';
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   children: ReactNode;

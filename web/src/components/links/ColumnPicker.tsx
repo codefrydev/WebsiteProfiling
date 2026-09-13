@@ -39,21 +39,21 @@ export default function ColumnPicker({ columns, onChange }: ColumnPickerProps) {
         <Columns3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Columns
         {hiddenCount > 0 ? (
-          <span className="rounded-full bg-amber-600 px-1.5 text-[10px] font-bold text-white">
+          <span className="rounded-full bg-md-sys-warning px-1.5 text-[10px] font-bold text-md-sys-on-warning">
             {hiddenCount}
           </span>
         ) : null}
       </Button>
 
       {open ? (
-        <div className="absolute right-0 top-full mt-1 z-50 min-w-[180px] rounded-lg border border-default bg-brand-900 shadow-xl py-1">
-          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">
+        <div className="absolute right-0 top-full mt-1 z-50 min-w-[180px] rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low shadow-xl py-1">
+          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase text-md-sys-on-surface-variant tracking-wide">
             Toggle columns
           </p>
           {TOGGLEABLE.map((col) => (
             <label
               key={col.key}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-brand-800 select-none"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-md-sys-surface-container select-none"
             >
               <input
                 type="checkbox"
@@ -61,14 +61,14 @@ export default function ColumnPicker({ columns, onChange }: ColumnPickerProps) {
                 onChange={() => onChange(toggleColumn(columns, col.key))}
                 className="accent-blue-500"
               />
-              <span className="text-foreground">{col.label}</span>
+              <span className="text-md-sys-on-surface">{col.label}</span>
             </label>
           ))}
           {columns != null ? (
             <button
               type="button"
               onClick={() => onChange(undefined)}
-              className="w-full text-left px-3 py-1.5 text-xs text-link hover:underline border-t border-default mt-1 pt-2"
+              className="w-full text-left px-3 py-1.5 text-xs text-md-sys-primary hover:underline border-t border-md-sys-outline-variant/40 mt-1 pt-2"
             >
               Reset to defaults
             </button>

@@ -82,10 +82,10 @@ export const SETTINGS_GROUP_ICONS: Record<PipelineSettingsGroupId, LucideIcon> =
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  starting: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
-  running: 'bg-blue-500/15 text-blue-800 dark:text-blue-300 border-blue-500/30',
-  success: 'bg-green-500/15 text-green-800 dark:text-green-300 border-green-500/30',
-  error: 'bg-red-500/15 text-red-800 dark:text-red-300 border-red-500/30',
+  starting: 'bg-md-sys-warning-container/30 text-md-sys-on-warning-container border-md-sys-warning/30',
+  running: 'bg-md-sys-primary-container/30 text-md-sys-on-primary-container border-md-sys-primary/30',
+  success: 'bg-md-sys-success-container/30 text-md-sys-on-success-container border-md-sys-success/30',
+  error: 'bg-md-sys-error-container/30 text-md-sys-on-error-container border-md-sys-error/30',
 };
 
 export function PipelineStatusBadge({
@@ -113,7 +113,7 @@ export function PipelineStatusBadge({
         <Check className="h-3 w-3" aria-hidden />
       ) : (
         <span
-          className={`h-1.5 w-1.5 rounded-full ${status === 'error' ? 'bg-red-500' : 'bg-current'}`}
+          className={`h-1.5 w-1.5 rounded-full ${status === 'error' ? 'bg-md-sys-error' : 'bg-current'}`}
           aria-hidden
         />
       )}
@@ -163,10 +163,10 @@ export function PresetIcon({
   const Icon = PRESET_ICONS[presetId];
   return (
     <span
-      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
         selected
-          ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
-          : 'bg-brand-700/40 text-muted-foreground'
+          ? 'bg-md-sys-primary-container text-md-sys-on-primary-container'
+          : 'bg-md-sys-surface-container-high/40 text-md-sys-on-surface-variant'
       } ${className}`.trim()}
     >
       <Icon className="h-4 w-4" aria-hidden />

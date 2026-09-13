@@ -60,7 +60,7 @@ function SectionLink({
     <button
       type="button"
       onClick={() => onOpenTab(tab, section)}
-      className="inline-flex items-center gap-0.5 text-xs text-link hover:underline font-medium"
+      className="inline-flex items-center gap-0.5 text-xs text-md-sys-primary hover:underline font-medium"
     >
       {label}
       <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -79,7 +79,7 @@ function SectionHeader({
 }) {
   return (
     <div className="mb-3 flex items-center justify-between gap-3">
-      <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+      <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-md-sys-on-surface-variant">
         {icon}
         {title}
       </h3>
@@ -91,11 +91,11 @@ function SectionHeader({
 function SocialCheckItem({ label, present }: { label: string; present: boolean }) {
   const lc = strings.components.linkTabs.content;
   return (
-    <div className="flex items-center justify-between gap-3 py-2 border-b border-muted/50 last:border-0">
-      <span className="text-sm text-foreground">{label}</span>
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-md-sys-outline-variant/40 last:border-0">
+      <span className="text-sm text-md-sys-on-surface">{label}</span>
       <span
         className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-          present ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+          present ? 'text-md-sys-success' : 'text-md-sys-error'
         }`}
       >
         {present ? <Check className="h-3.5 w-3.5" aria-hidden /> : <X className="h-3.5 w-3.5" aria-hidden />}
@@ -168,7 +168,7 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
       value: wc > 0 ? wc.toLocaleString() : sj.emDash,
       band: wc > 0 ? wcInfo.label : undefined,
       bandClassName: wc > 0 ? wcInfo.color : undefined,
-      valueClassName: wc > 0 ? wcInfo.color : 'text-muted-foreground',
+      valueClassName: wc > 0 ? wcInfo.color : 'text-md-sys-on-surface-variant',
     },
     {
       key: 'readingLevel',
@@ -178,7 +178,7 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
       value: rl > 0 ? format(o.readingGrade, { n: rl }) : sj.emDash,
       band: rl > 0 ? rlInfo.label : undefined,
       bandClassName: rl > 0 ? rlInfo.color : undefined,
-      valueClassName: rl > 0 ? rlInfo.color : 'text-muted-foreground',
+      valueClassName: rl > 0 ? rlInfo.color : 'text-md-sys-on-surface-variant',
     },
     {
       key: 'redirects',
@@ -187,8 +187,8 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
       value: link.redirect_chain_length ?? 0,
       valueClassName:
         (link.redirect_chain_length ?? 0) > 0
-          ? 'text-yellow-800 dark:text-yellow-400'
-          : 'text-bright',
+          ? 'text-md-sys-warning'
+          : 'text-md-sys-on-surface',
     },
   ];
 
@@ -219,13 +219,13 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
     },
     {
       key: 'stylesheets',
-      icon: <FileCode className="h-4 w-4 shrink-0 text-purple-700 dark:text-purple-400" aria-hidden />,
+      icon: <FileCode className="h-4 w-4 shrink-0 text-md-sys-tertiary" aria-hidden />,
       label: o.statStylesheets,
       value: link.link_stylesheet_count ?? sj.emDash,
     },
     {
       key: 'preload',
-      icon: <Zap className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden />,
+      icon: <Zap className="h-4 w-4 shrink-0 text-md-sys-warning" aria-hidden />,
       label: o.statPreload,
       value: `${pa.preload_count ?? 0} / ${pa.preconnect_count ?? 0}`,
     },
@@ -283,7 +283,7 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
           ))}
         </div>
         {sslExp && (
-          <p className="mt-2 font-mono text-xs text-muted-foreground">
+          <p className="mt-2 font-mono text-xs text-md-sys-on-surface-variant">
             {o.sslExpires}: {sslExp.slice(0, 10)}
           </p>
         )}
@@ -306,7 +306,7 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
               />
             </div>
             {cwvMetrics.length > 0 ? (
-              <div className="border-t border-muted/50 pt-4">
+              <div className="border-t border-md-sys-outline-variant/40 pt-4">
                 <div className="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-4">
                   {cwvMetrics.map(({ key, label, value }) => (
                     <StatCard
@@ -326,9 +326,9 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-brand-900 border border-default rounded-xl p-4">
+        <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-4">
           <div className="flex items-center justify-between gap-3 mb-2">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{o.socialHeading}</h3>
+            <h3 className="text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider">{o.socialHeading}</h3>
             <SectionLink label={o.openSeoSocial} tab="seo" onOpenTab={onOpenTab} />
           </div>
           <SocialCheckItem label={o.socialOgTitle} present={hasOg} />
@@ -337,9 +337,9 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
         </div>
 
         {keywords.length > 0 && (
-          <div className="bg-brand-900 border border-default rounded-xl p-4">
+          <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-4">
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{o.topKeywordsHeading}</h3>
+              <h3 className="text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider">{o.topKeywordsHeading}</h3>
               <SectionLink label={o.openContent} tab="content" onOpenTab={onOpenTab} />
             </div>
             <ul className="flex flex-wrap gap-2">
@@ -348,10 +348,10 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
                 return (
                   <li
                     key={`${word}-${i}`}
-                    className="text-[11px] font-mono px-2 py-0.5 rounded bg-brand-800 border border-default text-foreground"
+                    className="text-[11px] font-mono px-2 py-0.5 rounded bg-md-sys-surface-container border border-md-sys-outline-variant/40 text-md-sys-on-surface"
                   >
                     {word}
-                    {count != null && <span className="text-muted-foreground ml-1">({count})</span>}
+                    {count != null && <span className="text-md-sys-on-surface-variant ml-1">({count})</span>}
                   </li>
                 );
               })}
@@ -361,45 +361,45 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
       </div>
 
       {link.content_type && (
-        <div className="bg-brand-900 border border-default rounded-xl p-3">
-          <div className="text-xs text-muted-foreground mb-1">{o.contentType}</div>
-          <div className="text-xs font-mono text-foreground">{link.content_type}</div>
+        <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-3">
+          <div className="text-xs text-md-sys-on-surface-variant mb-1">{o.contentType}</div>
+          <div className="text-xs font-mono text-md-sys-on-surface">{link.content_type}</div>
         </div>
       )}
 
-      <div className="bg-brand-900 border border-default rounded-xl p-4">
+      <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-4">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-xs text-muted-foreground">{o.fieldTitle}</div>
+          <div className="text-xs text-md-sys-on-surface-variant">{o.fieldTitle}</div>
           <CopyBtn text={link.title} />
         </div>
-        <div className="text-sm text-foreground">
-          {link.title || <span className="text-red-600 dark:text-red-400">{o.missing}</span>}
+        <div className="text-sm text-md-sys-on-surface">
+          {link.title || <span className="text-md-sys-error">{o.missing}</span>}
         </div>
         <CharBar len={titleLen} max={60} colorFn={titleCharColor} />
       </div>
 
-      <div className="bg-brand-900 border border-default rounded-xl p-4">
+      <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-4">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-xs text-muted-foreground">{o.fieldMetaDesc}</div>
+          <div className="text-xs text-md-sys-on-surface-variant">{o.fieldMetaDesc}</div>
           <CopyBtn text={link.meta_description} />
         </div>
-        <div className="text-sm text-foreground">
-          {link.meta_description || <span className="text-red-600 dark:text-red-400">{o.missing}</span>}
+        <div className="text-sm text-md-sys-on-surface">
+          {link.meta_description || <span className="text-md-sys-error">{o.missing}</span>}
         </div>
         <CharBar len={metaLen} max={160} colorFn={metaCharColor} />
       </div>
 
-      <div className="bg-brand-900 border border-default rounded-xl p-4">
+      <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-4">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-xs text-muted-foreground">{o.fieldH1}</div>
+          <div className="text-xs text-md-sys-on-surface-variant">{o.fieldH1}</div>
           <div className="flex items-center gap-2">
             <span
               className={`text-xs px-2 py-0.5 rounded ${
                 link.h1_count === 1
-                  ? 'bg-green-500/20 text-green-700 dark:text-green-400'
+                  ? 'bg-md-sys-success-container/30 text-md-sys-success'
                   : link.h1_count === 0
-                    ? 'bg-red-500/20 text-red-600 dark:text-red-400'
-                    : 'bg-yellow-500/20 text-yellow-800 dark:text-yellow-400'
+                    ? 'bg-md-sys-error-container/30 text-md-sys-error'
+                    : 'bg-md-sys-warning-container/30 text-md-sys-warning'
               }`}
             >
               {format(o.h1Count, { n: link.h1_count ?? 0, s: link.h1_count !== 1 ? 's' : '' })}
@@ -407,7 +407,7 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
             <CopyBtn text={link.h1} />
           </div>
         </div>
-        <div className="text-sm text-foreground">{link.h1 || <span className="text-muted-foreground">{sj.emDash}</span>}</div>
+        <div className="text-sm text-md-sys-on-surface">{link.h1 || <span className="text-md-sys-on-surface-variant">{sj.emDash}</span>}</div>
       </div>
     </div>
   );

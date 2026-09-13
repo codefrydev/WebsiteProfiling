@@ -50,7 +50,7 @@ export function IntentMixChart({ rows, devData }: IntentMixChartProps) {
   if (!chart) {
     return (
       <GoogleChartCard title={ke.charts.intentTitle} hint={ke.charts.intentHint} ariaLabel={ke.charts.intentAria} devData={devData}>
-        <div className="flex items-center justify-center h-full text-sm text-muted-foreground min-h-[12rem]">
+        <div className="flex items-center justify-center h-full text-sm text-md-sys-on-surface-variant min-h-[12rem]">
           {strings.common.notEnoughData}
         </div>
       </GoogleChartCard>
@@ -98,7 +98,7 @@ export function SourceMixChart({ rows, devData }: SourceMixChartProps) {
   if (!chart) {
     return (
       <GoogleChartCard title={ke.charts.sourceTitle} hint={ke.charts.sourceHint} ariaLabel={ke.charts.sourceAria} devData={devData}>
-        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        <div className="flex items-center justify-center h-full text-sm text-md-sys-on-surface-variant">
           {strings.common.notEnoughData}
         </div>
       </GoogleChartCard>

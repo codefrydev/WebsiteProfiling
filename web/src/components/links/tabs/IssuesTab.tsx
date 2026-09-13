@@ -139,7 +139,7 @@ export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesT
         const topFailures = lhData.top_failures || [];
         return (
           <div>
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+            <h3 className="text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
               <Gauge className="h-3.5 w-3.5" /> {it.lighthouseScores}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -147,29 +147,29 @@ export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesT
                 const score = cs[cat] != null ? Number(cs[cat]) : null;
                 const color = score != null ? scoreBandColor(score) : 'rgb(71,85,105)';
                 return (
-                  <div key={cat} className="bg-brand-900 rounded-xl p-3 border border-default text-center">
-                    <div className="text-xs text-muted-foreground capitalize mb-1">{cat.replace('-', ' ')}</div>
+                  <div key={cat} className="bg-md-sys-surface-container-low rounded-xl p-3 border border-md-sys-outline-variant/40 text-center">
+                    <div className="text-xs text-md-sys-on-surface-variant capitalize mb-1">{cat.replace('-', ' ')}</div>
                     <div className="text-xl font-bold" style={{ color }}>{score != null ? score : sj.emDash}</div>
                   </div>
                 );
               })}
             </div>
-            <div className="bg-brand-900 border border-default rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm mb-4">
+            <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm mb-4">
               {[['LCP', 'lcp_ms'], ['FCP', 'fcp_ms'], ['TBT', 'tbt_ms'], ['CLS', 'cls']].map(([label, key]) => (
                 <div key={key}>
-                  <span className="text-muted-foreground">{label} </span>
-                  <span className="text-foreground font-mono">{formatLhMetric(key, mm[key])}</span>
+                  <span className="text-md-sys-on-surface-variant">{label} </span>
+                  <span className="text-md-sys-on-surface font-mono">{formatLhMetric(key, mm[key])}</span>
                 </div>
               ))}
             </div>
             {topFailures.length > 0 && (
               <>
-                <div className="text-xs text-muted-foreground mb-2">{it.lighthouseFailures}</div>
+                <div className="text-xs text-md-sys-on-surface-variant mb-2">{it.lighthouseFailures}</div>
                 <div className="space-y-2">
                   {topFailures.map((f: LighthouseAuditRef, i: number) => {
                     const label = lighthouseFailureLabel(f);
                     return (
-                    <div key={i} className="bg-brand-800 border border-default rounded-lg px-3 py-2 text-xs text-foreground space-y-2">
+                    <div key={i} className="bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg px-3 py-2 text-xs text-md-sys-on-surface space-y-2">
                       <span>{label || f.id}</span>
                       <AiSuggestionButton
                         request={buildLighthouseFailureContext(label || f.id || '', f.id, pageUrl)}
@@ -186,8 +186,8 @@ export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesT
 
       <div>
         {allIssues.length > 0 && (
-          <div className="bg-brand-900 border border-default rounded-xl p-3 mb-4">
-            <div className="text-xs text-muted-foreground mb-2">{it.issuesBySource}</div>
+          <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-3 mb-4">
+            <div className="text-xs text-md-sys-on-surface-variant mb-2">{it.issuesBySource}</div>
             <div className="h-36">
               <RankedBarChart
                 ariaSummary={typeChart.aria}
@@ -202,7 +202,7 @@ export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesT
           </div>
         )}
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider">
             {format(it.allIssues, { count: allIssues.length })}
           </h3>
           <select
@@ -219,7 +219,7 @@ export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesT
         </div>
 
         {filteredIssues.length === 0 ? (
-          <div className="text-muted-foreground text-sm py-4 text-center">
+          <div className="text-md-sys-on-surface-variant text-sm py-4 text-center">
             {it.noIssues}
             {issueFilter !== 'All' ? format(it.noIssuesAtSeverity, { severity: issueFilter }) : '.'}
           </div>
@@ -230,26 +230,26 @@ export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesT
                 <button
                   type="button"
                   onClick={() => setExpandedIssue(expandedIssue === i ? null : i)}
-                  className="w-full flex items-center gap-3 bg-brand-800 border border-default hover:bg-brand-700 rounded-xl px-4 py-3 text-left transition-colors"
+                  className="w-full flex items-center gap-3 bg-md-sys-surface-container border border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container-high rounded-xl px-4 py-3 text-left transition-colors"
                 >
                   <span className={`text-xs px-2 py-0.5 rounded font-semibold shrink-0 ${severityBg(issue.severity)}`}>
                     {issue.severity}
                   </span>
-                  <span className="text-sm text-foreground flex-1 min-w-0 truncate">{issue.message}</span>
+                  <span className="text-sm text-md-sys-on-surface flex-1 min-w-0 truncate">{issue.message}</span>
                   {expandedIssue === i ? (
-                    <ChevronUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <ChevronUp className="h-3.5 w-3.5 text-md-sys-on-surface-variant shrink-0" />
                   ) : (
-                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <ChevronDown className="h-3.5 w-3.5 text-md-sys-on-surface-variant shrink-0" />
                   )}
                 </button>
                 {expandedIssue === i && (issue.detail || issue.recommendation) && (
-                  <div className="mx-2 border-x border-b border-default rounded-b-xl bg-brand-900 px-4 py-3 space-y-2">
+                  <div className="mx-2 border-x border-b border-md-sys-outline-variant/40 rounded-b-xl bg-md-sys-surface-container-low px-4 py-3 space-y-2">
                     {issue.detail ? (
-                      <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-all">{issue.detail}</pre>
+                      <pre className="text-xs font-mono text-md-sys-on-surface-variant whitespace-pre-wrap break-all">{issue.detail}</pre>
                     ) : null}
                     {issue.recommendation ? (
-                      <p className="text-xs text-foreground">
-                        <span className="text-link font-semibold">{it.recommendation} </span>
+                      <p className="text-xs text-md-sys-on-surface">
+                        <span className="text-md-sys-primary font-semibold">{it.recommendation} </span>
                         {issue.recommendation}
                       </p>
                     ) : null}
@@ -264,16 +264,16 @@ export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesT
 
       {inspectorDetails && (inspectorDetails.recommendations?.length ?? 0) > 0 && (
         <div>
-          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{it.whatToImprove}</h3>
+          <h3 className="text-xs font-bold text-md-sys-on-surface-variant uppercase tracking-wider mb-3">{it.whatToImprove}</h3>
           <div className="space-y-2">
             {inspectorDetails.recommendations.map((rec: string, i: number) => (
               <div
                 key={i}
-                className="flex flex-col gap-2 bg-brand-800 border border-default rounded-lg px-4 py-2.5"
+                className="flex flex-col gap-2 bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg px-4 py-2.5"
               >
                 <div className="flex items-start gap-2">
-                  <ChevronRight className="h-3.5 w-3.5 text-link shrink-0 mt-0.5" />
-                  <span className="text-sm text-foreground flex-1">{rec}</span>
+                  <ChevronRight className="h-3.5 w-3.5 text-md-sys-primary shrink-0 mt-0.5" />
+                  <span className="text-sm text-md-sys-on-surface flex-1">{rec}</span>
                 </div>
                 <AiSuggestionButton request={buildRecommendationBulletContext(rec, pageUrl)} />
               </div>

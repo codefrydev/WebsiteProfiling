@@ -18,9 +18,9 @@ export function resolveOllamaHealth(
 }
 
 export function ollamaHealthDotClass(health: OllamaHealth): string {
-  if (health === 'healthy') return 'text-emerald-400';
-  if (health === 'degraded' || health === 'loading') return 'text-amber-400';
-  return 'text-red-400';
+  if (health === 'healthy') return 'text-md-sys-success';
+  if (health === 'degraded' || health === 'loading') return 'text-md-sys-warning';
+  return 'text-md-sys-error';
 }
 
 export function ollamaHealthLabel(

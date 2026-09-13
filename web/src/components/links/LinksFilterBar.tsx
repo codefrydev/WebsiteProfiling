@@ -117,7 +117,7 @@ export default function LinksFilterBar({
           <Filter className="h-4 w-4" />
           Filters
           {activeCount > 0 ? (
-            <span className="absolute -top-1.5 -right-1.5 bg-amber-600 text-white text-[10px] font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
+            <span className="absolute -top-1.5 -right-1.5 bg-md-sys-warning text-md-sys-on-warning text-[10px] font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
               {activeCount}
             </span>
           ) : null}
@@ -131,15 +131,15 @@ export default function LinksFilterBar({
               className="fixed inset-0 z-40 bg-[color:var(--app-overlay)]"
               onClick={() => setMobileOpen(false)}
             />
-            <div className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-brand-800 border-l border-default shadow-xl flex flex-col p-5 gap-4">
+            <div className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-md-sys-surface-container border-l border-md-sys-outline-variant/40 shadow-xl flex flex-col p-5 gap-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-bright">Filters</h2>
-                <button type="button" onClick={() => setMobileOpen(false)} className="p-2 text-muted-foreground hover:text-foreground">
+                <h2 className="text-lg font-bold text-md-sys-on-surface">Filters</h2>
+                <button type="button" onClick={() => setMobileOpen(false)} className="p-2 text-md-sys-on-surface-variant hover:text-md-sys-on-surface">
                   <X className="h-5 w-5" />
                 </button>
               </div>
               <FilterSelects values={values} onChange={onChange} layout="stack" />
-              <div className="flex gap-2 mt-auto pt-4 border-t border-muted">
+              <div className="flex gap-2 mt-auto pt-4 border-t border-md-sys-outline-variant/40">
                 {activeCount > 0 ? (
                   <Button variant="ghost" type="button" onClick={() => { onClearAll(); setMobileOpen(false); }}>
                     Clear all
@@ -161,14 +161,14 @@ export default function LinksFilterBar({
               key={chip.key}
               type="button"
               onClick={() => onChange(chip.key, sj.all)}
-              className="inline-flex items-center gap-1.5 text-xs rounded-full border border-default bg-brand-800 px-2.5 py-1 text-foreground hover:bg-brand-700 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-2.5 py-1 text-md-sys-on-surface hover:bg-md-sys-surface-container-high transition-colors"
             >
               {chip.label}
               <X className="h-3 w-3 opacity-60" />
             </button>
           ))}
           {activeCount > 1 ? (
-            <button type="button" onClick={onClearAll} className="text-xs text-link hover:underline">
+            <button type="button" onClick={onClearAll} className="text-xs text-md-sys-primary hover:underline">
               Clear all
             </button>
           ) : null}

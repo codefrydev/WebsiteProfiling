@@ -14,6 +14,7 @@ import {
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings, format } from '@/lib/strings';
 import { Button } from '@/components';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import type {
   WizardOption,
   WizardOptionsResult,
@@ -67,6 +68,11 @@ export default function GuidedDraftWizard({
   const [keyword, setKeyword] = useState(initialKeyword);
   const [started, setStarted] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
+
+  useModalDismiss({
+    onDismiss: onClose,
+    enabled: open,
+  });
 
   const [intentOptions, setIntentOptions] = useState<WizardOption[] | null>(null);
   const [typeOptions, setTypeOptions] = useState<WizardOption[] | null>(null);
@@ -258,16 +264,21 @@ export default function GuidedDraftWizard({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[var(--chat-bg)]">
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-md-sys-surface"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="guided-wizard-title"
+    >
       {/* Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-default px-4 py-3 sm:px-6">
+      <div className="flex shrink-0 items-center justify-between border-b border-md-sys-outline-variant/40 px-4 py-3 sm:px-6">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 shrink-0 text-link" aria-hidden />
-            <h2 className="truncate text-sm font-semibold text-foreground">{w.title}</h2>
+            <Sparkles className="h-4 w-4 shrink-0 text-md-sys-primary" aria-hidden />
+            <h2 id="guided-wizard-title" className="truncate text-sm font-semibold text-md-sys-on-surface">{w.title}</h2>
           </div>
           {keyword.trim() ? (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            <p className="mt-0.5 truncate text-xs text-md-sys-on-surface-variant">
               {keyword.trim()} · {locale}
             </p>
           ) : null}
@@ -275,7 +286,7 @@ export default function GuidedDraftWizard({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md p-1.5 text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground"
+          className="press rounded-full p-1.5 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98] transition-all"
           aria-label={w.close}
         >
           <X className="h-4 w-4" aria-hidden />
@@ -296,17 +307,17 @@ export default function GuidedDraftWizard({
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
             <div className="mx-auto w-full max-w-3xl">
               {stepIdx > 0 && intent ? (
-                <div className="mb-6 flex items-start gap-2 rounded-lg bg-[var(--chat-surface)]/60 px-4 py-3 text-sm">
-                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                  <p className="text-muted-foreground">
-                    <span className="text-muted-foreground/80">{w.selectedIntent}</span>{' '}
-                    <span className="text-foreground">{intent}</span>
+                <div className="mb-6 flex items-start gap-2 rounded-lg bg-md-sys-surface-container/60 px-4 py-3 text-sm">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />
+                  <p className="text-md-sys-on-surface-variant">
+                    <span className="text-md-sys-on-surface-variant/80">{w.selectedIntent}</span>{' '}
+                    <span className="text-md-sys-on-surface">{intent}</span>
                   </p>
                 </div>
               ) : null}
 
               {error ? (
-                <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-md-sys-error/40 bg-md-sys-error-container/10 px-4 py-3 text-sm text-md-sys-error">
                   <span>{error}</span>
                   <Button type="button" variant="secondary" className="!px-2 !py-1 !text-xs" onClick={() => void load(step)}>
                     {w.retry}
@@ -315,7 +326,7 @@ export default function GuidedDraftWizard({
               ) : null}
 
               {busy ? (
-                <div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 py-10 text-sm text-md-sys-on-surface-variant">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                   {w.loadingOptions}
                 </div>
@@ -345,7 +356,7 @@ export default function GuidedDraftWizard({
           </div>
 
           {/* Footer */}
-          <div className="flex shrink-0 items-center justify-between border-t border-default px-4 py-3 sm:px-6">
+          <div className="flex shrink-0 items-center justify-between border-t border-md-sys-outline-variant/40 px-4 py-3 sm:px-6">
             <Button type="button" variant="ghost" onClick={goBack} disabled={generating}>
               {w.back}
             </Button>
@@ -380,8 +391,8 @@ function KeywordGate({
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
-        <h3 className="text-xl font-semibold text-foreground">{w.keywordHeading}</h3>
-        <p className="mt-2 text-sm text-muted-foreground">{w.keywordSub}</p>
+        <h3 className="text-xl font-semibold text-md-sys-on-surface">{w.keywordHeading}</h3>
+        <p className="mt-2 text-sm text-md-sys-on-surface-variant">{w.keywordSub}</p>
         <form
           className="mt-6 flex gap-2"
           onSubmit={(e) => {
@@ -395,7 +406,7 @@ function KeywordGate({
             onChange={(e) => onChange(e.target.value)}
             placeholder={w.keywordPlaceholder}
             autoFocus
-            className="min-w-0 flex-1 rounded-lg border border-default bg-[var(--chat-surface)] px-3 py-2 text-sm text-foreground focus:border-blue-500 focus:outline-none"
+            className="min-w-0 flex-1 rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-3 py-2 text-sm text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none"
           />
           <Button type="submit" variant="primary" disabled={!keyword.trim()}>
             {w.start}
@@ -410,7 +421,7 @@ function Stepper({ current }: { current: number }) {
   const labels = strings.views.contentStudio.wizard.steps;
   const order: Array<keyof typeof labels> = ['intent', 'type', 'tone', 'title', 'outline'];
   return (
-    <div className="shrink-0 overflow-x-auto border-b border-default bg-[var(--chat-surface)]/30 px-4 sm:px-6">
+    <div className="shrink-0 overflow-x-auto border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container/30 px-4 sm:px-6">
       <ol className="mx-auto flex w-full max-w-4xl items-center">
         {order.map((key, i) => {
           const active = i === current;
@@ -421,19 +432,19 @@ function Stepper({ current }: { current: number }) {
                 <span
                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${
                     active
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-md-sys-primary text-md-sys-on-primary'
                       : done
-                        ? 'bg-green-600 text-white'
-                        : 'bg-brand-700 text-muted-foreground'
+                        ? 'bg-md-sys-success text-md-sys-on-success'
+                        : 'bg-md-sys-surface-container-high text-md-sys-on-surface-variant'
                   }`}
                 >
                   {i + 1}
                 </span>
-                <span className={`whitespace-nowrap text-xs font-medium ${active ? 'text-link' : done ? 'text-foreground' : 'text-muted-foreground'}`}>
+                <span className={`whitespace-nowrap text-xs font-medium ${active ? 'text-md-sys-primary' : done ? 'text-md-sys-on-surface' : 'text-md-sys-on-surface-variant'}`}>
                   {labels[key]}
                 </span>
               </div>
-              {i < order.length - 1 ? <ChevronRight className="mx-2 h-4 w-4 shrink-0 text-muted-foreground/50" aria-hidden /> : null}
+              {i < order.length - 1 ? <ChevronRight className="mx-2 h-4 w-4 shrink-0 text-md-sys-on-surface-variant/50" aria-hidden /> : null}
             </li>
           );
         })}
@@ -531,8 +542,8 @@ function OptionList({
 }) {
   return (
     <div>
-      <h3 className="text-2xl font-bold text-foreground">{heading}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">{sub}</p>
+      <h3 className="text-2xl font-bold text-md-sys-on-surface">{heading}</h3>
+      <p className="mt-1 text-sm text-md-sys-on-surface-variant">{sub}</p>
       <div className="mt-6 space-y-2">
         {(options || []).map((opt) => {
           const active = opt.label === selected;
@@ -543,21 +554,21 @@ function OptionList({
               onClick={() => onSelect(opt.label)}
               className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
                 active
-                  ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/40'
-                  : 'border-default hover:border-default/80 hover:bg-[var(--chat-surface)]/40'
+                  ? 'border-md-sys-primary bg-md-sys-primary-container/10 ring-1 ring-md-sys-primary/40'
+                  : 'border-md-sys-outline-variant/40 hover:border-md-sys-outline-variant/50 hover:bg-md-sys-surface-container/40'
               }`}
             >
               <span
                 className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                  active ? 'border-blue-500 bg-blue-500' : 'border-muted-foreground/50'
+                  active ? 'border-md-sys-primary bg-md-sys-primary' : 'border-md-sys-outline-variant/60'
                 }`}
               >
                 {active ? <span className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-medium text-foreground">{opt.label}</span>
+                <span className="block text-sm font-medium text-md-sys-on-surface">{opt.label}</span>
                 {opt.description ? (
-                  <span className="mt-0.5 block text-xs text-muted-foreground">{opt.description}</span>
+                  <span className="mt-0.5 block text-xs text-md-sys-on-surface-variant">{opt.description}</span>
                 ) : null}
               </span>
             </button>
@@ -580,8 +591,8 @@ function TitleStep({
   const w = strings.views.contentStudio.wizard;
   return (
     <div>
-      <h3 className="text-2xl font-bold text-foreground">{w.titleHeading}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">{w.titleSub}</p>
+      <h3 className="text-2xl font-bold text-md-sys-on-surface">{w.titleHeading}</h3>
+      <p className="mt-1 text-sm text-md-sys-on-surface-variant">{w.titleSub}</p>
       <div className="mt-6 space-y-2">
         {(titles || []).map((t) => {
           const active = t === title;
@@ -592,8 +603,8 @@ function TitleStep({
               onClick={() => onSelect(t)}
               className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
                 active
-                  ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/40 text-foreground'
-                  : 'border-default text-foreground hover:bg-[var(--chat-surface)]/40'
+                  ? 'border-md-sys-primary bg-md-sys-primary-container/10 ring-1 ring-md-sys-primary/40 text-md-sys-on-surface'
+                  : 'border-md-sys-outline-variant/40 text-md-sys-on-surface hover:bg-md-sys-surface-container/40'
               }`}
             >
               {t}
@@ -601,14 +612,14 @@ function TitleStep({
           );
         })}
       </div>
-      <label className="mt-6 block text-xs text-muted-foreground">
+      <label className="mt-6 block text-xs text-md-sys-on-surface-variant">
         {w.titleCustomLabel}
         <input
           type="text"
           value={title}
           onChange={(e) => onSelect(e.target.value)}
           placeholder={w.titleCustomPlaceholder}
-          className="mt-1 w-full rounded-lg border border-default bg-[var(--chat-surface)] px-3 py-2 text-sm text-foreground focus:border-blue-500 focus:outline-none"
+          className="mt-1 w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-3 py-2 text-sm text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none"
         />
       </label>
     </div>
@@ -631,9 +642,9 @@ function OutlineStep({
   const w = strings.views.contentStudio.wizard;
   return (
     <div>
-      <h3 className="text-2xl font-bold text-foreground">{w.outlineHeading}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">{w.outlineSub}</p>
-      <div className="mt-6 space-y-2 rounded-xl border border-default p-3">
+      <h3 className="text-2xl font-bold text-md-sys-on-surface">{w.outlineHeading}</h3>
+      <p className="mt-1 text-sm text-md-sys-on-surface-variant">{w.outlineSub}</p>
+      <div className="mt-6 space-y-2 rounded-xl border border-md-sys-outline-variant/40 p-3">
         {(outline || []).map((row, i) => (
           <div
             key={row.uid}
@@ -641,7 +652,7 @@ function OutlineStep({
               row.level === 'h1' ? '' : row.level === 'h3' ? 'ml-8' : 'ml-4'
             }`}
           >
-            <span className="w-7 shrink-0 text-center text-[10px] font-semibold uppercase text-muted-foreground">
+            <span className="w-7 shrink-0 text-center text-[10px] font-semibold uppercase text-md-sys-on-surface-variant">
               {row.level}
             </span>
             <input
@@ -649,7 +660,7 @@ function OutlineStep({
               value={row.text}
               onChange={(e) => onUpdateRow(row.uid, e.target.value)}
               disabled={row.level === 'h1'}
-              className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1 text-sm text-foreground hover:border-default focus:border-blue-500 focus:bg-[var(--chat-surface)] focus:outline-none disabled:opacity-80"
+              className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1 text-sm text-md-sys-on-surface hover:border-md-sys-outline-variant/40 focus:border-md-sys-primary focus:bg-md-sys-surface-container focus:outline-none disabled:opacity-80"
             />
             {row.level !== 'h1' ? (
               <span className="flex shrink-0 items-center gap-0.5">
@@ -657,7 +668,7 @@ function OutlineStep({
                   type="button"
                   onClick={() => onMoveRow(row.uid, -1)}
                   disabled={i <= 1}
-                  className="rounded p-1 text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground disabled:opacity-30"
+                  className="rounded p-1 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface disabled:opacity-30"
                   aria-label={w.moveUp}
                 >
                   <ChevronUp className="h-3.5 w-3.5" aria-hidden />
@@ -666,7 +677,7 @@ function OutlineStep({
                   type="button"
                   onClick={() => onMoveRow(row.uid, 1)}
                   disabled={i >= (outline?.length || 0) - 1}
-                  className="rounded p-1 text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground disabled:opacity-30"
+                  className="rounded p-1 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface disabled:opacity-30"
                   aria-label={w.moveDown}
                 >
                   <ChevronDown className="h-3.5 w-3.5" aria-hidden />
@@ -674,7 +685,7 @@ function OutlineStep({
                 <button
                   type="button"
                   onClick={() => onDeleteRow(row.uid)}
-                  className="rounded p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-600"
+                  className="rounded p-1 text-md-sys-on-surface-variant hover:bg-md-sys-error-container/20 hover:text-md-sys-error"
                   aria-label={w.deleteHeading}
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden />
@@ -687,7 +698,7 @@ function OutlineStep({
           <button
             type="button"
             onClick={() => onAddRow('h2')}
-            className="flex items-center gap-1 text-xs text-link hover:underline"
+            className="flex items-center gap-1 text-xs text-md-sys-primary hover:underline"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             {w.addH2}
@@ -695,7 +706,7 @@ function OutlineStep({
           <button
             type="button"
             onClick={() => onAddRow('h3')}
-            className="flex items-center gap-1 text-xs text-link hover:underline"
+            className="flex items-center gap-1 text-xs text-md-sys-primary hover:underline"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             {w.addH3}

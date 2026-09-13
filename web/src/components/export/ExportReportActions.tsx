@@ -51,16 +51,16 @@ export default function ExportReportActions() {
   );
 
   const secondaryBtn =
-    'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-default text-foreground hover:bg-brand-700/80 transition-colors whitespace-nowrap';
+    'press inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium border border-md-sys-outline-variant/40 text-md-sys-on-surface hover:bg-md-sys-surface-container-high/80 active:scale-[0.98] transition-all duration-200 whitespace-nowrap';
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 print:hidden">
-      <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+      <label className="inline-flex items-center gap-1.5 text-xs text-md-sys-on-surface-variant whitespace-nowrap">
         <span className="hidden lg:inline">Profile</span>
         <select
           value={profile}
           onChange={(e) => setQuery({ profile: e.target.value })}
-          className="rounded-lg border border-default bg-brand-900 px-2 py-1.5 text-xs text-foreground"
+          className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-2.5 py-1.5 text-xs text-md-sys-on-surface"
           aria-label="PDF report profile"
         >
           {PROFILES.map((p) => (
@@ -70,19 +70,19 @@ export default function ExportReportActions() {
           ))}
         </select>
       </label>
-      <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap cursor-pointer">
+      <label className="inline-flex items-center gap-1.5 text-xs text-md-sys-on-surface-variant whitespace-nowrap cursor-pointer">
         <input
           type="checkbox"
           checked={branding}
           onChange={(e) => setQuery({ branding: e.target.checked ? 'true' : 'false' })}
-          className="rounded border-default"
+          className="rounded border-md-sys-outline-variant/40"
         />
         <span className="hidden md:inline">Agency branding</span>
       </label>
       <a
         href={pdfUrl}
         download
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-blue-600 hover:bg-blue-500 text-white transition-colors whitespace-nowrap"
+        className="press inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold bg-md-sys-primary hover:brightness-105 active:scale-[0.98] text-md-sys-on-primary transition-all duration-200 whitespace-nowrap shadow-sm"
       >
         <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         <span className="hidden sm:inline">{ve.downloadPdf}</span>

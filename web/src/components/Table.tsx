@@ -8,7 +8,7 @@ interface TableProps {
 }
 
 /**
- * Wrapper for consistent table styling: thead bg-brand-900, uppercase text-xs font-semibold text-muted-foreground.
+ * Wrapper for consistent table styling: thead bg-md-sys-surface-container-low, uppercase text-xs font-semibold text-md-sys-on-surface-variant.
  * Use `striped` on TableBody for alternating row backgrounds.
  */
 export default function Table({ children, className = '', wrapperClassName = '' }: TableProps) {
@@ -27,7 +27,7 @@ interface TableHeadProps {
 }
 
 export const TableHead = ({ children, sticky = false }: TableHeadProps) => (
-  <thead className={`bg-brand-900 text-muted-foreground uppercase text-xs font-semibold ${sticky ? 'sticky top-0 z-10' : ''}`}>
+  <thead className={`bg-md-sys-surface-container-low text-md-sys-on-surface-variant uppercase text-xs font-semibold tracking-wider [&_tr]:hover:bg-transparent border-b border-md-sys-outline-variant/40 ${sticky ? 'sticky top-0 z-10' : ''}`}>
     {children}
   </thead>
 );
@@ -66,15 +66,15 @@ interface TableBodyProps {
 }
 
 export const TableBody = ({ children, striped = false, className = '' }: TableBodyProps) => (
-  <tbody className={`divide-y divide-muted ${striped ? '[&>tr:nth-child(even)]:bg-brand-900/30' : ''} ${className}`.trim()}>
+  <tbody className={`divide-y divide-md-sys-outline-variant/30 ${striped ? '[&>tr:nth-child(even)]:bg-md-sys-surface-container-low/40' : ''} ${className}`.trim()}>
     {children}
   </tbody>
 );
 
 export const TableRow = ({ children, className = '' }: { children?: ReactNode; className?: string }) => (
-  <tr className={`hover:bg-brand-800/80 transition-colors ${className}`.trim()}>{children}</tr>
+  <tr className={`hover:bg-md-sys-surface-container-high/60 transition-colors duration-150 ${className}`.trim()}>{children}</tr>
 );
 
 export const TableCell = ({ children, className = '', title }: { children?: ReactNode; className?: string; title?: string }) => (
-  <td className={`px-4 py-3 ${className}`.trim()} title={title}>{children}</td>
+  <td className={`px-4 py-3 text-md-sys-on-surface ${className}`.trim()} title={title}>{children}</td>
 );

@@ -8,13 +8,13 @@ export default function CharBar({ len, max, colorFn }: CharBarProps) {
   const pct = Math.min(100, (len / max) * 100);
   return (
     <div className="mt-1 flex items-center gap-2">
-      <div className="flex-1 bg-track rounded-full h-1.5 overflow-hidden">
+      <div className="flex-1 bg-md-sys-surface-container-highest/40 rounded-full h-1.5 overflow-hidden">
         <div
           className={`h-1.5 rounded-full transition-all duration-500 ${colorFn(len)}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-xs text-muted-foreground tabular-nums w-10 text-right">{len}/{max}</span>
+      <span className="text-xs text-md-sys-on-surface-variant tabular-nums w-10 text-right">{len}/{max}</span>
     </div>
   );
 }

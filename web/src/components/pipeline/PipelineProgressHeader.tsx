@@ -78,7 +78,7 @@ export default function PipelineProgressHeader({
 
   return (
     <div
-      className={`rounded-lg border border-default bg-brand-900/80 ${compact ? 'px-2 py-2' : 'px-3 py-3'} ${className}`}
+      className={`rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/80 ${compact ? 'px-2 py-2' : 'px-3 py-3'} ${className}`}
       role="status"
       aria-live="polite"
     >
@@ -93,18 +93,18 @@ export default function PipelineProgressHeader({
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                     active
-                      ? 'bg-blue-500/20 text-blue-200 ring-1 ring-blue-500/40'
+                      ? 'bg-md-sys-primary-container text-md-sys-on-primary-container ring-1 ring-md-sys-primary/40'
                       : done
-                        ? 'bg-green-500/15 text-green-300'
+                        ? 'bg-md-sys-success-container text-md-sys-on-success-container'
                         : future
-                          ? 'text-muted-foreground/60'
-                          : 'text-muted-foreground'
+                          ? 'text-md-sys-on-surface-variant/60'
+                          : 'text-md-sys-on-surface-variant'
                   }`}
                 >
                   {PHASE_LABELS[phase]}
                 </span>
                 {i < PIPELINE_STEPPER_PHASES.length - 1 ? (
-                  <span className="text-muted-foreground/40 text-[10px]">›</span>
+                  <span className="text-md-sys-on-surface-variant/40 text-[10px]">›</span>
                 ) : null}
               </div>
             );
@@ -115,28 +115,28 @@ export default function PipelineProgressHeader({
       <div className={`flex flex-wrap items-center justify-between gap-2 ${compact ? 'text-[10px]' : 'text-xs'}`}>
         <div className="flex min-w-0 items-center gap-2">
           {isActive ? (
-            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-link" aria-hidden />
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-md-sys-primary" aria-hidden />
           ) : jobPaused ? (
-            <Pause className="h-3.5 w-3.5 shrink-0 text-amber-400" aria-hidden />
+            <Pause className="h-3.5 w-3.5 shrink-0 text-md-sys-warning" aria-hidden />
           ) : jobFinished && status === 'success' ? (
-            <Check className="h-3.5 w-3.5 shrink-0 text-green-500" aria-hidden />
+            <Check className="h-3.5 w-3.5 shrink-0 text-md-sys-success" aria-hidden />
           ) : null}
-          <span className="font-medium text-foreground">
+          <span className="font-medium text-md-sys-on-surface">
             {jobPaused ? 'Paused' : phaseLabel}
             {!compact ? ` · ${jobPaused ? 'Crawl saved — click Resume to continue' : stepText}` : `: ${jobPaused ? 'paused' : stepText}`}
           </span>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2 tabular-nums text-muted-foreground">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 tabular-nums text-md-sys-on-surface-variant">
           {countLabel ? <span>{countLabel}</span> : null}
           {eta.ratePerSec != null && latest.phase === 'crawl' ? (
             <span>{eta.ratePerSec.toFixed(1)} pg/s</span>
           ) : null}
           {eta.elapsedMs != null ? <span>elapsed {formatDurationMs(eta.elapsedMs)}</span> : null}
           {eta.remainingMs != null && !liveEstimate?.remainingMs ? (
-            <span className="text-foreground/80">step ETA {formatDurationMs(eta.remainingMs)}</span>
+            <span className="text-md-sys-on-surface/80">step ETA {formatDurationMs(eta.remainingMs)}</span>
           ) : null}
           {liveEstimate?.remainingMs != null && isActive ? (
-            <span className="font-medium text-foreground/90">
+            <span className="font-medium text-md-sys-on-surface/90">
               ~{formatDurationMs(liveEstimate.remainingMs)} left total
             </span>
           ) : null}
@@ -144,7 +144,7 @@ export default function PipelineProgressHeader({
             <button
               type="button"
               onClick={onPause}
-              className="ml-1 flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300 hover:bg-amber-500/20 active:opacity-70"
+              className="press ml-1 flex items-center gap-1 rounded-full border border-md-sys-warning/40 bg-md-sys-warning-container/30 px-2.5 py-0.5 text-[10px] font-medium text-md-sys-on-warning-container hover:bg-md-sys-warning-container/50 active:scale-[0.98] transition-all"
               title="Pause crawl and save frontier"
             >
               <Pause className="h-2.5 w-2.5" aria-hidden />
@@ -155,7 +155,7 @@ export default function PipelineProgressHeader({
             <button
               type="button"
               onClick={onResume}
-              className="ml-1 flex items-center gap-1 rounded border border-green-500/40 bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-300 hover:bg-green-500/20 active:opacity-70"
+              className="press ml-1 flex items-center gap-1 rounded-full border border-md-sys-success/40 bg-md-sys-success-container/30 px-2.5 py-0.5 text-[10px] font-medium text-md-sys-on-success-container hover:bg-md-sys-success-container/50 active:scale-[0.98] transition-all"
               title="Resume crawl from saved frontier"
             >
               <Play className="h-2.5 w-2.5" aria-hidden />
@@ -166,7 +166,7 @@ export default function PipelineProgressHeader({
       </div>
 
       {liveEstimate?.ratePerSec != null && isActive && latest.phase === 'crawl' && !compact ? (
-        <p className="mt-1.5 text-[10px] text-muted-foreground">
+        <p className="mt-1.5 text-[10px] text-md-sys-on-surface-variant">
           Avg {liveEstimate.ratePerSec.toFixed(2)} pages/s
           {liveEstimate.observedCrawlPages != null ? ` · ${liveEstimate.observedCrawlPages} crawled` : ''}
           {liveEstimate.totalMs != null ? ` · ~${formatDurationMs(liveEstimate.totalMs)} projected total` : ''}
@@ -174,20 +174,20 @@ export default function PipelineProgressHeader({
       ) : null}
 
       {hasBar && barPct != null ? (
-        <div className={`${compact ? 'mt-1.5' : 'mt-2'} h-1.5 overflow-hidden rounded-full bg-brand-700/80`}>
+        <div className={`${compact ? 'mt-1.5' : 'mt-2'} h-1.5 overflow-hidden rounded-full bg-md-sys-surface-container-high/80`}>
           <div
-            className="h-full rounded-full bg-gradient-to-r from-blue-600 to-sky-400 transition-[width] duration-300 ease-out"
+            className="h-full rounded-full bg-md-sys-primary transition-[width] duration-300 ease-out"
             style={{ width: `${barPct}%` }}
           />
         </div>
       ) : latest.step !== 'done' ? (
-        <div className={`${compact ? 'mt-1.5' : 'mt-2'} h-1.5 overflow-hidden rounded-full bg-brand-700/80`}>
-          <div className="h-full w-1/3 animate-pulse rounded-full bg-blue-500/50" />
+        <div className={`${compact ? 'mt-1.5' : 'mt-2'} h-1.5 overflow-hidden rounded-full bg-md-sys-surface-container-high/80`}>
+          <div className="h-full w-1/3 animate-pulse rounded-full bg-md-sys-primary/50" />
         </div>
       ) : null}
 
       {latest.url && !compact ? (
-        <p className="mt-2 truncate font-mono text-[11px] text-muted-foreground" title={latest.url}>
+        <p className="mt-2 truncate font-mono text-[11px] text-md-sys-on-surface-variant" title={latest.url}>
           {truncateUrl(latest.url)}
         </p>
       ) : null}

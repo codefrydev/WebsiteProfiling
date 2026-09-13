@@ -15,7 +15,7 @@ export default function InlineRing({ pct, color = '#3b82f6' }: InlineRingProps) 
           strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-xs font-bold text-bright">{Math.round(pct)}%</span>
+        <span className="text-xs font-bold text-md-sys-on-surface">{Math.round(pct)}%</span>
       </div>
     </div>
   );

@@ -45,8 +45,8 @@ export function SlicerBar({
   if (!editing && slicers.length === 0 && !crossFilter) return null;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap px-1 py-2 border-b border-default">
-      <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+    <div className="flex items-center gap-2 flex-wrap px-1 py-2 border-b border-md-sys-outline-variant/40">
+      <SlidersHorizontal className="h-3.5 w-3.5 text-md-sys-on-surface-variant shrink-0" />
       {slicers.map((s) => (
         <SlicerControl
           key={s.id}
@@ -67,7 +67,7 @@ export function SlicerBar({
             if (opt) onAddSlicer(opt.key, opt.datasetId, opt.label);
             e.currentTarget.value = '';
           }}
-          className="px-2 py-1 text-xs bg-brand-800 border border-dashed border-default rounded-lg text-muted-foreground hover:text-bright focus:outline-none cursor-pointer"
+          className="px-3 py-1 text-xs bg-md-sys-surface-container border border-dashed border-md-sys-outline-variant/40 rounded-full text-md-sys-on-surface-variant hover:text-md-sys-on-surface focus:outline-none cursor-pointer"
         >
           <option value="">+ Add slicer…</option>
           {dimOptions.map((o) => (
@@ -79,7 +79,7 @@ export function SlicerBar({
       {crossFilter && (
         <button
           onClick={onClearCrossFilter}
-          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-md-sys-warning-container/30 border border-md-sys-warning/30 text-md-sys-warning text-xs active:scale-[0.98] transition-all"
           title="Clear cross-filter"
         >
           {crossFilter.field} = {crossFilter.value}

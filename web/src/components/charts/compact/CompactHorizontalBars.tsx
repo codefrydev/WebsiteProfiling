@@ -17,10 +17,10 @@ export function CompactHorizontalBars({ items }: CompactHorizontalBarsProps) {
       {items.map((item) => (
         <li key={item.label}>
           <div className="mb-0.5 flex justify-between text-[9px] sm:text-[10px]">
-            <span className="text-muted-foreground">{item.label}</span>
-            <span className="font-semibold tabular-nums text-foreground">{item.value.toLocaleString()}</span>
+            <span className="text-md-sys-on-surface-variant">{item.label}</span>
+            <span className="font-semibold tabular-nums text-md-sys-on-surface">{item.value.toLocaleString()}</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-brand-700/60">
+          <div className="h-1.5 overflow-hidden rounded-full bg-md-sys-surface-container-high/60">
             <div
               className="h-full rounded-full"
               style={{

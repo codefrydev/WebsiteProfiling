@@ -62,6 +62,20 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 
 Schema changes: add an EF Core migration (`dotnet ef migrations add <Name>` in `services/Schema/src/Schema.Model/`).
 
+**UI Design — Google Material 3 (M3) Expressive Design (Strict Rules)**
+
+All frontend UI code in `web/` must strictly comply with **Google Material 3 Expressive Design**. Canonical rules: [.agents/rules/m3-expressive-design.md](.agents/rules/m3-expressive-design.md).
+
+| Element | M3 Expressive Rule | Allowed Tailwind / CSS |
+|---|---|---|
+| **Buttons** | **Must be pill-shaped (`rounded-full`)**. High emphasis uses Primary; medium emphasis uses Filled Tonal (`bg-secondary-container`). | `rounded-full px-5 py-2.5 font-medium transition-all active:scale-[0.98]` |
+| **Cards** | **Tonal Surface Container (`rounded-2xl` or `rounded-3xl`)**. Layer depth using `surface-container-*` hierarchy instead of arbitrary dark drop shadows. Mandatory `devData` wiring. | `bg-md-sys-surface-container rounded-2xl p-6 border border-md-sys-outline-variant/50` |
+| **Chips & Badges** | **Must be pill-shaped (`rounded-full`)**. Height 32dp (or compact 24dp), tonal background. | `rounded-full px-3.5 py-1 text-xs font-medium` |
+| **Typography** | Strictly follow M3 15-scale (Display, Headline, Title, Body, Label). Tighter tracking on display/headline; generous line-height on body. | M3 type scale roles (`Display`, `Headline`, `Title`, `Body`, `Label`) |
+| **Motion** | Responsive spring curves (`cubic-bezier(0.2, 0, 0, 1)`), tactile press downscale (`active:scale-[0.98]` / `.press`), staggered entrance lists. | `transition-all duration-200 ease-out active:scale-[0.98]` |
+| **Elevation** | Surface depth communicated through **tonal color shifts** (Surface Container Lowest to Highest), not heavy drop shadows. | `--elevation-1` to `--elevation-3` |
+| **Accessibility** | Minimum 48x48dp touch targets, ≥4.5:1 text contrast, visible 2px offset focus rings, full `prefers-reduced-motion` support. | `focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2` |
+
 **Charts — Chart.js + D3 (hybrid)**
 
 The web UI uses **both** Chart.js and D3.js. Pick the library that fits each chart; do not migrate everything to one stack.

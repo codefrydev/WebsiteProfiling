@@ -9,7 +9,7 @@ export default function LlmDisclosure({
   if (!llmMeta?.model) return null;
   const d = strings.components.llmDisclosure;
   return (
-    <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
+    <p className="text-xs text-md-sys-on-surface-variant flex flex-wrap items-center gap-2">
       <DataSourceBadge source="ai" />
       <span>
         {d.prefix} {llmMeta.model}

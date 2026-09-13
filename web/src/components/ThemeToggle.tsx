@@ -14,7 +14,7 @@ export default function ThemeToggle() {
 
   return (
     <div
-      className="flex items-center rounded-lg border border-default bg-brand-700/55 dark:bg-brand-700/35 p-0.5 gap-0.5"
+      className="flex items-center rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high p-1 gap-1"
       role="group"
       aria-label={strings.app.themeGroupLabel}
     >
@@ -30,10 +30,10 @@ export default function ThemeToggle() {
             title={label()}
             aria-label={label()}
             aria-pressed={active}
-            className={`press p-2 rounded-md transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
+            className={`press p-1.5 rounded-full transition-all duration-200 ease-out active:scale-[0.95] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-sys-primary ${
               active
-                ? 'bg-brand-700 text-bright shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-md-sys-secondary-container text-md-sys-on-secondary-container shadow-xs font-semibold'
+                : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-highest/60'
             }`}
           >
             <Icon

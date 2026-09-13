@@ -42,23 +42,23 @@ function PortfolioComparisonBar({
 
   return (
     <div className="space-y-2">
-      <div className="relative h-3 overflow-hidden rounded-full bg-brand-900 ring-1 ring-inset ring-default/80">
+      <div className="relative h-3 overflow-hidden rounded-full bg-md-sys-surface-container-low ring-1 ring-inset ring-md-sys-outline-variant/60">
         <div
-          className="absolute inset-y-0 left-0 rounded-full bg-link/25"
+          className="absolute inset-y-0 left-0 rounded-full bg-md-sys-primary/25"
           style={{ width: `${propertyPct}%` }}
         />
         <div
-          className="absolute top-0 bottom-0 w-0.5 bg-muted-foreground/70"
+          className="absolute top-0 bottom-0 w-0.5 bg-md-sys-on-surface-variant/70"
           style={{ left: `${medianPct}%` }}
           aria-hidden
         />
         <div
-          className="absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-blue-500 bg-blue-600 shadow-sm"
+          className="absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-md-sys-primary bg-md-sys-primary shadow-sm"
           style={{ left: `calc(${propertyPct}% - 8px)` }}
           aria-hidden
         />
       </div>
-      <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground tabular-nums">
+      <div className="flex items-center justify-between gap-2 text-[10px] text-md-sys-on-surface-variant tabular-nums">
         <span>0</span>
         <span>
           {format(vo.portfolioMedianMarker, { score: median })}
@@ -88,22 +88,22 @@ function StatusBanner({
     <div
       className={`flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
         isError
-          ? 'border-red-500/30 bg-red-500/10'
-          : 'border-amber-500/25 bg-amber-500/10'
+          ? 'border-md-sys-error/30 bg-md-sys-error-container/15'
+          : 'border-md-sys-warning/25 bg-md-sys-warning-container/15'
       }`}
     >
       <div className="flex items-start gap-2 min-w-0">
         <AlertCircle
-          className={`h-4 w-4 shrink-0 mt-0.5 ${isError ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}
+          className={`h-4 w-4 shrink-0 mt-0.5 ${isError ? 'text-md-sys-error' : 'text-md-sys-warning'}`}
           aria-hidden
         />
-        <p className={`text-sm ${isError ? 'text-red-800 dark:text-red-300' : 'text-amber-900 dark:text-amber-100'}`}>
+        <p className={`text-sm ${isError ? 'text-md-sys-error' : 'text-md-sys-warning'}`}>
           {message}
         </p>
       </div>
       <Link
         to={portfolioHref}
-        className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-default bg-brand-800 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-brand-700/60"
+        className="press inline-flex shrink-0 items-center gap-2 rounded-full border border-md-sys-outline-variant/50 bg-md-sys-surface-container px-3.5 py-1.5 text-xs font-medium text-md-sys-on-surface transition-all hover:bg-md-sys-surface-container-high active:scale-[0.98]"
       >
         <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
         {ctaLabel}
@@ -181,21 +181,21 @@ export function PortfolioBenchmarkCard({
   if (!isComparable && property == null && !benchmark.message) return null;
 
   return (
-    <Card shadow className="mb-8 overflow-hidden border border-default">
-      <div className="relative group/dev-card border-b border-muted/60 p-4 sm:p-5">
+    <Card shadow className="mb-8 overflow-hidden border border-md-sys-outline-variant/40">
+      <div className="relative group/dev-card border-b border-md-sys-outline-variant/50 p-4 sm:p-5">
         <DevCopyJsonButton data={headerDevData} />
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" aria-hidden />
-              <h2 className="text-lg font-bold text-bright">{vo.portfolioBenchmarkTitle}</h2>
+              <TrendingUp className="h-5 w-5 shrink-0 text-md-sys-primary" aria-hidden />
+              <h2 className="text-lg font-bold text-md-sys-on-surface">{vo.portfolioBenchmarkTitle}</h2>
               <HelpHint ariaLabel={vo.portfolioBenchmarkHelpTitle} side="bottom">
                 {vo.portfolioBenchmarkHelpBody}
               </HelpHint>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">{vo.portfolioBenchmarkSubtitle}</p>
+            <p className="mt-1 text-sm text-md-sys-on-surface-variant">{vo.portfolioBenchmarkSubtitle}</p>
             {isComparable && propertyCount != null && propertyCount > 1 ? (
-              <p className="mt-2 text-xs font-medium text-foreground">
+              <p className="mt-2 text-xs font-medium text-md-sys-on-surface">
                 {format(vo.portfolioPropertyCount, { count: propertyCount.toLocaleString() })}
               </p>
             ) : null}
@@ -203,7 +203,7 @@ export function PortfolioBenchmarkCard({
           <div className="flex flex-wrap gap-2 shrink-0">
             <Link
               to={portfolioHref}
-              className="inline-flex items-center gap-2 rounded-lg border border-default px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-brand-700/50"
+              className="press inline-flex items-center gap-2 rounded-full border border-md-sys-outline-variant/50 bg-md-sys-surface-container-high/40 px-4 py-2 text-sm font-medium text-md-sys-on-surface transition-all duration-200 hover:bg-md-sys-surface-container-highest active:scale-[0.98]"
             >
               <LayoutGrid className="h-4 w-4" aria-hidden />
               {vo.portfolioViewPortfolio}
@@ -211,7 +211,7 @@ export function PortfolioBenchmarkCard({
             {compareHref && reportCount > 1 ? (
               <Link
                 to={compareHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+                className="press inline-flex items-center gap-2 rounded-full bg-md-sys-primary px-5 py-2 text-sm font-medium text-md-sys-on-primary transition-all duration-200 hover:brightness-105 active:scale-[0.98] shadow-sm"
               >
                 <ArrowLeftRight className="h-4 w-4" aria-hidden />
                 {vo.portfolioCompareRuns}
@@ -245,16 +245,16 @@ export function PortfolioBenchmarkCard({
                 ) : null}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-default/80 bg-brand-900/40 px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="rounded-lg border border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/40 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant">
                     {vo.portfolioMedianScore}
                   </p>
                   <p className={`mt-1 text-2xl font-bold tabular-nums ${portfolioMedianClassName(median)}`}>
                     {median}
                   </p>
                 </div>
-                <div className="rounded-lg border border-default/80 bg-brand-900/40 px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="rounded-lg border border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/40 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant">
                     {vo.portfolioDelta}
                   </p>
                   <p className={`mt-1 text-2xl font-bold tabular-nums ${portfolioDeltaClassName(delta)}`}>
@@ -269,7 +269,7 @@ export function PortfolioBenchmarkCard({
             <CategoryScoreGauge name={vo.portfolioNoBenchmarkLabel} score={property} size="md" />
             <Link
               to={`#${categoriesAnchorId}`}
-              className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline"
+              className="inline-flex items-center gap-1 text-xs font-medium text-md-sys-primary hover:underline"
             >
               {vo.portfolioScrollCategories}
               <ChevronRight className="h-3.5 w-3.5" />

@@ -61,10 +61,10 @@ function wrapClass(span: 1 | 2) {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-default bg-brand-900 px-3 py-2 text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
+  'w-full rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface focus:border-md-sys-primary focus:outline-none focus:ring-2 focus:ring-md-sys-primary/20 transition-colors';
 
 const chipClass =
-  'inline-flex items-center gap-1 rounded-full border border-default bg-brand-900/50 px-2.5 py-1 text-xs text-foreground';
+  'inline-flex items-center gap-1 rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-2.5 py-1 text-xs text-md-sys-on-surface';
 
 /** One draggable row in a SortableSelectorList. */
 function SortableSelectorRow({
@@ -85,24 +85,24 @@ function SortableSelectorRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 rounded-lg border border-default bg-brand-900/50 px-2 py-1.5"
+      className="flex items-center gap-2 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-2.5 py-1.5"
     >
       <button
         type="button"
         {...attributes}
         {...listeners}
         disabled={disabled}
-        className="shrink-0 cursor-grab text-muted-foreground hover:text-foreground disabled:cursor-not-allowed"
+        className="shrink-0 cursor-grab text-md-sys-on-surface-variant hover:text-md-sys-on-surface disabled:cursor-not-allowed press"
         aria-label="Drag to reorder"
       >
         <GripVertical className="h-3.5 w-3.5" />
       </button>
-      <span className="min-w-0 flex-1 truncate font-mono text-sm text-foreground">{value}</span>
+      <span className="min-w-0 flex-1 truncate font-mono text-sm text-md-sys-on-surface">{value}</span>
       <button
         type="button"
         onClick={onRemove}
         disabled={disabled}
-        className="shrink-0 text-muted-foreground hover:text-red-500 disabled:cursor-not-allowed"
+        className="shrink-0 rounded-full p-0.5 text-md-sys-on-surface-variant hover:text-md-sys-error hover:bg-md-sys-error-container/20 disabled:cursor-not-allowed press transition-colors"
         aria-label={`Remove ${value}`}
       >
         <X className="h-3.5 w-3.5" />
@@ -199,7 +199,7 @@ function ChipListInput({
               type="button"
               onClick={() => onChange(items.filter((_, idx) => idx !== i))}
               disabled={disabled}
-              className="text-muted-foreground hover:text-red-500 disabled:cursor-not-allowed"
+              className="shrink-0 rounded-full p-0.5 text-md-sys-on-surface-variant hover:text-md-sys-error hover:bg-md-sys-error-container/20 disabled:cursor-not-allowed press transition-colors"
               aria-label={`Remove ${item}`}
             >
               <X className="h-3 w-3" />
@@ -232,16 +232,16 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
 
   const labelBlock = (
     <div className="mb-2">
-      <label htmlFor={id} className="block text-xs font-medium text-foreground">
+      <label htmlFor={id} className="block text-xs font-medium text-md-sys-on-surface">
         {f.label}
-        {f.required ? <span className="ml-0.5 text-red-600 dark:text-red-400" aria-hidden>*</span> : null}
+        {f.required ? <span className="ml-0.5 text-md-sys-error" aria-hidden>*</span> : null}
       </label>
-      {f.help ? <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{f.help}</p> : null}
+      {f.help ? <p className="mt-0.5 text-xs leading-relaxed text-md-sys-on-surface-variant">{f.help}</p> : null}
     </div>
   );
 
   const helpBelow = f.help ? (
-    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{f.help}</p>
+    <p className="mt-1 text-xs leading-relaxed text-md-sys-on-surface-variant">{f.help}</p>
   ) : null;
 
   if (f.type === 'url') {
@@ -266,7 +266,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
     const strVal = value == null ? String(f.defaultValue ?? '') : String(value);
     return (
       <div className={outerClass}>
-        <label htmlFor={id} className="mb-1 block text-xs font-medium text-foreground">
+        <label htmlFor={id} className="mb-1 block text-xs font-medium text-md-sys-on-surface">
           {f.label}
         </label>
         <select
@@ -294,7 +294,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
 
     return (
       <div className={outerClass}>
-        <p className="mb-2 text-xs font-medium text-foreground">{f.label}</p>
+        <p className="mb-2 text-xs font-medium text-md-sys-on-surface">{f.label}</p>
         <div className={optionGridClass} role="radiogroup" aria-label={f.label}>
           {options.map((opt) => {
             const optId = `${id}-${opt.value}`;
@@ -302,7 +302,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
               <label
                 key={opt.value}
                 htmlFor={optId}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-default bg-brand-900/50 px-3 py-2"
+                className="flex cursor-pointer items-center gap-2 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-3 py-2 transition-colors hover:bg-md-sys-surface-container-high"
               >
                 <input
                   id={optId}
@@ -311,9 +311,9 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
                   checked={strVal === opt.value}
                   disabled={disabled}
                   onChange={() => onChange(opt.value)}
-                  className="h-4 w-4 border-default text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 border-md-sys-outline-variant/40 text-md-sys-primary accent-md-sys-primary focus:ring-md-sys-primary/40"
                 />
-                <span className="text-sm text-foreground">{opt.label}</span>
+                <span className="text-sm text-md-sys-on-surface">{opt.label}</span>
               </label>
             );
           })}
@@ -343,7 +343,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
 
     return (
       <div className={outerClass}>
-        <p className="mb-2 text-xs font-medium text-foreground">{f.label}</p>
+        <p className="mb-2 text-xs font-medium text-md-sys-on-surface">{f.label}</p>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {options.map((opt) => {
             const optId = `${id}-${opt.value}`;
@@ -351,7 +351,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
               <label
                 key={opt.value}
                 htmlFor={optId}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-default bg-brand-900/50 px-3 py-2"
+                className="flex cursor-pointer items-center gap-2 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-3 py-2 transition-colors hover:bg-md-sys-surface-container-high"
               >
                 <input
                   id={optId}
@@ -359,9 +359,9 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
                   checked={selected.has(opt.value)}
                   disabled={disabled}
                   onChange={(e) => toggle(opt.value, e.target.checked)}
-                  className="h-4 w-4 rounded border-default text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-md-sys-outline-variant/40 text-md-sys-primary accent-md-sys-primary focus:ring-md-sys-primary/40"
                 />
-                <span className="text-sm text-foreground">{opt.label}</span>
+                <span className="text-sm text-md-sys-on-surface">{opt.label}</span>
               </label>
             );
           })}
@@ -414,7 +414,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
 
     return (
       <div className={outerClass}>
-        <div className="rounded-lg border border-default bg-brand-900/50 px-4 py-3">
+        <div className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-4 py-3">
           {labelBlock}
           <DraftInput
             id={id}
@@ -427,13 +427,13 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
             className={`${inputClass} font-mono`}
           />
           {isMasked ? (
-            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-green-700 dark:text-green-400">
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-md-sys-success">
               <span className="inline-flex items-center gap-1.5">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
                 Key saved ({savedLabel}). Leave blank to keep it.
               </span>
               {savedAtLabel ? (
-                <span className="text-muted-foreground">Last saved {savedAtLabel}</span>
+                <span className="text-md-sys-on-surface-variant">Last saved {savedAtLabel}</span>
               ) : null}
             </p>
           ) : null}
@@ -449,7 +449,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
         <div className={outerClass}>
           <label
             htmlFor={id}
-            className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-default bg-brand-900/50 px-3 py-2.5"
+            className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-3 py-2.5 transition-colors hover:bg-md-sys-surface-container-high"
           >
             <input
               id={id}
@@ -457,11 +457,11 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
               checked={checked}
               disabled={disabled}
               onChange={(e) => onChange(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-default text-blue-600 focus:ring-blue-500"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-md-sys-outline-variant/40 text-md-sys-primary accent-md-sys-primary focus:ring-md-sys-primary/40"
             />
             <span className="min-w-0">
-              <span className="block text-sm font-medium text-foreground">{f.label}</span>
-              <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{f.help}</span>
+              <span className="block text-sm font-medium text-md-sys-on-surface">{f.label}</span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-md-sys-on-surface-variant">{f.help}</span>
             </span>
           </label>
         </div>
@@ -471,7 +471,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
       <div className={outerClass}>
         <label
           htmlFor={id}
-          className="flex cursor-pointer items-center gap-2 rounded-lg border border-default bg-brand-900/50 px-3 py-2"
+          className="flex cursor-pointer items-center gap-2 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-3 py-2 transition-colors hover:bg-md-sys-surface-container-high"
         >
           <input
             id={id}
@@ -479,9 +479,9 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
             checked={checked}
             disabled={disabled}
             onChange={(e) => onChange(e.target.checked)}
-            className="h-4 w-4 rounded border-default text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-md-sys-outline-variant/40 text-md-sys-primary accent-md-sys-primary focus:ring-md-sys-primary/40"
           />
-          <span className="text-sm text-foreground">{f.label}</span>
+          <span className="text-sm text-md-sys-on-surface">{f.label}</span>
         </label>
       </div>
     );
@@ -501,7 +501,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
         {f.help ? (
           labelBlock
         ) : (
-          <p className="mb-2 text-xs font-medium text-foreground">{f.label}</p>
+          <p className="mb-2 text-xs font-medium text-md-sys-on-surface">{f.label}</p>
         )}
         <div className={optionGridClass} role="radiogroup" aria-label={f.label}>
           {options.map((opt) => {
@@ -510,7 +510,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
               <label
                 key={opt.value}
                 htmlFor={optId}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-default bg-brand-900/50 px-3 py-2"
+                className="flex cursor-pointer items-center gap-2 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-3 py-2 transition-colors hover:bg-md-sys-surface-container-high"
               >
                 <input
                   id={optId}
@@ -519,9 +519,9 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
                   checked={strVal === opt.value}
                   disabled={disabled}
                   onChange={() => onChange(opt.value)}
-                  className="h-4 w-4 border-default text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 border-md-sys-outline-variant/40 text-md-sys-primary accent-md-sys-primary focus:ring-md-sys-primary/40"
                 />
-                <span className="text-sm text-foreground">{opt.label}</span>
+                <span className="text-sm text-md-sys-on-surface">{opt.label}</span>
               </label>
             );
           })}
@@ -553,13 +553,13 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
   if (isNumeric && f.help) {
     return (
       <div className={outerClass}>
-        <div className="rounded-lg border border-default bg-brand-900/50 px-4 py-3">
+        <div className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-4 py-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 flex-1">
-              <label htmlFor={id} className="block text-sm font-medium text-foreground">
+              <label htmlFor={id} className="block text-sm font-medium text-md-sys-on-surface">
                 {f.label}
               </label>
-              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{f.help}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-md-sys-on-surface-variant">{f.help}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2 sm:pl-4">
               <DraftInput
@@ -574,7 +574,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
                 className={`${inputClass} w-full min-w-[5.5rem] max-w-[7rem] font-mono tabular-nums sm:text-right`}
               />
               {f.unit ? (
-                <span className="text-xs text-muted-foreground">{f.unit}</span>
+                <span className="text-xs text-md-sys-on-surface-variant">{f.unit}</span>
               ) : null}
             </div>
           </div>
@@ -588,9 +588,9 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
       {f.help ? (
         labelBlock
       ) : (
-        <label htmlFor={id} className="mb-1 block text-xs font-medium text-foreground">
+        <label htmlFor={id} className="mb-1 block text-xs font-medium text-md-sys-on-surface">
           {f.label}
-          {f.required ? <span className="ml-0.5 text-red-600 dark:text-red-400" aria-hidden>*</span> : null}
+          {f.required ? <span className="ml-0.5 text-md-sys-error" aria-hidden>*</span> : null}
         </label>
       )}
       <DraftInput

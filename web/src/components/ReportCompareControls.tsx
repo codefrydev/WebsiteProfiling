@@ -49,14 +49,14 @@ export default function ReportCompareControls() {
 
   if (reportList.length < 2) {
     return (
-      <p className="text-sm text-muted-foreground">{vc.needTwoReports}</p>
+      <p className="text-sm text-md-sys-on-surface-variant">{vc.needTwoReports}</p>
     );
   }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="compare-view-report" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <label htmlFor="compare-view-report" className="text-xs font-semibold text-md-sys-on-surface-variant uppercase tracking-wider">
           {vc.newerLabel}
         </label>
         <select
@@ -67,7 +67,7 @@ export default function ReportCompareControls() {
             setSelectedReportId(v === '' ? null : Number(v));
           }}
           disabled={loading || !!error}
-          className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-foreground focus:border-blue-500 outline-none w-full"
+          className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg px-3 py-2 text-sm text-md-sys-on-surface focus:border-md-sys-primary outline-none w-full"
           title={s.titleLoadReport}
         >
           <option value="">{s.latestOption}</option>
@@ -79,7 +79,7 @@ export default function ReportCompareControls() {
         </select>
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="compare-view-baseline" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <label htmlFor="compare-view-baseline" className="text-xs font-semibold text-md-sys-on-surface-variant uppercase tracking-wider">
           {vc.baselineLabel}
         </label>
         <select
@@ -90,7 +90,7 @@ export default function ReportCompareControls() {
             setCompareReportId(v === '' ? null : Number(v));
           }}
           disabled={loading || !!error}
-          className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-foreground focus:border-blue-500 outline-none w-full"
+          className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg px-3 py-2 text-sm text-md-sys-on-surface focus:border-md-sys-primary outline-none w-full"
           title={s.titleCompareBaseline}
         >
           <option value="">{s.noneOption}</option>

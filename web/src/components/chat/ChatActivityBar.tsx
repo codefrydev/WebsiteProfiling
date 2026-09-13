@@ -15,7 +15,7 @@ export default function ChatActivityBar({ busy, statusText, elapsedSec }: ChatAc
 
   return (
     <div
-      className="mx-auto flex w-full max-w-3xl items-center justify-center gap-2 px-4 pb-1 text-xs text-muted-foreground"
+      className="mx-auto flex w-full max-w-3xl items-center justify-center gap-2 px-4 pb-1 text-xs text-md-sys-on-surface-variant"
       role="status"
       aria-live="polite"
     >

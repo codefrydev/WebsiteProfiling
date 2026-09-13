@@ -26,13 +26,13 @@ export default function WriteSuggestedStarters({ onSelect, disabled }: WriteSugg
               type="button"
               disabled={disabled}
               onClick={() => onSelect(starter.keyword)}
-              className="group flex items-start gap-3 rounded-2xl border border-default/50 bg-[var(--chat-surface)]/25 px-4 py-3 text-left transition-all hover:border-default hover:bg-[var(--chat-surface)]/60 disabled:opacity-40"
+              className="group flex items-start gap-3 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container/25 px-4 py-3 text-left transition-all hover:border-md-sys-outline-variant/40 hover:bg-md-sys-surface-container/60 disabled:opacity-40"
             >
               <Icon
-                className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
+                className="mt-0.5 h-4 w-4 shrink-0 text-md-sys-on-surface-variant transition-colors group-hover:text-md-sys-on-surface"
                 aria-hidden
               />
-              <span className="text-[13px] leading-snug text-foreground/85 group-hover:text-foreground">
+              <span className="text-[13px] leading-snug text-md-sys-on-surface/85 group-hover:text-md-sys-on-surface">
                 {starter.label}
               </span>
             </button>

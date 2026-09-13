@@ -56,9 +56,9 @@ function TopSummaryTable({
 }) {
   return (
     <Card devData={devData}>
-      <h2 className="text-sm font-bold text-foreground mb-1">{title}</h2>
-      <p className="text-xs text-muted-foreground mb-4">{hint}</p>
-      <div className="border border-default rounded-xl overflow-hidden">
+      <h2 className="text-sm font-bold text-md-sys-on-surface mb-1">{title}</h2>
+      <p className="text-xs text-md-sys-on-surface-variant mb-4">{hint}</p>
+      <div className="overflow-x-auto">
         <Table>
           <TableHead>
             <tr>
@@ -78,14 +78,14 @@ function TopSummaryTable({
                     />
                   </div>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{row.count.toLocaleString()}</TableCell>
+                <TableCell className="text-md-sys-on-surface-variant">{row.count.toLocaleString()}</TableCell>
                 <TableCell>
                   <ul className="space-y-1">
                     {row.sample_urls.map((url) => (
                       <li key={url}>
                         <Link
                           to={linksInspectHref(url, 'analysis', trailingQuery.replace(/^\?/, ''))}
-                          className="text-link hover:underline font-mono text-xs break-all"
+                          className="text-md-sys-primary hover:underline font-mono text-xs break-all"
                         >
                           {url}
                         </Link>
@@ -265,9 +265,9 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
       <PageLayout className="space-y-6">
         <PageHeader title={vj.title} subtitle={vj.subtitle} />
         <Card className="text-center py-12">
-          <Bug className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-          <h2 className="text-lg font-semibold text-foreground mb-2">{vj.emptyStaticTitle}</h2>
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-6">{vj.emptyStaticBody}</p>
+          <Bug className="h-12 w-12 text-md-sys-on-surface-variant mx-auto mb-4 opacity-50" />
+          <h2 className="text-lg font-semibold text-md-sys-on-surface mb-2">{vj.emptyStaticTitle}</h2>
+          <p className="text-sm text-md-sys-on-surface-variant max-w-lg mx-auto mb-6">{vj.emptyStaticBody}</p>
           <Link to="/pipeline">
             <Button variant="primary">{vj.runAudit}</Button>
           </Link>
@@ -281,9 +281,9 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
       <PageLayout className="space-y-6">
         <PageHeader title={vj.title} subtitle={vj.subtitle} />
         <Card className="text-center py-12">
-          <Bug className="h-12 w-12 text-emerald-600 dark:text-emerald-400 mx-auto mb-4 opacity-80" />
-          <h2 className="text-lg font-semibold text-foreground mb-2">{vj.emptyCleanTitle}</h2>
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto">{vj.emptyCleanBody}</p>
+          <Bug className="h-12 w-12 text-md-sys-success mx-auto mb-4 opacity-80" />
+          <h2 className="text-lg font-semibold text-md-sys-on-surface mb-2">{vj.emptyCleanTitle}</h2>
+          <p className="text-sm text-md-sys-on-surface-variant max-w-lg mx-auto">{vj.emptyCleanBody}</p>
         </Card>
       </PageLayout>
     );
@@ -316,27 +316,29 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'summary' && (
         <ViewTabPanel idPrefix="javascript-errors" tabId="summary" className="space-y-6">
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          <div className="relative group/dev-card">
             <DevCopyJsonButton data={summaryStatsDevData} />
-            <StatCard
-              label={vj.consolePagesCard}
-              value={formatPagesAffectedStat(stats.pagesWithConsole, stats.totalPages)}
-              hint={metricHelpHint('views.jsErrors.consolePages')}
-            />
-            <StatCard label={vj.consoleTotalCard} value={stats.totalConsole.toLocaleString()} hint={metricHelpHint('views.jsErrors.consoleTotal')} />
-            <StatCard
-              label={vj.exceptionPagesCard}
-              value={formatPagesAffectedStat(stats.pagesWithExceptions, stats.totalPages)}
-              hint={metricHelpHint('views.jsErrors.exceptionPages')}
-            />
-            <StatCard label={vj.exceptionTotalCard} value={stats.totalExceptions.toLocaleString()} hint={metricHelpHint('views.jsErrors.exceptionTotal')} />
-            <StatCard
-              label={vj.failedPagesCard}
-              value={formatPagesAffectedStat(stats.pagesWithFailedRequests, stats.totalPages)}
-              hint={metricHelpHint('views.jsErrors.failedPages')}
-            />
-            <StatCard label={vj.failedTotalCard} value={stats.totalFailedRequests.toLocaleString()} hint={metricHelpHint('views.jsErrors.failedTotal')} />
-            <StatCard label={vj.renderMode} value={<span className="capitalize">{scopeInfo.renderMode}</span>} hint={metricHelpHint('views.jsErrors.renderMode')} />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+              <StatCard
+                label={vj.consolePagesCard}
+                value={formatPagesAffectedStat(stats.pagesWithConsole, stats.totalPages)}
+                hint={metricHelpHint('views.jsErrors.consolePages')}
+              />
+              <StatCard label={vj.consoleTotalCard} value={stats.totalConsole.toLocaleString()} hint={metricHelpHint('views.jsErrors.consoleTotal')} />
+              <StatCard
+                label={vj.exceptionPagesCard}
+                value={formatPagesAffectedStat(stats.pagesWithExceptions, stats.totalPages)}
+                hint={metricHelpHint('views.jsErrors.exceptionPages')}
+              />
+              <StatCard label={vj.exceptionTotalCard} value={stats.totalExceptions.toLocaleString()} hint={metricHelpHint('views.jsErrors.exceptionTotal')} />
+              <StatCard
+                label={vj.failedPagesCard}
+                value={formatPagesAffectedStat(stats.pagesWithFailedRequests, stats.totalPages)}
+                hint={metricHelpHint('views.jsErrors.failedPages')}
+              />
+              <StatCard label={vj.failedTotalCard} value={stats.totalFailedRequests.toLocaleString()} hint={metricHelpHint('views.jsErrors.failedTotal')} />
+              <StatCard label={vj.renderMode} value={<span className="capitalize">{scopeInfo.renderMode}</span>} hint={metricHelpHint('views.jsErrors.renderMode')} />
+            </div>
           </div>
 
           {topMessages.length > 0 ? (
@@ -362,7 +364,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
           ) : null}
 
           {topMessages.length === 0 && topExceptions.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground text-sm">{vj.emptyFiltered}</Card>
+            <Card className="p-8 text-center text-md-sys-on-surface-variant text-sm">{vj.emptyFiltered}</Card>
           ) : null}
         </ViewTabPanel>
       )}
@@ -372,9 +374,9 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
           <Card devData={errorsTableDevData}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div>
-                <h2 className="text-sm font-bold text-foreground">{vj.allErrors}</h2>
-                <p className="text-xs text-muted-foreground">{vj.allErrorsHint}</p>
-                <p className="text-xs text-muted-foreground mt-1">{vj.consoleLevelsNote}</p>
+                <h2 className="text-sm font-bold text-md-sys-on-surface">{vj.allErrors}</h2>
+                <p className="text-xs text-md-sys-on-surface-variant">{vj.allErrorsHint}</p>
+                <p className="text-xs text-md-sys-on-surface-variant mt-1">{vj.consoleLevelsNote}</p>
               </div>
               <Select
                 value={typeFilter}
@@ -389,10 +391,10 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
             </div>
 
             {filteredRows.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-6 text-center">{vj.emptyFiltered}</p>
+              <p className="text-sm text-md-sys-on-surface-variant py-6 text-center">{vj.emptyFiltered}</p>
             ) : (
               <>
-                <div className="border border-default rounded-xl overflow-hidden">
+                <div className="border border-md-sys-outline-variant/40 rounded-xl overflow-hidden">
                   <Table className="min-w-[720px]">
                     <TableHead>
                       <tr>
@@ -415,7 +417,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                                 {canExpand ? (
                                   <button
                                     type="button"
-                                    className="p-1 text-muted-foreground hover:text-foreground"
+                                    className="p-1 text-md-sys-on-surface-variant hover:text-md-sys-on-surface"
                                     aria-expanded={expanded}
                                     aria-label={expanded ? vj.collapseStack : vj.expandStack}
                                     onClick={() => setExpandedRow(expanded ? null : row.id)}
@@ -433,13 +435,13 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                                   href={row.url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="text-link hover:underline inline-flex items-start gap-1"
+                                  className="text-md-sys-primary hover:underline inline-flex items-start gap-1"
                                 >
                                   {row.url}
                                   <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
                                 </a>
                               </TableCell>
-                              <TableCell className="text-xs text-muted-foreground">
+                              <TableCell className="text-xs text-md-sys-on-surface-variant">
                                 {typeLabel(row.type, vj)}
                               </TableCell>
                               <TableCell className="font-mono text-xs break-all">
@@ -448,22 +450,22 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                                   <AiSuggestionButton request={buildBrowserErrorContext(row)} />
                                 </div>
                               </TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground break-all">
+                              <TableCell className="font-mono text-xs text-md-sys-on-surface-variant break-all">
                                 {formatBrowserErrorSource(row.source_url, row.line)}
                               </TableCell>
                               <TableCell>
                                 <Link
                                   to={linksInspectHref(row.url, 'analysis', trailingQuery.replace(/^\?/, ''))}
-                                  className="text-xs text-link hover:underline whitespace-nowrap"
+                                  className="text-xs text-md-sys-primary hover:underline whitespace-nowrap"
                                 >
                                   {vj.viewDetails}
                                 </Link>
                               </TableCell>
                             </TableRow>
                             {expanded && row.stack ? (
-                              <tr key={`${row.id}-stack`} className="border-b border-muted/60 bg-brand-900/50">
+                              <tr key={`${row.id}-stack`} className="border-b border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/50">
                                 <td colSpan={6} className="px-4 py-3">
-                                  <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-all">
+                                  <pre className="text-xs font-mono text-md-sys-on-surface-variant whitespace-pre-wrap break-all">
                                     {row.stack}
                                   </pre>
                                 </td>
@@ -476,14 +478,14 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                   </Table>
                 </div>
                 {filteredRowsTotal > 0 ? (
-                  <div className="mt-4 pt-4 border-t border-muted flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-                    <div className="text-sm text-muted-foreground space-y-0.5">
+                  <div className="mt-4 pt-4 border-t border-md-sys-outline-variant/40 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+                    <div className="text-sm text-md-sys-on-surface-variant space-y-0.5">
                       <div>{format(vjp.showingSlice, { from: errorsFrom, to: errorsTo, total: filteredRowsTotal })}</div>
                       <div className="text-xs">
                         {vjp.pageOf}{' '}
-                        <span className="font-bold text-bright tabular-nums">{safeErrorsPage}</span> {vjp.of}{' '}
-                        <span className="font-bold text-bright tabular-nums">{errorsTotalPages}</span>
-                        <span className="text-muted-foreground ml-2">
+                        <span className="font-bold text-md-sys-on-surface tabular-nums">{safeErrorsPage}</span> {vjp.of}{' '}
+                        <span className="font-bold text-md-sys-on-surface tabular-nums">{errorsTotalPages}</span>
+                        <span className="text-md-sys-on-surface-variant ml-2">
                           ({format(vjp.rowsPerPage, { n: PAGE_SIZE })})
                         </span>
                       </div>
@@ -497,7 +499,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                             setExpandedRow(null);
                           }}
                           disabled={safeErrorsPage <= 1}
-                          className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                          className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
                         >
                           {vjp.previous}
                         </Button>
@@ -508,7 +510,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                             setExpandedRow(null);
                           }}
                           disabled={safeErrorsPage >= errorsTotalPages}
-                          className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                          className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
                         >
                           {vjp.next}
                         </Button>

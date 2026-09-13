@@ -22,25 +22,25 @@ export default function LandingHero() {
         <div className={landingSectionSplitClass}>
           <div className={`${landingSplitCopyClass} max-w-xl flex flex-col gap-8 @md:gap-10 @md:pr-8 @lg:pr-12`}>
             <div className="space-y-5 @md:space-y-6">
-              <p className="text-sm leading-relaxed text-muted-foreground">{vl.heroEyebrow}</p>
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground @sm:text-4xl @md:text-[2.5rem] @md:leading-[1.25]">
+              <p className="text-sm leading-relaxed text-md-sys-on-surface-variant">{vl.heroEyebrow}</p>
+              <h1 className="text-3xl font-semibold tracking-tight text-md-sys-on-surface @sm:text-4xl @md:text-[2.5rem] @md:leading-[1.25]">
                 {vl.heroTitle}
               </h1>
-              <p className="max-w-md text-base leading-7 text-muted-foreground @md:text-lg @md:leading-8">
+              <p className="max-w-md text-base leading-7 text-md-sys-on-surface-variant @md:text-lg @md:leading-8">
                 {vl.heroSubtitle}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
               <Link
                 to="/pipeline"
-                className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+                className="press inline-flex items-center gap-1.5 rounded-full bg-md-sys-primary px-5 py-2.5 text-sm font-semibold text-md-sys-on-primary transition-all duration-200 hover:brightness-105 active:scale-[0.98] shadow-sm"
               >
                 {vl.ctaRunAudit}
                 <ChevronRight className="h-4 w-4" aria-hidden />
               </Link>
               <Link
                 to="/home"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="text-sm font-medium text-md-sys-on-surface-variant transition-colors hover:text-md-sys-on-surface"
               >
                 {vl.ctaDashboard}
               </Link>

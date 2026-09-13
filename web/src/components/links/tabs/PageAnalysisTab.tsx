@@ -67,10 +67,10 @@ function NerBlock({ nlp }: NerBlockProps) {
   const labels = Array.isArray(nlp.top_entity_labels) ? nlp.top_entity_labels : [];
   if (count == null && labels.length === 0) return null;
   return (
-    <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
-      <div className="text-muted-foreground mb-1">{p.namedEntities}</div>
+    <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg p-3 sm:col-span-2">
+      <div className="text-md-sys-on-surface-variant mb-1">{p.namedEntities}</div>
       {count != null && (
-        <div className="text-foreground mb-2">{format(p.totalEntities, { count: Number(count).toLocaleString() })}</div>
+        <div className="text-md-sys-on-surface mb-2">{format(p.totalEntities, { count: Number(count).toLocaleString() })}</div>
       )}
       {labels.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -80,7 +80,7 @@ function NerBlock({ nlp }: NerBlockProps) {
             return (
               <span
                 key={`${String(label)}-${i}`}
-                className="text-[11px] font-mono px-2 py-0.5 rounded bg-violet-200/70 border border-violet-400/35 text-violet-950 dark:bg-violet-950/50 dark:border-violet-500/20 dark:text-violet-200"
+                className="text-[11px] font-mono px-2 py-0.5 rounded bg-md-sys-tertiary-container/30 border border-md-sys-tertiary/35 text-md-sys-on-tertiary-container dark:text-md-sys-tertiary"
               >
                 {String(label)}
                 {n != null ? `: ${n}` : ''}
@@ -124,23 +124,23 @@ function ResourceSection({ title, urls, pageUrl }: ResourceSectionProps) {
   if (list.length === 0) return null;
 
   return (
-    <div className="border border-default rounded-xl overflow-hidden bg-brand-900">
+    <div className="border border-md-sys-outline-variant/40 rounded-xl overflow-hidden bg-md-sys-surface-container-low">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-2 px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-brand-800/80"
+        className="w-full flex items-center gap-2 px-4 py-3 text-left text-sm font-medium text-md-sys-on-surface hover:bg-md-sys-surface-container/80"
       >
         {open ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
         <span>{title}</span>
-        <span className="text-xs text-muted-foreground ml-auto font-mono">{list.length}</span>
+        <span className="text-xs text-md-sys-on-surface-variant ml-auto font-mono">{list.length}</span>
       </button>
       {open && (
-        <div className="px-4 pb-3 border-t border-muted max-h-64 overflow-y-auto">
+        <div className="px-4 pb-3 border-t border-md-sys-outline-variant/40 max-h-64 overflow-y-auto">
           <ul className="mt-2 space-y-1">
             {shown.map((u, i) => {
               const resolved = resolveResourceUrl(u, pageUrl) || u;
               return (
-                <li key={`${u}-${i}`} className="text-xs font-mono text-link/90 break-all">
+                <li key={`${u}-${i}`} className="text-xs font-mono text-md-sys-primary/90 break-all">
                   <a href={resolved} target="_blank" rel="noreferrer" className="hover:underline">
                     {resolved}
                   </a>
@@ -152,7 +152,7 @@ function ResourceSection({ title, urls, pageUrl }: ResourceSectionProps) {
             <button
               type="button"
               onClick={() => setShowAll(!showAll)}
-              className="mt-2 text-xs text-muted-foreground hover:text-bright"
+              className="mt-2 text-xs text-md-sys-on-surface-variant hover:text-md-sys-on-surface"
             >
               {showAll ? p.showLess : format(p.showAll, { count: list.length })}
             </button>
@@ -179,46 +179,46 @@ function InsightsPanel({
   const p = strings.components.linkTabs.pageAnalysis;
 
   if (!hasIntelligence) {
-    return <p className="text-sm text-muted-foreground">{p.noInsights}</p>;
+    return <p className="text-sm text-md-sys-on-surface-variant">{p.noInsights}</p>;
   }
 
   return (
-    <div className="border border-violet-400/30 dark:border-violet-500/20 rounded-xl p-4 bg-violet-100/45 dark:bg-violet-950/20 space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-foreground">
+    <div className="border border-md-sys-tertiary/30 rounded-xl p-4 bg-md-sys-tertiary-container/10 space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-md-sys-on-surface">
         {link.duplicate_group_id && (
-          <div className="bg-brand-900 border border-default rounded-lg p-3">
-            <div className="text-muted-foreground mb-1">{p.duplicateCluster}</div>
-            <div className="font-mono text-violet-800 dark:text-violet-300">{link.duplicate_group_id}</div>
+          <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg p-3">
+            <div className="text-md-sys-on-surface-variant mb-1">{p.duplicateCluster}</div>
+            <div className="font-mono text-md-sys-tertiary">{link.duplicate_group_id}</div>
           </div>
         )}
         {link.detected_language && (
-          <div className="bg-brand-900 border border-default rounded-lg p-3">
-            <div className="text-muted-foreground mb-1">{p.detectedLanguage}</div>
-            <div className="font-mono text-foreground">{link.detected_language}</div>
+          <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg p-3">
+            <div className="text-md-sys-on-surface-variant mb-1">{p.detectedLanguage}</div>
+            <div className="font-mono text-md-sys-on-surface">{link.detected_language}</div>
           </div>
         )}
         <NerBlock nlp={nlpSignals} />
         {link.keyphrases?.phrases && link.keyphrases.phrases.length > 0 && (
-          <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
-            <div className="text-muted-foreground mb-2">{p.keyphrasesKeybert}</div>
+          <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg p-3 sm:col-span-2">
+            <div className="text-md-sys-on-surface-variant mb-2">{p.keyphrasesKeybert}</div>
             <ul className="flex flex-wrap gap-2">
               {link.keyphrases.phrases.slice(0, 12).map((pair: unknown, i: number) => {
                 const phrasePair = Array.isArray(pair) ? pair : [pair];
                 return (
                   <li
                     key={`${String(phrasePair[0])}-${i}`}
-                    className="text-[11px] font-mono px-2 py-0.5 rounded bg-brand-800 border border-default text-emerald-800 dark:text-emerald-300/90"
+                    className="text-[11px] font-mono px-2 py-0.5 rounded bg-md-sys-surface-container border border-md-sys-outline-variant/40 text-md-sys-success"
                   >
                     {String(phrasePair[0])}
                     {typeof phrasePair[1] === 'number' && (
-                      <span className="text-muted-foreground ml-1">({phrasePair[1].toFixed(2)})</span>
+                      <span className="text-md-sys-on-surface-variant ml-1">({phrasePair[1].toFixed(2)})</span>
                     )}
                   </li>
                 );
               })}
             </ul>
             {link.keyphrases.phrases.length > 12 && (
-              <p className="text-[11px] text-muted-foreground mt-2">
+              <p className="text-[11px] text-md-sys-on-surface-variant mt-2">
                 {format(p.keyphrasesMore, { count: link.keyphrases.phrases.length - 12 })}
               </p>
             )}
@@ -227,23 +227,23 @@ function InsightsPanel({
       </div>
       {similarRows.length > 0 && (
         <div>
-          <div className="text-xs text-muted-foreground mb-2">{p.similarInternalCaption}</div>
+          <div className="text-xs text-md-sys-on-surface-variant mb-2">{p.similarInternalCaption}</div>
           <ul className="space-y-1 max-h-48 overflow-y-auto">
             {similarRows.slice(0, 8).map((row) => (
               <li key={row.url} className="flex flex-wrap items-baseline gap-2 gap-y-0">
                 {row.score != null && !Number.isNaN(row.score) && (
-                  <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400/90 shrink-0 w-14">
+                  <span className="text-[10px] font-mono text-md-sys-success shrink-0 w-14">
                     {row.score.toFixed(4)}
                   </span>
                 )}
-                <a href={row.url} target="_blank" rel="noreferrer" className="text-link hover:underline font-mono text-xs break-all min-w-0">
+                <a href={row.url} target="_blank" rel="noreferrer" className="text-md-sys-primary hover:underline font-mono text-xs break-all min-w-0">
                   {row.url}
                 </a>
               </li>
             ))}
           </ul>
           {similarRows.length > 8 && (
-            <p className="text-[11px] text-muted-foreground mt-2">
+            <p className="text-[11px] text-md-sys-on-surface-variant mt-2">
               {format(p.similarMore, { count: similarRows.length - 8 })}
             </p>
           )}
@@ -265,11 +265,11 @@ function WarningsPanel({ pa, pageUrl }: { pa: PageAnalysis; pageUrl: string }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm text-muted-foreground">{format(p.onPageWarnings, { count: filteredWarnings.length })}</p>
+        <p className="text-sm text-md-sys-on-surface-variant">{format(p.onPageWarnings, { count: filteredWarnings.length })}</p>
         <select
           value={sevFilter}
           onChange={(e) => setSevFilter(e.target.value)}
-          className="bg-brand-800 border border-brand-700 text-xs rounded-lg px-2 py-1.5 text-foreground outline-none"
+          className="bg-md-sys-surface-container border border-md-sys-outline-variant/50 text-xs rounded-lg px-2 py-1.5 text-md-sys-on-surface outline-none"
         >
           <option value="All">{p.severityAll}</option>
           <option value="high">{p.severityHigh}</option>
@@ -278,13 +278,13 @@ function WarningsPanel({ pa, pageUrl }: { pa: PageAnalysis; pageUrl: string }) {
         </select>
       </div>
       {filteredWarnings.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{p.noMatchingWarnings}</p>
+        <p className="text-sm text-md-sys-on-surface-variant">{p.noMatchingWarnings}</p>
       ) : (
         <ul className="space-y-2">
           {filteredWarnings.map((w, i) => (
             <li
               key={`${w.id}-${i}`}
-              className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-foreground space-y-2"
+              className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-lg px-3 py-2 text-sm text-md-sys-on-surface space-y-2"
             >
               <div>
                 <span className={`text-xs px-2 py-0.5 rounded mr-2 ${severityBg(w.severity)}`}>
@@ -292,7 +292,7 @@ function WarningsPanel({ pa, pageUrl }: { pa: PageAnalysis; pageUrl: string }) {
                 </span>
                 {w.message}
                 {w.detail && (
-                  <div className="mt-1 text-xs text-muted-foreground font-mono break-all">{w.detail}</div>
+                  <div className="mt-1 text-xs text-md-sys-on-surface-variant font-mono break-all">{w.detail}</div>
                 )}
               </div>
               <AiSuggestionButton request={buildOnPageWarningContext(w, pageUrl)} />
@@ -316,7 +316,7 @@ function ResourcesPanel({
   const p = strings.components.linkTabs.pageAnalysis;
 
   if (resourceSections.length === 0) {
-    return <p className="text-sm text-muted-foreground">{p.noResources}</p>;
+    return <p className="text-sm text-md-sys-on-surface-variant">{p.noResources}</p>;
   }
 
   return (
@@ -412,9 +412,9 @@ export default function PageAnalysisTab({ link }: PageAnalysisTabProps) {
 
   return (
     <div className="flex flex-col gap-4 min-h-0">
-      <p className="text-sm text-muted-foreground max-w-3xl leading-relaxed shrink-0">{p.intro}</p>
+      <p className="text-sm text-md-sys-on-surface-variant max-w-3xl leading-relaxed shrink-0">{p.intro}</p>
 
-      <div className="shrink-0 border-b border-muted pb-2">
+      <div className="shrink-0 border-b border-md-sys-outline-variant/40 pb-2">
         <ViewTabs
           tabs={tabs}
           activeTab={activeSection}

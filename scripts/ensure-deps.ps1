@@ -89,7 +89,29 @@ function Invoke-EnsurePythonLauncher {
     Assert-EnsureExitCode "Python command failed: $($Launcher -join ' ') $($PythonArgs -join ' ')"
 }
 
+function Update-SessionPath {
+    try {
+        $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+        $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+        $current = @($env:PATH -split ';')
+        $regPaths = @($machinePath -split ';' + $userPath -split ';')
+        $standardPaths = @(
+            "C:\Program Files\dotnet",
+            "C:\Program Files\nodejs",
+            "C:\Program Files\Docker\Docker\resources\bin",
+            "$HOME\AppData\Local\Programs\Python\Python312",
+            "$HOME\AppData\Local\Programs\Python\Python312\Scripts",
+            "$HOME\.dotnet\tools"
+        )
+        $all = @($standardPaths + $regPaths + $current) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
+        $env:PATH = ($all -join ';')
+    } catch {
+        # ignore if registry read is constrained
+    }
+}
+
 function Test-DotnetVersionOk {
+    Update-SessionPath
     if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { return $false }
     $version = (& dotnet --version 2>$null)
     if (-not $version) { return $false }
@@ -103,6 +125,7 @@ function Install-WingetPackage {
         [string]$PackageId
     )
 
+    Update-SessionPath
     if (Get-Command $CommandName -ErrorAction SilentlyContinue) {
         return
     }
@@ -114,14 +137,15 @@ function Install-WingetPackage {
     }
     Write-EnsureLog "Installing $PackageId via winget"
     & winget install --id $PackageId -e --accept-source-agreements --accept-package-agreements
-    Assert-EnsureExitCode "winget install failed for $PackageId"
+    Update-SessionPath
     if (-not (Get-Command $CommandName -ErrorAction SilentlyContinue)) {
-        Write-EnsureWarn "$CommandName not on PATH yet — open a new terminal after winget install"
-        Write-EnsureDie "Still missing required command: $CommandName"
+        Write-EnsureWarn "$CommandName not on PATH yet in current session"
+        Write-EnsureDie "Installed $PackageId, but '$CommandName' is not found in PATH yet. Please restart your PowerShell terminal to reload system environment variables, or run the full stack via Docker: .\local-run.ps1 docker"
     }
 }
 
 function Ensure-SystemTools {
+    Update-SessionPath
     Install-WingetPackage -CommandName "docker" -PackageId "Docker.DockerDesktop"
     Install-WingetPackage -CommandName "python" -PackageId "Python.Python.3.12"
     if (-not (Get-EnsurePythonLauncher)) {
@@ -132,7 +156,7 @@ function Ensure-SystemTools {
         Install-WingetPackage -CommandName "dotnet" -PackageId "Microsoft.DotNet.SDK.10"
     }
     if (-not (Test-DotnetVersionOk)) {
-        Write-EnsureDie ".NET SDK 10+ required (see README.md prerequisites)"
+        Write-EnsureDie ".NET SDK 10+ required for local host execution (services/CoreService, AiService, Bff).`nInstall via: winget install Microsoft.DotNet.SDK.10`nor download from: https://dotnet.microsoft.com/download/dotnet/10.0`n(Note: You can also run the full stack without installing .NET locally using: .\local-run.ps1 docker)"
     }
 }
 

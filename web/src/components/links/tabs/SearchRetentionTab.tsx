@@ -315,7 +315,7 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground py-12 justify-center">
+      <div className="flex items-center gap-2 text-md-sys-on-surface-variant py-12 justify-center">
         <Loader2 className="h-5 w-5 animate-spin" />
         {sr.loading}
       </div>
@@ -325,24 +325,24 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Data bar */}
-      <div className="flex flex-wrap items-center gap-3 p-4 bg-brand-900 border border-default rounded-xl">
+      <div className="flex flex-wrap items-center gap-3 p-4 bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl">
         <span
           className={`text-xs font-semibold uppercase tracking-wide px-2 py-1 rounded ${
             dataSource === 'live'
-              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-              : 'bg-blue-500/15 text-blue-700 dark:text-blue-300'
+              ? 'bg-md-sys-success-container/20 text-md-sys-success'
+              : 'bg-md-sys-primary-container/20 text-md-sys-primary'
           }`}
         >
           {dataSource === 'live' ? sr.badgeLive : sr.badgeSnapshot}
         </span>
         {pageData?.fetchedAt && (
-          <span className="text-xs text-muted-foreground">{format(sr.fetchedAt, { when: fmtWhen(pageData.fetchedAt) })}</span>
+          <span className="text-xs text-md-sys-on-surface-variant">{format(sr.fetchedAt, { when: fmtWhen(pageData.fetchedAt) })}</span>
         )}
         <button
           type="button"
           disabled={liveBusy}
           onClick={() => void handleFetchLive()}
-          className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50"
+          className="press inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-md-sys-primary hover:brightness-105 active:scale-[0.98] text-md-sys-on-primary transition-all duration-200 disabled:opacity-50 shadow-sm"
         >
           {liveBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
           {sr.fetchLive}
@@ -351,15 +351,15 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
           <button
             type="button"
             onClick={() => void handleRevertSnapshot()}
-            className="text-sm text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+            className="text-sm text-md-sys-on-surface-variant hover:text-md-sys-on-surface underline-offset-2 hover:underline"
           >
             {sr.revertSnapshot}
           </button>
         )}
         <div className="flex items-center gap-2 ml-auto flex-wrap">
-          <label className="text-xs text-muted-foreground">{sr.compareTo}</label>
+          <label className="text-xs text-md-sys-on-surface-variant">{sr.compareTo}</label>
           <select
-            className="text-sm bg-brand-800 border border-default rounded-lg px-2 py-1 max-w-[220px]"
+            className="text-sm bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-lg px-2 py-1 max-w-[220px]"
             value={
               compareSelect === 'default'
                 ? 'default'
@@ -394,18 +394,18 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
       </div>
 
       {liveError && (
-        <p className="text-sm text-rose-600 dark:text-rose-400">{liveError}</p>
+        <p className="text-sm text-md-sys-error">{liveError}</p>
       )}
 
       {!hasGoogleData && (
-        <div className="p-6 border border-dashed border-default rounded-xl text-center text-muted-foreground text-sm space-y-2">
+        <div className="p-6 border border-dashed border-md-sys-outline-variant/40 rounded-xl text-center text-md-sys-on-surface-variant text-sm space-y-2">
           <p>{sr.emptyNoData}</p>
           <p className="text-xs">{sr.emptyPrereq}</p>
         </div>
       )}
 
       {compareLoading && (
-        <div className="text-xs text-muted-foreground flex items-center gap-2">
+        <div className="text-xs text-md-sys-on-surface-variant flex items-center gap-2">
           <Loader2 className="h-3 w-3 animate-spin" />
           {sr.compareLoading}
         </div>
@@ -413,8 +413,8 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
 
       {compare?.metrics && compare.metrics.length > 0 && compare.baseline && (
         <section>
-          <h3 className="text-sm font-semibold text-bright mb-1">{sr.compareHeading}</h3>
-          {compareCaption && <p className="text-xs text-muted-foreground mb-3">{compareCaption}</p>}
+          <h3 className="text-sm font-semibold text-md-sys-on-surface mb-1">{sr.compareHeading}</h3>
+          {compareCaption && <p className="text-xs text-md-sys-on-surface-variant mb-3">{compareCaption}</p>}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {compare.metrics.map((row) => (
               <CompareMetricCard key={row.id} row={row} />
@@ -426,49 +426,49 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
       {hasGoogleData && (
         <>
           <section className="grid sm:grid-cols-2 gap-4">
-            <div className="bg-brand-900 border border-default rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-bright mb-3">{sr.gscHeading}</h3>
+            <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-md-sys-on-surface mb-3">{sr.gscHeading}</h3>
               {displayGsc ? (
                 <dl className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <dt className="text-muted-foreground text-xs">{sr.clicks}</dt>
+                    <dt className="text-md-sys-on-surface-variant text-xs">{sr.clicks}</dt>
                     <dd className="font-semibold tabular-nums">{displayGsc.clicks?.toLocaleString() ?? 0}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground text-xs">{sr.impressions}</dt>
+                    <dt className="text-md-sys-on-surface-variant text-xs">{sr.impressions}</dt>
                     <dd className="font-semibold tabular-nums">{displayGsc.impressions?.toLocaleString() ?? 0}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground text-xs">{sr.ctr}</dt>
+                    <dt className="text-md-sys-on-surface-variant text-xs">{sr.ctr}</dt>
                     <dd className="font-semibold tabular-nums">{displayGsc.ctr ?? 0}%</dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground text-xs">{sr.position}</dt>
+                    <dt className="text-md-sys-on-surface-variant text-xs">{sr.position}</dt>
                     <dd className="font-semibold tabular-nums">{displayGsc.position?.toFixed(1) ?? sj.emDash}</dd>
                   </div>
                 </dl>
               ) : (
-                <p className="text-xs text-muted-foreground">{sr.noGsc}</p>
+                <p className="text-xs text-md-sys-on-surface-variant">{sr.noGsc}</p>
               )}
             </div>
-            <div className="bg-brand-900 border border-default rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-bright mb-3">{sr.ga4Heading}</h3>
+            <div className="bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-md-sys-on-surface mb-3">{sr.ga4Heading}</h3>
               {displayGa4 ? (
                 <dl className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <dt className="text-muted-foreground text-xs">{sr.sessions}</dt>
+                    <dt className="text-md-sys-on-surface-variant text-xs">{sr.sessions}</dt>
                     <dd className="font-semibold tabular-nums">{displayGa4.sessions?.toLocaleString() ?? 0}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground text-xs">{sr.pageViews}</dt>
+                    <dt className="text-md-sys-on-surface-variant text-xs">{sr.pageViews}</dt>
                     <dd className="font-semibold tabular-nums">{displayGa4.screenPageViews?.toLocaleString() ?? 0}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground text-xs">{sr.engagement}</dt>
+                    <dt className="text-md-sys-on-surface-variant text-xs">{sr.engagement}</dt>
                     <dd className="font-semibold tabular-nums">{displayGa4.engagementRate ?? 0}%</dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground text-xs">{sr.avgDuration}</dt>
+                    <dt className="text-md-sys-on-surface-variant text-xs">{sr.avgDuration}</dt>
                     <dd className="font-semibold tabular-nums">
                       {displayGa4.avgSessionDuration != null
                         ? `${Math.round(displayGa4.avgSessionDuration)}s`
@@ -477,18 +477,18 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
                   </div>
                 </dl>
               ) : (
-                <p className="text-xs text-muted-foreground">{sr.noGa4}</p>
+                <p className="text-xs text-md-sys-on-surface-variant">{sr.noGa4}</p>
               )}
             </div>
           </section>
 
           {displayGsc?.queries && displayGsc.queries.length > 0 && (
             <section>
-              <h3 className="text-sm font-semibold text-bright mb-2">{sr.topQueries}</h3>
-              <div className="overflow-x-auto border border-default rounded-xl">
+              <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{sr.topQueries}</h3>
+              <div className="overflow-x-auto border border-md-sys-outline-variant/40 rounded-xl">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-muted-foreground border-b border-default bg-brand-900/80">
+                    <tr className="text-left text-xs text-md-sys-on-surface-variant border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/80">
                       <th className="px-3 py-2">{sr.queryCol}</th>
                       <th className="px-3 py-2 text-right">{sr.clicks}</th>
                       <th className="px-3 py-2 text-right">{sr.impressions}</th>
@@ -497,7 +497,7 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
                   </thead>
                   <tbody>
                     {displayGsc.queries.slice(0, 15).map((q, i) => (
-                      <tr key={`${q.query}-${i}`} className="border-b border-default/60 last:border-0">
+                      <tr key={`${q.query}-${i}`} className="border-b border-md-sys-outline-variant/40 last:border-0">
                         <td className="px-3 py-2 font-medium">{q.query || sj.emDash}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{q.clicks ?? 0}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{q.impressions ?? 0}</td>
@@ -516,29 +516,29 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
 
       {/* Quick wins */}
       <section>
-        <h3 className="text-sm font-semibold text-bright mb-2">{sr.quickWinsHeading}</h3>
+        <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{sr.quickWinsHeading}</h3>
         {hints.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{sr.noHints}</p>
+          <p className="text-sm text-md-sys-on-surface-variant">{sr.noHints}</p>
         ) : (
           <ul className="space-y-2">
             {hints.map((h, i) => (
               <li
                 key={`${h.category}-${i}`}
-                className="p-3 rounded-lg border border-default bg-brand-900/50 text-sm"
+                className="p-3 rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 text-sm"
               >
                 <span
                   className={`text-[10px] uppercase font-bold mr-2 ${
                     h.severity === 'high'
-                      ? 'text-rose-600 dark:text-rose-400'
+                      ? 'text-md-sys-error'
                       : h.severity === 'medium'
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-muted-foreground'
+                        ? 'text-md-sys-warning'
+                        : 'text-md-sys-on-surface-variant'
                   }`}
                 >
                   {h.severity}
                 </span>
-                <span className="text-bright">{h.message}</span>
-                {h.action && <p className="text-xs text-muted-foreground mt-1">{h.action}</p>}
+                <span className="text-md-sys-on-surface">{h.message}</span>
+                {h.action && <p className="text-xs text-md-sys-on-surface-variant mt-1">{h.action}</p>}
               </li>
             ))}
           </ul>
@@ -547,13 +547,13 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
 
       {/* History pickers */}
       {(siteHistory.length > 0 || liveHistory.length > 0) && (
-        <section className="text-xs text-muted-foreground space-y-1">
-          <p className="font-medium text-foreground">{sr.historyHeading}</p>
+        <section className="text-xs text-md-sys-on-surface-variant space-y-1">
+          <p className="font-medium text-md-sys-on-surface">{sr.historyHeading}</p>
           {liveHistory.map((row) => (
             <button
               key={row.id}
               type="button"
-              className="block hover:text-foreground underline-offset-2 hover:underline"
+              className="block hover:text-md-sys-on-surface underline-offset-2 hover:underline"
               onClick={() => handleViewLiveSnapshot(row.id)}
             >
               {format(sr.historyLiveRow, { when: fmtWhen(row.fetchedAt), id: row.id })}
@@ -563,7 +563,7 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
             <button
               key={row.id}
               type="button"
-              className="block hover:text-foreground underline-offset-2 hover:underline"
+              className="block hover:text-md-sys-on-surface underline-offset-2 hover:underline"
               onClick={() => void handleViewSiteSnapshot(row.id)}
             >
               {format(sr.historySiteRow, { when: fmtWhen(row.fetchedAt), id: row.id })}
@@ -573,17 +573,17 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
       )}
 
       {/* AI coach */}
-      <section className="border border-default rounded-xl p-4 bg-brand-900/40">
+      <section className="border border-md-sys-outline-variant/40 rounded-xl p-4 bg-md-sys-surface-container-low/40">
         <div className="flex flex-wrap items-center gap-3 mb-3">
-          <h3 className="text-sm font-semibold text-bright flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-violet-400" />
+          <h3 className="text-sm font-semibold text-md-sys-on-surface flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-md-sys-tertiary" />
             {sr.coachHeading}
           </h3>
           <button
             type="button"
             disabled={coachBusy || !hasGoogleData}
             onClick={() => void runCoach(false)}
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full bg-md-sys-tertiary hover:brightness-105 active:scale-[0.98] text-md-sys-on-tertiary disabled:opacity-50"
           >
             {coachBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {sr.coachGenerate}
@@ -593,25 +593,25 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
               type="button"
               disabled={coachBusy}
               onClick={() => void runCoach(true)}
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1 text-sm text-md-sys-on-surface-variant hover:text-md-sys-on-surface"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               {sr.coachRegenerate}
             </button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mb-3">{sr.coachHint}</p>
-        {coachError && <p className="text-sm text-rose-600 dark:text-rose-400 mb-2">{coachError}</p>}
+        <p className="text-xs text-md-sys-on-surface-variant mb-3">{sr.coachHint}</p>
+        {coachError && <p className="text-sm text-md-sys-error mb-2">{coachError}</p>}
         {coachCached && coach && (
-          <p className="text-xs text-muted-foreground mb-2">{sr.coachCached}</p>
+          <p className="text-xs text-md-sys-on-surface-variant mb-2">{sr.coachCached}</p>
         )}
         {coach?.summary && (
           <div className="space-y-4 text-sm">
-            <p className="text-foreground leading-relaxed">{coach.summary}</p>
+            <p className="text-md-sys-on-surface leading-relaxed">{coach.summary}</p>
             {coach.missing_on_page && coach.missing_on_page.length > 0 && (
               <div>
-                <h4 className="font-medium text-bright mb-1">{sr.coachMissing}</h4>
-                <ul className="list-disc pl-5 text-muted-foreground space-y-1">
+                <h4 className="font-medium text-md-sys-on-surface mb-1">{sr.coachMissing}</h4>
+                <ul className="list-disc pl-5 text-md-sys-on-surface-variant space-y-1">
                   {coach.missing_on_page.map((m, i) => (
                     <li key={i}>{m}</li>
                   ))}
@@ -626,15 +626,15 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
             )}
             {coach.quick_wins && coach.quick_wins.length > 0 && (
               <div>
-                <h4 className="font-medium text-bright mb-1">{sr.coachQuickWins}</h4>
-                <ul className="list-disc pl-5 text-muted-foreground space-y-1">
+                <h4 className="font-medium text-md-sys-on-surface mb-1">{sr.coachQuickWins}</h4>
+                <ul className="list-disc pl-5 text-md-sys-on-surface-variant space-y-1">
                   {coach.quick_wins.map((w, i) => (
                     <li key={i}>{w}</li>
                   ))}
                 </ul>
               </div>
             )}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-md-sys-on-surface-variant">
               {sr.coachCopyJson}
               <CopyBtn text={JSON.stringify(coach, null, 2)} />
             </div>
@@ -654,15 +654,15 @@ function CoachList({
 }) {
   return (
     <div>
-      <h4 className="font-medium text-bright mb-1">{title}</h4>
+      <h4 className="font-medium text-md-sys-on-surface mb-1">{title}</h4>
       <ul className="space-y-2">
         {items.map((item, i) => (
-          <li key={i} className="border-l-2 border-violet-500/50 pl-3">
+          <li key={i} className="border-l-2 border-md-sys-tertiary/50 pl-3">
             <span className="font-medium">{item.title}</span>
             {item.priority && (
-              <span className="ml-2 text-[10px] uppercase text-muted-foreground">{item.priority}</span>
+              <span className="ml-2 text-[10px] uppercase text-md-sys-on-surface-variant">{item.priority}</span>
             )}
-            {item.why && <p className="text-xs text-muted-foreground mt-0.5">{item.why}</p>}
+            {item.why && <p className="text-xs text-md-sys-on-surface-variant mt-0.5">{item.why}</p>}
           </li>
         ))}
       </ul>

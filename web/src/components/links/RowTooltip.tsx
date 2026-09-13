@@ -13,19 +13,19 @@ export default function RowTooltip({ link, style }: RowTooltipProps) {
 
   return (
     <div
-      className="absolute z-50 bg-brand-800 border border-default rounded-xl shadow-2xl p-4 w-72 pointer-events-none"
+      className="absolute z-50 bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-xl shadow-2xl p-4 w-72 pointer-events-none"
       style={style}
     >
-      <p className="text-xs font-semibold text-bright mb-1 truncate">{link.title || link.url}</p>
+      <p className="text-xs font-semibold text-md-sys-on-surface mb-1 truncate">{link.title || link.url}</p>
       {link.meta_description && (
-        <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{link.meta_description}</p>
+        <p className="text-xs text-md-sys-on-surface-variant line-clamp-2 mb-2">{link.meta_description}</p>
       )}
-      <div className="flex gap-4 text-xs text-muted-foreground">
+      <div className="flex gap-4 text-xs text-md-sys-on-surface-variant">
         {(link.reading_level ?? 0) > 0 && (
-          <span>Grade <span className="text-bright">{link.reading_level}</span></span>
+          <span>Grade <span className="text-md-sys-on-surface">{link.reading_level}</span></span>
         )}
         {(link.word_count ?? 0) > 0 && (
-          <span><span className="text-bright">{link.word_count}</span> words</span>
+          <span><span className="text-md-sys-on-surface">{link.word_count}</span> words</span>
         )}
       </div>
       {kws.length > 0 && (
@@ -33,7 +33,7 @@ export default function RowTooltip({ link, style }: RowTooltipProps) {
           {kws.map((kw, i) => {
             const { word } = normaliseKw(kw);
             return (
-              <span key={i} className="text-xs bg-blue-500/20 text-link-soft px-1.5 py-0.5 rounded font-mono">
+              <span key={i} className="text-xs bg-md-sys-primary-container/40 text-md-sys-primary px-1.5 py-0.5 rounded-full font-mono">
                 {word}
               </span>
             );

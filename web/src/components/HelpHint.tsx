@@ -143,10 +143,10 @@ export default function HelpHint({
       ref={tooltipRef}
       role="tooltip"
       style={tooltipStyle}
-      className="w-72 max-w-[min(18rem,calc(100vw-1rem))] bg-brand-800 border border-default rounded-xl shadow-2xl p-3 pointer-events-none normal-case tracking-normal font-normal text-left"
+      className="w-72 max-w-[min(18rem,calc(100vw-1rem))] bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-xl shadow-2xl p-3 pointer-events-none normal-case tracking-normal font-normal text-left"
     >
-      {title ? <div className="font-semibold text-bright text-sm mb-1">{title}</div> : null}
-      <div className="text-xs text-muted-foreground leading-relaxed">{children}</div>
+      {title ? <div className="font-semibold text-md-sys-on-surface text-sm mb-1">{title}</div> : null}
+      <div className="text-xs text-md-sys-on-surface-variant leading-relaxed">{children}</div>
     </div>
   ) : null;
 
@@ -160,7 +160,7 @@ export default function HelpHint({
         ref={buttonRef}
         role="button"
         tabIndex={0}
-        className="rounded-full p-0.5 text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 align-middle cursor-pointer"
+        className="rounded-full p-0.5 text-md-sys-on-surface-variant hover:text-md-sys-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-md-sys-primary/40 align-middle cursor-pointer"
         aria-expanded={open}
         aria-describedby={open ? id : undefined}
         aria-label={ariaLabel}
@@ -218,7 +218,7 @@ export function ChartTitleWithHint({
   const Tag = as;
   return (
     <div className={`flex items-start gap-1.5 mb-3 ${className}`.trim()}>
-      <Tag className="text-sm font-bold text-foreground min-w-0">{title}</Tag>
+      <Tag className="text-sm font-bold text-md-sys-on-surface min-w-0">{title}</Tag>
       {hintContent ? (
         <HelpHint title={hintContent.title} ariaLabel={`About ${title}`}>
           {hintContent.body}

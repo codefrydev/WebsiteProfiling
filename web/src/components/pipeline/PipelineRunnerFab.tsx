@@ -32,19 +32,19 @@ export default function PipelineRunnerFab() {
         <div
           role="status"
           aria-live="polite"
-          className="flex items-center gap-3 rounded-xl border border-default bg-brand-800 px-3 py-2.5 shadow-xl"
+          className="flex items-center gap-3 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container px-3.5 py-2.5 shadow-xl"
         >
         {busy ? (
-          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-link" aria-hidden />
+          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-md-sys-primary" aria-hidden />
         ) : (
           <span
-            className={`h-2.5 w-2.5 shrink-0 rounded-full ${status === 'error' ? 'bg-red-500' : 'bg-muted-foreground'}`}
+            className={`h-2.5 w-2.5 shrink-0 rounded-full ${status === 'error' ? 'bg-md-sys-error' : 'bg-md-sys-on-surface-variant'}`}
             aria-hidden
           />
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold text-bright">{s.dockTitle}</p>
-          <p className="truncate text-[11px] text-muted-foreground" title={status || log || ''}>
+          <p className="text-xs font-semibold text-md-sys-on-surface">{s.dockTitle}</p>
+          <p className="truncate text-[11px] text-md-sys-on-surface-variant" title={status || log || ''}>
             {busy
               ? s.dockRunning
               : status === 'error'
@@ -60,7 +60,7 @@ export default function PipelineRunnerFab() {
           type="button"
           onClick={() => void cancelJob()}
           disabled={!busy || stopping}
-          className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-brand-700 hover:text-foreground disabled:opacity-40"
+          className="shrink-0 rounded-full p-2 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface press active:scale-95 transition-all disabled:opacity-40"
           aria-label={s.stopJobAria}
           title={stopping ? s.stoppingJob : s.stopJob}
         >
@@ -73,7 +73,7 @@ export default function PipelineRunnerFab() {
         <button
           type="button"
           onClick={() => navigate('/pipeline')}
-          className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-brand-700 hover:text-foreground"
+          className="shrink-0 rounded-full p-2 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface press active:scale-95 transition-all"
           aria-label={s.dockExpand}
           title={s.dockExpand}
         >

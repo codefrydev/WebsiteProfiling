@@ -65,7 +65,7 @@ export function WidgetFrame({
       devData={devData}
       className={`h-full flex flex-col min-h-0 overflow-hidden relative group/widget ${
         isEditing ? 'pointer-events-none' : ''
-      } ${selected ? 'ring-2 ring-blue-500/70' : ''}`}
+      } ${selected ? 'ring-2 ring-md-sys-primary' : ''}`}
     >
       <div
         className={`widget-edit-chrome flex items-start justify-between gap-2 mb-1.5 shrink-0 ${
@@ -74,11 +74,11 @@ export function WidgetFrame({
       >
         <div className="flex items-center gap-1.5 min-w-0">
           {isEditing && (
-            <span className="shrink-0 text-muted-foreground pointer-events-none" aria-hidden>
+            <span className="shrink-0 text-md-sys-on-surface-variant pointer-events-none" aria-hidden>
               <GripVertical className="h-4 w-4" />
             </span>
           )}
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground truncate" title={title}>
+          <p className="text-xs font-bold uppercase tracking-wider text-md-sys-on-surface-variant truncate" title={title}>
             {title}
           </p>
         </div>
@@ -87,7 +87,7 @@ export function WidgetFrame({
             <button
               onClick={() => downloadCsv(title, result.table)}
               title="Export CSV"
-              className="p-0.5 rounded hover:bg-white/10 text-muted-foreground hover:text-bright transition-colors"
+              className="press p-1 rounded-full hover:bg-md-sys-surface-container-high text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-colors active:scale-95"
             >
               <Download className="h-3.5 w-3.5" />
             </button>
@@ -96,7 +96,7 @@ export function WidgetFrame({
             <button
               onClick={() => chartRef.current && chartToPng(chartRef.current, title)}
               title="Export PNG"
-              className="p-0.5 rounded hover:bg-white/10 text-muted-foreground hover:text-bright transition-colors"
+              className="press p-1 rounded-full hover:bg-md-sys-surface-container-high text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-colors active:scale-95"
             >
               <ImageIcon className="h-3.5 w-3.5" />
             </button>
@@ -105,7 +105,7 @@ export function WidgetFrame({
             <button
               onClick={() => onEdit(widget.id)}
               title="Configure widget"
-              className="p-0.5 rounded hover:bg-white/10 text-muted-foreground hover:text-bright transition-colors"
+              className="press p-1 rounded-full hover:bg-md-sys-surface-container-high text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-colors active:scale-95"
             >
               <Settings className="h-3.5 w-3.5" />
             </button>
@@ -114,7 +114,7 @@ export function WidgetFrame({
             <button
               onClick={() => onDuplicate(widget.id)}
               title="Duplicate widget"
-              className="p-0.5 rounded hover:bg-white/10 text-muted-foreground hover:text-bright transition-colors"
+              className="press p-1 rounded-full hover:bg-md-sys-surface-container-high text-md-sys-on-surface-variant hover:text-md-sys-on-surface transition-colors active:scale-95"
             >
               <Copy className="h-3.5 w-3.5" />
             </button>
@@ -123,7 +123,7 @@ export function WidgetFrame({
             <button
               onClick={() => onRemove(widget.id)}
               title="Remove widget"
-              className="p-0.5 rounded hover:bg-red-500/20 text-muted-foreground hover:text-red-400 transition-colors"
+              className="press p-1 rounded-full hover:bg-md-sys-error-container text-md-sys-on-surface-variant hover:text-md-sys-on-error-container transition-colors active:scale-95"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -131,8 +131,8 @@ export function WidgetFrame({
         </div>
       </div>
       {drill && drill.path.length > 0 && (
-        <div className="flex items-center gap-1.5 mb-1 text-[10px] text-muted-foreground shrink-0">
-          <button onClick={drill.onUp} className="px-1 rounded border border-default hover:text-bright hover:border-blue-500/50" title="Drill up">↑</button>
+        <div className="flex items-center gap-1.5 mb-1 text-[10px] text-md-sys-on-surface-variant shrink-0">
+          <button onClick={drill.onUp} className="press px-2 py-0.5 rounded-full border border-md-sys-outline-variant/40 hover:text-md-sys-on-surface hover:border-md-sys-primary/50 text-[10px] active:scale-95 transition-all" title="Drill up">↑</button>
           <span className="truncate">{drill.path.map((p) => p.value).join(' › ')}</span>
         </div>
       )}

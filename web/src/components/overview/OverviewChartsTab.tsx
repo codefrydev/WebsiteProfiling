@@ -46,10 +46,10 @@ function ChartSection({
   return (
     <section className="space-y-4">
       <div className="flex items-start gap-2">
-        <span className="mt-0.5 shrink-0 text-muted-foreground">{icon}</span>
+        <span className="mt-0.5 shrink-0 text-md-sys-on-surface-variant">{icon}</span>
         <div>
-          <h3 className="text-sm font-bold text-bright">{title}</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+          <h3 className="text-sm font-bold text-md-sys-on-surface">{title}</h3>
+          <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">{hint}</p>
         </div>
       </div>
       <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">{children}</div>
@@ -94,13 +94,13 @@ function ChartInsightCard({
     <Card shadow devData={devData} className={`flex h-full flex-col ${className}`.trim()}>
       <ChartTitleWithHint title={title} helpKey={helpKey} hint={hint} />
       {takeaway ? (
-        <p className="mb-3 text-xs font-medium leading-relaxed text-foreground/90">{takeaway}</p>
+        <p className="mb-3 text-xs font-medium leading-relaxed text-md-sys-on-surface/90">{takeaway}</p>
       ) : null}
       <div className="min-h-0 flex-1">{children}</div>
       {viewHref && viewLabel ? (
         <Link
           to={viewHref}
-          className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-link hover:underline"
+          className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-md-sys-primary hover:underline"
         >
           {viewLabel}
           <ChevronRight className="h-3.5 w-3.5" />
@@ -298,17 +298,17 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
             <DevCopyJsonButton data={insightsGlanceDevData} />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
-                <h2 className="flex items-center gap-2 text-xl font-bold text-bright">
-                  <BarChart3 className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" aria-hidden />
+                <h2 className="flex items-center gap-2 text-xl font-bold text-md-sys-on-surface">
+                  <BarChart3 className="h-5 w-5 shrink-0 text-md-sys-primary" aria-hidden />
                   {vo.insightsGlance}
                 </h2>
-                <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{vo.chartsSubtitle}</p>
+                <p className="mt-1 max-w-3xl text-sm text-md-sys-on-surface-variant">{vo.chartsSubtitle}</p>
               </div>
             </div>
 
             {concerns.length > 0 ? (
               <div>
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant">
                   {vo.chartsTopConcerns}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -316,14 +316,14 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                     <Link
                       key={concern.id}
                       to={concern.href}
-                      className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-amber-500/40 hover:bg-amber-500/15"
+                      className="press inline-flex max-w-full items-center gap-1.5 rounded-full border border-md-sys-warning/30 bg-md-sys-warning-container/20 px-3 py-1.5 text-xs font-medium text-md-sys-on-surface transition-colors hover:border-md-sys-warning/50 hover:bg-md-sys-warning-container/30 active:scale-95"
                     >
                       <AlertTriangle
-                        className="h-3.5 w-3.5 shrink-0 text-amber-700 dark:text-amber-400"
+                        className="h-3.5 w-3.5 shrink-0 text-md-sys-warning"
                         aria-hidden
                       />
                       <span className="truncate">{concern.label}</span>
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-md-sys-on-surface-variant" />
                     </Link>
                   ))}
                 </div>
@@ -418,7 +418,7 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                     },
                   }}
                 >
-                  <div className="mb-2 text-xs tabular-nums text-muted-foreground">
+                  <div className="mb-2 text-xs tabular-nums text-md-sys-on-surface-variant">
                     {format(vo.depthSummaryLine, {
                       maxDepth: depth.max_depth ?? sj.emDash,
                       avgDepth: depth.avg_depth ?? sj.emDash,
@@ -589,7 +589,7 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
           ) : null}
         </>
       ) : (
-        <Card className="p-8 text-center text-sm text-muted-foreground">{vo.chartsEmpty}</Card>
+        <Card className="p-8 text-center text-sm text-md-sys-on-surface-variant">{vo.chartsEmpty}</Card>
       )}
     </OverviewTabPanel>
   );

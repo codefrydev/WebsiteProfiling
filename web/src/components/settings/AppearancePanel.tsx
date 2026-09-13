@@ -32,29 +32,29 @@ const s = strings.settings;
 function PreviewCard() {
   return (
     <div
-      className="rounded-2xl border border-default bg-[var(--app-bg-elevated)] p-5 shadow-sm"
+      className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5 shadow-sm"
       aria-label={s.previewLabel}
     >
-      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-md-sys-on-surface-variant">
         {s.previewLabel}
       </p>
       <div className="space-y-3">
         <div>
-          <h2 className="text-base font-semibold text-bright">Heading text</h2>
-          <p className="text-sm text-foreground">Body text rendered with your current palette.</p>
-          <p className="text-xs text-muted-foreground">Subtle / muted text for secondary info.</p>
+          <h2 className="text-base font-semibold text-md-sys-on-surface">Heading text</h2>
+          <p className="text-sm text-md-sys-on-surface">Body text rendered with your current palette.</p>
+          <p className="text-xs text-md-sys-on-surface-variant">Subtle / muted text for secondary info.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors"
+            className="press rounded-full px-4 py-2 text-xs font-medium text-white transition-all active:scale-[0.98]"
             style={{ background: 'var(--accent)' }}
           >
             Primary button
           </button>
           <button
             type="button"
-            className="rounded-lg border border-default bg-[var(--app-bg-muted)] px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-[var(--app-bg-sunken)]"
+            className="press rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high px-4 py-2 text-xs font-medium text-md-sys-on-surface transition-all hover:bg-md-sys-surface-container-highest active:scale-[0.98]"
           >
             Secondary
           </button>
@@ -63,11 +63,11 @@ function PreviewCard() {
           <span className="h-3 w-3 rounded-full" style={{ background: 'var(--accent)' }} />
           <span className="h-3 w-3 rounded-full" style={{ background: 'var(--accent-warm)' }} />
           <span className="h-3 w-3 rounded-full" style={{ background: 'var(--accent-2)' }} />
-          <a href="#" className="text-xs text-link underline-offset-2 hover:underline" onClick={(e) => e.preventDefault()}>
+          <a href="#" className="text-xs text-md-sys-primary underline-offset-2 hover:underline" onClick={(e) => e.preventDefault()}>
             Link color
           </a>
         </div>
-        <div className="rounded-lg border border-default bg-[var(--app-bg-muted)] px-3 py-2 text-xs text-foreground">
+        <div className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high px-3 py-2 text-xs text-md-sys-on-surface">
           Muted surface / card background
         </div>
       </div>
@@ -99,7 +99,7 @@ function TokenRow({ token, editDark, overrideValue, onSet, onReset }: TokenRowPr
         aria-label={`Edit ${token.label}`}
       >
         <span
-          className="block h-7 w-7 rounded-lg border border-default shadow-sm transition-transform hover:scale-110"
+          className="block h-7 w-7 rounded-lg border border-md-sys-outline-variant/40 shadow-sm transition-transform hover:scale-110"
           style={{ background: displayed }}
         />
         <input
@@ -113,14 +113,14 @@ function TokenRow({ token, editDark, overrideValue, onSet, onReset }: TokenRowPr
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-bright truncate">{token.label}</span>
+          <span className="text-xs font-medium text-md-sys-on-surface truncate">{token.label}</span>
           {isCustom && (
-            <span className="rounded-full bg-[var(--accent-bg)] px-1.5 py-px text-[10px] font-medium text-[var(--accent)]">
+            <span className="rounded-full bg-md-sys-primary/10 px-1.5 py-px text-[10px] font-medium text-md-sys-primary">
               {s.customizedBadge}
             </span>
           )}
         </div>
-        <code className="block text-[10px] text-muted-foreground">{token.cssVar}</code>
+        <code className="block text-[10px] text-md-sys-on-surface-variant">{token.cssVar}</code>
       </div>
 
       <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -128,7 +128,7 @@ function TokenRow({ token, editDark, overrideValue, onSet, onReset }: TokenRowPr
           type="text"
           value={displayed}
           maxLength={9}
-          className="w-20 rounded-lg border border-default bg-[var(--app-bg-muted)] px-2 py-1 text-[11px] font-mono text-foreground transition-colors focus:border-[var(--accent)] focus:outline-none"
+          className="w-20 rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high px-2 py-1 text-[11px] font-mono text-md-sys-on-surface transition-colors focus:border-md-sys-primary focus:outline-none"
           aria-label={`${token.label} hex value`}
           onChange={(e) => {
             const v = e.target.value;
@@ -141,7 +141,7 @@ function TokenRow({ token, editDark, overrideValue, onSet, onReset }: TokenRowPr
             title={s.resetTokenLabel}
             aria-label={`${s.resetTokenLabel}: ${token.label}`}
             onClick={() => onReset(token.cssVar)}
-            className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-[var(--app-bg-muted)] hover:text-foreground"
+            className="press rounded-full p-1 text-md-sys-on-surface-variant transition-colors hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-95"
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
@@ -164,10 +164,10 @@ function PresetPill({ label, active, onClick }: PresetPillProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-lg border px-3.5 py-1.5 text-xs font-medium transition-all ${
+      className={`press rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all active:scale-[0.98] ${
         active
-          ? 'border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--accent)]'
-          : 'border-default text-muted-foreground hover:border-[var(--accent)] hover:text-foreground'
+          ? 'border-md-sys-primary bg-md-sys-primary/10 text-md-sys-primary'
+          : 'border-md-sys-outline-variant/40 text-md-sys-on-surface-variant hover:border-md-sys-primary/50 hover:text-md-sys-on-surface'
       }`}
     >
       {label}
@@ -222,9 +222,9 @@ function UiPrefsSection() {
   return (
     <div className="space-y-6">
       {/* Border radius */}
-      <section className="rounded-2xl border border-default bg-[var(--app-bg-elevated)] p-5">
-        <p className="mb-1 text-sm font-medium text-bright">Corner radius</p>
-        <p className="mb-3 text-xs text-muted-foreground">Controls how rounded buttons, cards, and inputs appear.</p>
+      <section className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5">
+        <p className="mb-1 text-sm font-medium text-md-sys-on-surface">Corner radius</p>
+        <p className="mb-3 text-xs text-md-sys-on-surface-variant">Controls how rounded buttons, cards, and inputs appear.</p>
         <div className="flex flex-wrap gap-2">
           {RADIUS_SCALES.map((scale) => (
             <PresetPill
@@ -238,7 +238,7 @@ function UiPrefsSection() {
         {/* Mini radius preview */}
         <div className="mt-4 flex items-center gap-3">
           <div
-            className="h-9 w-24 border border-default bg-[var(--app-bg-muted)] flex items-center justify-center text-xs text-muted-foreground"
+            className="h-9 w-24 border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high flex items-center justify-center text-xs text-md-sys-on-surface-variant"
             style={{ borderRadius: 'var(--radius-card)' }}
           >
             Card
@@ -250,16 +250,16 @@ function UiPrefsSection() {
             Button
           </div>
           <div
-            className="h-7 w-24 border border-default bg-[var(--app-bg-muted)]"
+            className="h-7 w-24 border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high"
             style={{ borderRadius: 'var(--radius-sm)' }}
           />
         </div>
       </section>
 
       {/* Density */}
-      <section className="rounded-2xl border border-default bg-[var(--app-bg-elevated)] p-5">
-        <p className="mb-1 text-sm font-medium text-bright">Layout density</p>
-        <p className="mb-3 text-xs text-muted-foreground">Adjusts page padding and card spacing throughout the app.</p>
+      <section className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5">
+        <p className="mb-1 text-sm font-medium text-md-sys-on-surface">Layout density</p>
+        <p className="mb-3 text-xs text-md-sys-on-surface-variant">Adjusts page padding and card spacing throughout the app.</p>
         <div className="flex flex-wrap gap-2">
           {DENSITY_SCALES.map((scale) => (
             <PresetPill
@@ -273,9 +273,9 @@ function UiPrefsSection() {
       </section>
 
       {/* Font size */}
-      <section className="rounded-2xl border border-default bg-[var(--app-bg-elevated)] p-5">
-        <p className="mb-1 text-sm font-medium text-bright">Base font size</p>
-        <p className="mb-3 text-xs text-muted-foreground">Scales the reading size across the entire interface.</p>
+      <section className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5">
+        <p className="mb-1 text-sm font-medium text-md-sys-on-surface">Base font size</p>
+        <p className="mb-3 text-xs text-md-sys-on-surface-variant">Scales the reading size across the entire interface.</p>
         <div className="flex flex-wrap gap-2">
           {FONT_SIZE_SCALES.map((scale) => (
             <PresetPill
@@ -287,7 +287,7 @@ function UiPrefsSection() {
           ))}
         </div>
         <p
-          className="mt-4 rounded-lg bg-[var(--app-bg-muted)] px-3 py-1.5 text-xs text-muted-foreground"
+          className="mt-4 rounded-lg bg-md-sys-surface-container-high px-3 py-1.5 text-xs text-md-sys-on-surface-variant"
           style={{ fontSize: 'var(--font-size-base)' }}
         >
           Preview — this line uses your selected font size.
@@ -295,11 +295,11 @@ function UiPrefsSection() {
       </section>
 
       {/* Animations */}
-      <section className="rounded-2xl border border-default bg-[var(--app-bg-elevated)] p-5">
+      <section className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-bright">Animations</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="text-sm font-medium text-md-sys-on-surface">Animations</p>
+            <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">
               Disable transitions and motion effects across the interface.
             </p>
           </div>
@@ -308,8 +308,8 @@ function UiPrefsSection() {
             role="switch"
             aria-checked={prefs.animations}
             onClick={() => update({ animations: !prefs.animations })}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
-              prefs.animations ? 'bg-[var(--accent)]' : 'bg-[var(--app-bg-muted)]'
+            className={`press relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-md-sys-primary ${
+              prefs.animations ? 'bg-md-sys-primary' : 'bg-md-sys-surface-container-high'
             }`}
           >
             <span
@@ -360,16 +360,16 @@ export default function AppearancePanel() {
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       {/* Page header */}
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-bright">{s.appearanceSection}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{s.appearanceSubtitle}</p>
+        <h1 className="text-xl font-semibold text-md-sys-on-surface">{s.appearanceSection}</h1>
+        <p className="mt-1 text-sm text-md-sys-on-surface-variant">{s.appearanceSubtitle}</p>
       </div>
 
       {/* Color mode toggle */}
-      <section className="mb-8 rounded-2xl border border-default bg-[var(--app-bg-elevated)] p-5">
+      <section className="mb-8 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-bright">{s.themeLabel}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">Light, dark, or follow the system setting.</p>
+            <p className="text-sm font-medium text-md-sys-on-surface">{s.themeLabel}</p>
+            <p className="mt-0.5 text-xs text-md-sys-on-surface-variant">Light, dark, or follow the system setting.</p>
           </div>
           <ThemeToggle />
         </div>
@@ -381,13 +381,13 @@ export default function AppearancePanel() {
       </div>
 
       {/* Palette editor */}
-      <section className="rounded-2xl border border-default bg-[var(--app-bg-elevated)] p-5">
+      <section className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5">
         {/* Editor mode selector + presets row */}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-bright">{s.editingModeLabel}</span>
+            <span className="text-sm font-medium text-md-sys-on-surface">{s.editingModeLabel}</span>
             <div
-              className="flex items-center rounded-lg border border-default bg-brand-700/55 dark:bg-brand-700/35 p-0.5 gap-0.5"
+              className="flex items-center rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high/55 dark:bg-md-sys-surface-container-high/35 p-0.5 gap-0.5"
               role="group"
               aria-label="Select mode to edit"
             >
@@ -400,10 +400,10 @@ export default function AppearancePanel() {
                   type="button"
                   onClick={() => setEditDark(value)}
                   aria-pressed={editDark === value}
-                  className={`press rounded-md px-3 py-1 text-xs transition-all ${
+                  className={`press rounded-full px-3 py-1 text-xs transition-all active:scale-[0.98] ${
                     editDark === value
-                      ? 'bg-brand-700 text-bright shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-md-sys-surface-container-high text-md-sys-on-surface shadow-sm font-medium'
+                      : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                   }`}
                 >
                   {label}
@@ -415,13 +415,13 @@ export default function AppearancePanel() {
           <div className="flex items-center gap-2">
             {/* Presets */}
             <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground">{s.presetsLabel}:</span>
+              <span className="text-xs text-md-sys-on-surface-variant">{s.presetsLabel}:</span>
               {THEME_PRESETS.map((preset) => (
                 <button
                   key={preset.id}
                   type="button"
                   onClick={() => handlePreset(preset.id)}
-                  className="rounded-lg border border-default px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-[var(--accent)] hover:text-foreground"
+                  className="press rounded-full border border-md-sys-outline-variant/40 px-2.5 py-1 text-xs text-md-sys-on-surface-variant transition-colors hover:border-md-sys-primary/50 hover:text-md-sys-on-surface active:scale-[0.98]"
                 >
                   {preset.label}
                 </button>
@@ -433,7 +433,7 @@ export default function AppearancePanel() {
               <button
                 type="button"
                 onClick={handleResetAll}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-[var(--app-bg-muted)] hover:text-foreground"
+                className="press flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-md-sys-on-surface-variant transition-all hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98]"
               >
                 <RotateCcw className="h-3 w-3" />
                 {s.resetAllLabel}
@@ -448,10 +448,10 @@ export default function AppearancePanel() {
             const tokens = THEME_TOKENS.filter((t) => t.group === group);
             return (
               <div key={group}>
-                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-md-sys-on-surface-variant">
                   {group}
                 </p>
-                <div className="divide-y divide-[var(--app-border-muted)]">
+                <div className="divide-y divide-md-sys-outline-variant/40">
                   {tokens.map((token) => (
                     <TokenRow
                       key={token.id}
@@ -468,14 +468,14 @@ export default function AppearancePanel() {
           })}
         </div>
 
-        <p className="mt-5 text-[11px] text-muted-foreground">
+        <p className="mt-5 text-[11px] text-md-sys-on-surface-variant">
           Changes apply instantly and are saved to this browser. Resetting removes custom overrides and restores defaults.
         </p>
       </section>
 
       {/* Radius / density / animations */}
       <div className="mt-8">
-        <h2 className="mb-5 text-base font-semibold text-bright">Shape &amp; motion</h2>
+        <h2 className="mb-5 text-base font-semibold text-md-sys-on-surface">Shape &amp; motion</h2>
         <UiPrefsSection />
       </div>
     </div>

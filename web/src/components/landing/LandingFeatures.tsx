@@ -37,12 +37,12 @@ function FeatureRow({
 }: (typeof FEATURES)[number]) {
   return (
     <article className="flex gap-3 px-3.5 py-3 @sm:gap-4 @sm:px-4 @sm:py-3.5">
-      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-link">
+      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-md-sys-primary/20 bg-md-sys-primary-container/20 text-md-sys-primary">
         <Icon className="h-3.5 w-3.5" aria-hidden />
       </span>
       <div className="min-w-0">
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground @sm:text-sm">{description}</p>
+        <h3 className="text-sm font-semibold text-md-sys-on-surface">{title}</h3>
+        <p className="mt-0.5 text-xs leading-relaxed text-md-sys-on-surface-variant @sm:text-sm">{description}</p>
       </div>
     </article>
   );
@@ -65,9 +65,9 @@ export default function LandingFeatures() {
         </div>
 
         <div className="flex min-h-0 flex-col justify-center @md:pl-2 @lg:pl-4">
-          <div className="overflow-hidden rounded-xl border border-default/60 @md:grid @md:grid-cols-2 @md:divide-x divide-default/60">
+          <div className="overflow-hidden rounded-xl border border-md-sys-outline-variant/40 @md:grid @md:grid-cols-2 @md:divide-x divide-md-sys-outline-variant/30/60">
             {columns.map((column, index) => (
-              <ul key={index} className="divide-y divide-default/60">
+              <ul key={index} className="divide-y divide-md-sys-outline-variant/30/60">
                 {column.map((feature) => (
                   <li key={feature.title}>
                     <FeatureRow {...feature} />

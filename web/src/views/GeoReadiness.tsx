@@ -184,7 +184,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
   const agentGrade = String(agentScore?.grade || '—');
   const agentCategories = (agentScore?.categories || {}) as Record<string, { score: number; max: number }>;
   const gradeColor = (g: string) =>
-    g === 'A' ? 'text-green-600' : g === 'B' ? 'text-green-500' : g === 'C' ? 'text-yellow-600' : g === 'D' ? 'text-orange-500' : g === 'F' ? 'text-destructive' : 'text-muted-foreground';
+    g === 'A' ? 'text-md-sys-success' : g === 'B' ? 'text-md-sys-success' : g === 'C' ? 'text-md-sys-warning' : g === 'D' ? 'text-md-sys-warning' : g === 'F' ? 'text-destructive' : 'text-md-sys-on-surface-variant';
 
   const citationStatsDevData = useMemo(
     () => ({
@@ -394,23 +394,23 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
       <PageHeader
         title={vg.title}
         subtitle={vg.subtitle}
-        icon={<Globe2 className="h-7 w-7 text-link shrink-0" />}
+        icon={<Globe2 className="h-7 w-7 text-md-sys-primary shrink-0" />}
       />
 
-      <Card className="mb-4 border-violet-500/25 bg-violet-500/5 p-4">
-        <p className="text-sm text-muted-foreground">{vg.provenanceBanner}</p>
+      <Card className="mb-4 border-md-sys-tertiary/25 bg-md-sys-tertiary-container/10 p-4">
+        <p className="text-sm text-md-sys-on-surface-variant">{vg.provenanceBanner}</p>
       </Card>
 
       {/* Tab switcher */}
-      <div className="flex gap-1 mb-6 border-b border-default">
+      <div className="flex gap-1 mb-6 border-b border-md-sys-outline-variant/40">
         {(['citation', 'agent'] as TabId[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
               activeTab === tab
-                ? 'border-link text-link'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'border-link text-md-sys-primary'
+                : 'border-transparent text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
             }`}
           >
             {tab === 'citation' ? vg.tabCitation : vg.tabAgent}
@@ -419,34 +419,36 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
       </div>
 
       {activeTab === 'citation' && (loading ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">{strings.app.loading}</Card>
+        <Card className="p-8 text-center text-sm text-md-sys-on-surface-variant">{strings.app.loading}</Card>
       ) : (
         <>
           {/* Top stat row */}
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="relative group/dev-card mb-6">
             <DevCopyJsonButton data={citationStatsDevData} />
-            <StatCard label={vg.scoreLabel} value={score} />
-            <StatCard label={vg.bandLabel} value={band} />
-            <StatCard label={vg.citabilityLabel} value={citabilityScore} />
-            <StatCard
-              label={vg.llmsLabel}
-              value={llms?.found ? vg.llmsFound : vg.llmsMissing}
-            />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label={vg.scoreLabel} value={score} />
+              <StatCard label={vg.bandLabel} value={band} />
+              <StatCard label={vg.citabilityLabel} value={citabilityScore} />
+              <StatCard
+                label={vg.llmsLabel}
+                value={llms?.found ? vg.llmsFound : vg.llmsMissing}
+              />
+            </div>
           </div>
 
           {/* 8-category score breakdown */}
           <div className="grid gap-4 lg:grid-cols-2 mb-6">
             <Card className="p-4" devData={citationCategoriesDevData}>
-              <h3 className="text-sm font-semibold text-foreground mb-3">{vg.componentsTitle}</h3>
+              <h3 className="text-sm font-semibold text-md-sys-on-surface mb-3">{vg.componentsTitle}</h3>
               <ul className="space-y-2">
                 {Object.entries(categories).map(([key, val]) => {
                   const pct = val.max ? Math.round((val.score / val.max) * 100) : 0;
                   return (
                     <li key={key} className="flex items-center gap-3 text-sm">
-                      <span className="text-muted-foreground flex-1">{key.replace(/_/g, ' ')}</span>
+                      <span className="text-md-sys-on-surface-variant flex-1">{key.replace(/_/g, ' ')}</span>
                       <span className="tabular-nums font-medium w-12 text-right">{val.score}/{val.max}</span>
-                      <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full rounded-full bg-link" style={{ width: `${pct}%` }} />
+                      <div className="w-20 h-1.5 rounded-full bg-md-sys-surface-container-highest/60 overflow-hidden">
+                        <div className="h-full rounded-full bg-md-sys-primary" style={{ width: `${pct}%` }} />
                       </div>
                     </li>
                   );
@@ -456,15 +458,15 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
 
             {/* llms.txt panel */}
             <Card className="p-4" devData={llmsPanelDevData}>
-              <h3 className="text-sm font-semibold text-foreground mb-3">{vg.llmsPanelTitle}</h3>
+              <h3 className="text-sm font-semibold text-md-sys-on-surface mb-3">{vg.llmsPanelTitle}</h3>
               {llms?.found ? (
                 <>
-                  <p className="text-xs font-mono text-foreground break-all">{String(llms.url || '')}</p>
+                  <p className="text-xs font-mono text-md-sys-on-surface break-all">{String(llms.url || '')}</p>
                   {llms.llms_full_txt_found && (
-                    <p className="text-xs text-green-600 mt-1">llms-full.txt also found</p>
+                    <p className="text-xs text-md-sys-success mt-1">llms-full.txt also found</p>
                   )}
                   {llms.depth ? (
-                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                    <ul className="mt-2 space-y-1 text-xs text-md-sys-on-surface-variant">
                       {Object.entries(llms.depth as Record<string, unknown>).map(([k, v]) => (
                         <li key={k} className="flex justify-between">
                           <span>{k.replace(/_/g, ' ')}</span>
@@ -474,32 +476,32 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
                     </ul>
                   ) : null}
                   {llms.preview ? (
-                    <pre className="mt-2 max-h-32 overflow-auto text-xs text-muted-foreground whitespace-pre-wrap">
+                    <pre className="mt-2 max-h-32 overflow-auto text-xs text-md-sys-on-surface-variant whitespace-pre-wrap">
                       {String(llms.preview)}
                     </pre>
                   ) : null}
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">{vg.llmsNotFoundHint}</p>
+                <p className="text-sm text-md-sys-on-surface-variant">{vg.llmsNotFoundHint}</p>
               )}
             </Card>
           </div>
 
           {/* AI discovery endpoints */}
           <Card className="p-4 mb-6" devData={aiDiscoveryDevData}>
-            <h3 className="text-sm font-semibold text-foreground mb-3">{vg.aiDiscoveryTitle}</h3>
+            <h3 className="text-sm font-semibold text-md-sys-on-surface mb-3">{vg.aiDiscoveryTitle}</h3>
             <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               {Object.entries(aiDiscoveryEndpoints).map(([key, ep]) => (
                 <li key={key} className="flex items-center gap-2">
-                  <span className={ep.found ? 'text-green-600' : 'text-destructive'}>
+                  <span className={ep.found ? 'text-md-sys-success' : 'text-destructive'}>
                     {ep.found ? '✓' : '✗'}
                   </span>
-                  <span className="text-muted-foreground truncate">{key.replace(/_/g, ' ')}</span>
+                  <span className="text-md-sys-on-surface-variant truncate">{key.replace(/_/g, ' ')}</span>
                 </li>
               ))}
             </ul>
             {aiDiscovery?.found_count !== undefined && (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs text-md-sys-on-surface-variant">
                 {String(aiDiscovery.found_count)} of {Object.keys(aiDiscoveryEndpoints).length} endpoints found
                 · Score: {String(aiDiscovery.discovery_score ?? '—')}/6
               </p>
@@ -509,17 +511,17 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           {/* Robots AI-bot tier table */}
           {robotsPerBot.length > 0 && (
             <Card className="overflow-hidden mb-6" devData={robotsDevData}>
-              <h3 className="text-sm font-semibold text-foreground px-4 pt-4 pb-2">{vg.robotsTitle}</h3>
-              <p className="px-4 pb-2 text-xs text-muted-foreground">
+              <h3 className="text-sm font-semibold text-md-sys-on-surface px-4 pt-4 pb-2">{vg.robotsTitle}</h3>
+              <p className="px-4 pb-2 text-xs text-md-sys-on-surface-variant">
                 Score: {String(robotsScore?.robots_score ?? '—')}/18
               </p>
               <Table>
                 <TableHead>
-                  <TableRow>
+                  <tr>
                     <TableHeadCell>Bot</TableHeadCell>
                     <TableHeadCell>Tier</TableHeadCell>
                     <TableHeadCell>Access</TableHeadCell>
-                  </TableRow>
+                  </tr>
                 </TableHead>
                 <TableBody>
                   {robotsPerBot.slice(0, 12).map((bot) => (
@@ -528,15 +530,15 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
                         <span className="font-mono text-xs">{String(bot.agent)}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-xs text-muted-foreground">{String(bot.tier)}</span>
+                        <span className="text-xs text-md-sys-on-surface-variant">{String(bot.tier)}</span>
                       </TableCell>
                       <TableCell>
                         <span className={
                           bot.access === 'blocked'
                             ? 'text-destructive text-xs font-medium'
                             : bot.access === 'allowed'
-                              ? 'text-green-600 text-xs font-medium'
-                              : 'text-muted-foreground text-xs'
+                              ? 'text-md-sys-success text-xs font-medium'
+                              : 'text-md-sys-on-surface-variant text-xs'
                         }>
                           {String(bot.access)}
                         </span>
@@ -550,38 +552,38 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
 
           {/* Citability score */}
           <Card className="p-4 mb-6" devData={citabilityDevData}>
-            <h3 className="text-sm font-semibold text-foreground mb-1">{vg.citabilityTitle}</h3>
-            <p className="text-xs text-muted-foreground mb-3">{vg.citabilitySubtitle}</p>
+            <h3 className="text-sm font-semibold text-md-sys-on-surface mb-1">{vg.citabilityTitle}</h3>
+            <p className="text-xs text-md-sys-on-surface-variant mb-3">{vg.citabilitySubtitle}</p>
             {citability ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                 <div>
-                  <span className="text-muted-foreground">Score</span>
+                  <span className="text-md-sys-on-surface-variant">Score</span>
                   <span className="ml-2 font-semibold">{citabilityScore}/100</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Pages &gt; 50</span>
+                  <span className="text-md-sys-on-surface-variant">Pages &gt; 50</span>
                   <span className="ml-2 font-semibold">{String(citability.pages_above_50 ?? '—')}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Pages &gt; 75</span>
+                  <span className="text-md-sys-on-surface-variant">Pages &gt; 75</span>
                   <span className="ml-2 font-semibold">{String(citability.pages_above_75 ?? '—')}</span>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No data</p>
+              <p className="text-sm text-md-sys-on-surface-variant">No data</p>
             )}
           </Card>
 
           {/* Negative signals */}
           {negativePages.length > 0 && (
             <Card className="overflow-hidden mb-6" devData={negativeSignalsDevData}>
-              <h3 className="text-sm font-semibold text-foreground px-4 pt-4 pb-2">{vg.negativeSectionTitle}</h3>
+              <h3 className="text-sm font-semibold text-md-sys-on-surface px-4 pt-4 pb-2">{vg.negativeSectionTitle}</h3>
               <Table>
                 <TableHead>
-                  <TableRow>
+                  <tr>
                     <TableHeadCell>URL</TableHeadCell>
                     <TableHeadCell>Signals</TableHeadCell>
-                  </TableRow>
+                  </tr>
                 </TableHead>
                 <TableBody>
                   {negativePages.slice(0, 10).map((row, i) => {
@@ -615,18 +617,18 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           {/* E-E-A-T */}
           {eeat && !eeat.missing ? (
             <Card className="p-4 mb-6" devData={eeatDevData}>
-              <h3 className="text-sm font-semibold text-foreground mb-2">{vg.eeatTitle}</h3>
+              <h3 className="text-sm font-semibold text-md-sys-on-surface mb-2">{vg.eeatTitle}</h3>
               <ul className="grid grid-cols-3 gap-3 text-xs">
                 <li>
-                  <span className="text-muted-foreground">Author schema</span>
+                  <span className="text-md-sys-on-surface-variant">Author schema</span>
                   <span className="ml-2 font-medium">{String(eeat.pages_with_author_schema)}</span>
                 </li>
                 <li>
-                  <span className="text-muted-foreground">Org schema</span>
+                  <span className="text-md-sys-on-surface-variant">Org schema</span>
                   <span className="ml-2 font-medium">{String(eeat.pages_with_organization_schema)}</span>
                 </li>
                 <li>
-                  <span className="text-muted-foreground">About/Contact</span>
+                  <span className="text-md-sys-on-surface-variant">About/Contact</span>
                   <span className="ml-2 font-medium">{String(eeat.about_contact_pages)}</span>
                 </li>
               </ul>
@@ -634,24 +636,26 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           ) : null}
 
           {/* FAQ coverage stat */}
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="relative group/dev-card mb-6">
             <DevCopyJsonButton data={faqStatsDevData} />
-            <StatCard label={vg.faqCoverageLabel} value={`${faq?.coverage_pct ?? '—'}%`} />
-            <StatCard label={vg.faqPagesLabel} value={Number(faq?.pages_with_faq_schema) || 0} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label={vg.faqCoverageLabel} value={`${faq?.coverage_pct ?? '—'}%`} />
+              <StatCard label={vg.faqPagesLabel} value={Number(faq?.pages_with_faq_schema) || 0} />
+            </div>
           </div>
 
           {/* Missing FAQ schema */}
           <Card className="overflow-hidden mb-6" devData={missingFaqDevData}>
-            <h3 className="text-sm font-semibold text-foreground px-4 pt-4 pb-2">{vg.missingFaqTitle}</h3>
+            <h3 className="text-sm font-semibold text-md-sys-on-surface px-4 pt-4 pb-2">{vg.missingFaqTitle}</h3>
             {filteredFaq.length === 0 ? (
-              <p className="px-4 pb-4 text-sm text-muted-foreground">{vg.missingFaqEmpty}</p>
+              <p className="px-4 pb-4 text-sm text-md-sys-on-surface-variant">{vg.missingFaqEmpty}</p>
             ) : (
               <>
                 <Table>
                   <TableHead>
-                    <TableRow>
+                    <tr>
                       <TableHeadCell>{vg.colUrl}</TableHeadCell>
-                    </TableRow>
+                    </tr>
                   </TableHead>
                   <TableBody>
                     {pagination.slice.map((row, i) => {
@@ -669,7 +673,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
                     })}
                   </TableBody>
                 </Table>
-                <p className="px-4 py-2 text-xs text-muted-foreground border-t border-default">
+                <p className="px-4 py-2 text-xs text-md-sys-on-surface-variant border-t border-md-sys-outline-variant/40">
                   {vg.pageOf} {pagination.from}–{pagination.to} {vg.of} {filteredFaq.length}
                 </p>
               </>
@@ -677,38 +681,40 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           </Card>
 
           {/* Live citation check note */}
-          <Card className="p-4 border-violet-500/25 bg-violet-500/5">
-            <h3 className="text-sm font-semibold text-foreground mb-1">{vg.citationLiveTitle}</h3>
-            <p className="text-xs text-muted-foreground">{vg.citationLiveOptInNote}</p>
+          <Card className="p-4 border-md-sys-tertiary/25 bg-md-sys-tertiary-container/10">
+            <h3 className="text-sm font-semibold text-md-sys-on-surface mb-1">{vg.citationLiveTitle}</h3>
+            <p className="text-xs text-md-sys-on-surface-variant">{vg.citationLiveOptInNote}</p>
           </Card>
         </>
       ))}
 
       {activeTab === 'agent' && (agentLoading ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">{strings.app.loading}</Card>
+        <Card className="p-8 text-center text-sm text-md-sys-on-surface-variant">{strings.app.loading}</Card>
       ) : (
         <>
           {/* Agent score header */}
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="relative group/dev-card mb-6">
             <DevCopyJsonButton data={agentStatsDevData} />
-            <StatCard label={vg.agentScoreLabel} value={agentPct} />
-            <StatCard label={vg.agentGradeLabel} value={<span className={gradeColor(agentGrade)}>{agentGrade}</span>} />
-            <StatCard label={vg.agentAgentsMdLabel} value={agentsMd?.found ? vg.agentAgentsMdFound : vg.agentAgentsMdMissing} />
-            <StatCard label={vg.agentSkillMdLabel} value={skillMd?.found ? vg.agentAgentsMdFound : vg.agentAgentsMdMissing} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label={vg.agentScoreLabel} value={agentPct} />
+              <StatCard label={vg.agentGradeLabel} value={<span className={gradeColor(agentGrade)}>{agentGrade}</span>} />
+              <StatCard label={vg.agentAgentsMdLabel} value={agentsMd?.found ? vg.agentAgentsMdFound : vg.agentAgentsMdMissing} />
+              <StatCard label={vg.agentSkillMdLabel} value={skillMd?.found ? vg.agentAgentsMdFound : vg.agentAgentsMdMissing} />
+            </div>
           </div>
 
           {/* 5-category score breakdown */}
           <Card className="p-4 mb-6" devData={agentCategoriesDevData}>
-            <h3 className="text-sm font-semibold text-foreground mb-3">{vg.agentCategoriesTitle}</h3>
+            <h3 className="text-sm font-semibold text-md-sys-on-surface mb-3">{vg.agentCategoriesTitle}</h3>
             <ul className="space-y-2">
               {Object.entries(agentCategories).map(([key, val]) => {
                 const pct = val.max ? Math.round((val.score / val.max) * 100) : 0;
                 return (
                   <li key={key} className="flex items-center gap-3 text-sm">
-                    <span className="text-muted-foreground flex-1">{key.replace(/_/g, ' ')}</span>
+                    <span className="text-md-sys-on-surface-variant flex-1">{key.replace(/_/g, ' ')}</span>
                     <span className="tabular-nums font-medium w-12 text-right">{val.score}/{val.max}</span>
-                    <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full bg-link" style={{ width: `${pct}%` }} />
+                    <div className="w-20 h-1.5 rounded-full bg-md-sys-surface-container-highest/60 overflow-hidden">
+                      <div className="h-full rounded-full bg-md-sys-primary" style={{ width: `${pct}%` }} />
                     </div>
                   </li>
                 );
@@ -718,7 +724,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
 
           {/* Discovery files */}
           <Card className="p-4 mb-6" devData={agentDiscoveryDevData}>
-            <h3 className="text-sm font-semibold text-foreground mb-3">{vg.agentDiscoveryFilesTitle}</h3>
+            <h3 className="text-sm font-semibold text-md-sys-on-surface mb-3">{vg.agentDiscoveryFilesTitle}</h3>
             <ul className="space-y-2 text-sm">
               {[
                 { label: 'AGENTS.md', data: agentsMd },
@@ -726,12 +732,12 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
                 { label: 'agent-permissions.json', data: agentPermissions },
               ].map(({ label, data }) => (
                 <li key={label} className="flex items-center gap-3">
-                  <span className={data?.found ? 'text-green-600' : 'text-destructive'}>
+                  <span className={data?.found ? 'text-md-sys-success' : 'text-destructive'}>
                     {data?.found ? '✓' : '✗'}
                   </span>
                   <span className="font-mono text-xs flex-1">{label}</span>
                   {data?.found && data?.url ? (
-                    <span className="text-xs text-muted-foreground truncate max-w-xs">{String(data.url)}</span>
+                    <span className="text-xs text-md-sys-on-surface-variant truncate max-w-xs">{String(data.url)}</span>
                   ) : null}
                 </li>
               ))}
@@ -740,42 +746,42 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
 
           {/* Token budget */}
           <Card className="p-4 mb-6" devData={tokenBudgetDevData}>
-            <h3 className="text-sm font-semibold text-foreground mb-1">{vg.agentTokenBudgetTitle}</h3>
-            <p className="text-xs text-muted-foreground mb-3">{vg.agentTokenBudgetSubtitle}</p>
+            <h3 className="text-sm font-semibold text-md-sys-on-surface mb-1">{vg.agentTokenBudgetTitle}</h3>
+            <p className="text-xs text-md-sys-on-surface-variant mb-3">{vg.agentTokenBudgetSubtitle}</p>
             {tokenBudget && !tokenBudget.missing ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <p className="text-muted-foreground">{vg.agentP50Label}</p>
+                  <p className="text-md-sys-on-surface-variant">{vg.agentP50Label}</p>
                   <p className="font-semibold">{String(tokenBudget.p50_tokens ?? '—')}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">{vg.agentP95Label}</p>
+                  <p className="text-md-sys-on-surface-variant">{vg.agentP95Label}</p>
                   <p className="font-semibold">{String(tokenBudget.p95_tokens ?? '—')}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">{vg.agentOverWarnLabel}</p>
+                  <p className="text-md-sys-on-surface-variant">{vg.agentOverWarnLabel}</p>
                   <p className="font-semibold">{String(tokenBudget.pages_over_warn ?? '—')}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">{vg.agentOverMaxLabel}</p>
+                  <p className="text-md-sys-on-surface-variant">{vg.agentOverMaxLabel}</p>
                   <p className="font-semibold">{String(tokenBudget.pages_over_max ?? '—')}</p>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No crawl data available.</p>
+              <p className="text-sm text-md-sys-on-surface-variant">No crawl data available.</p>
             )}
           </Card>
 
           {/* Oversized pages */}
           {oversizedPages.length > 0 ? (
             <Card className="overflow-hidden mb-6" devData={oversizedPagesDevData}>
-              <h3 className="text-sm font-semibold text-foreground px-4 pt-4 pb-2">{vg.agentOversizedTitle}</h3>
+              <h3 className="text-sm font-semibold text-md-sys-on-surface px-4 pt-4 pb-2">{vg.agentOversizedTitle}</h3>
               <Table>
                 <TableHead>
-                  <TableRow>
+                  <tr>
                     <TableHeadCell>{vg.colUrl}</TableHeadCell>
                     <TableHeadCell>Tokens</TableHeadCell>
-                  </TableRow>
+                  </tr>
                 </TableHead>
                 <TableBody>
                   {oversizedPages.slice(0, 20).map((row, i) => {
@@ -789,7 +795,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="text-xs tabular-nums font-medium text-orange-600">
+                          <span className="text-xs tabular-nums font-medium text-md-sys-warning">
                             {String(row.token_count ?? '—')}
                           </span>
                         </TableCell>
@@ -801,50 +807,50 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
             </Card>
           ) : (
             <Card className="p-4 mb-6" devData={oversizedPagesDevData}>
-              <p className="text-sm text-muted-foreground">{vg.agentOversizedEmpty}</p>
+              <p className="text-sm text-md-sys-on-surface-variant">{vg.agentOversizedEmpty}</p>
             </Card>
           )}
 
           {/* Copy-for-AI */}
           <Card className="p-4 mb-6" devData={copyForAiDevData}>
-            <h3 className="text-sm font-semibold text-foreground mb-1">{vg.agentCopyForAiTitle}</h3>
-            <p className="text-xs text-muted-foreground mb-3">{vg.agentCopyForAiSubtitle}</p>
+            <h3 className="text-sm font-semibold text-md-sys-on-surface mb-1">{vg.agentCopyForAiTitle}</h3>
+            <p className="text-xs text-md-sys-on-surface-variant mb-3">{vg.agentCopyForAiSubtitle}</p>
             {copyForAi ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                 <div>
-                  <p className="text-muted-foreground">All pages %</p>
+                  <p className="text-md-sys-on-surface-variant">All pages %</p>
                   <p className="font-semibold">{String(copyForAi.all_pages_pct ?? '—')}%</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Doc pages %</p>
+                  <p className="text-md-sys-on-surface-variant">Doc pages %</p>
                   <p className="font-semibold">{String(copyForAi.doc_pages_pct ?? '—')}%</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">UX bridge score</p>
+                  <p className="text-md-sys-on-surface-variant">UX bridge score</p>
                   <p className="font-semibold">{String(copyForAi.ux_score ?? '—')}/10</p>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No data available.</p>
+              <p className="text-sm text-md-sys-on-surface-variant">No data available.</p>
             )}
           </Card>
 
           {/* Generate bundle CTA */}
-          <Card className="p-4 border-violet-500/25 bg-violet-500/5" devData={agentBundleDevData}>
-            <h3 className="text-sm font-semibold text-foreground mb-1">{vg.agentBundleTitle}</h3>
-            <p className="text-xs text-muted-foreground mb-3">{vg.agentBundleSubtitle}</p>
+          <Card className="p-4 border-md-sys-tertiary/25 bg-md-sys-tertiary-container/10" devData={agentBundleDevData}>
+            <h3 className="text-sm font-semibold text-md-sys-on-surface mb-1">{vg.agentBundleTitle}</h3>
+            <p className="text-xs text-md-sys-on-surface-variant mb-3">{vg.agentBundleSubtitle}</p>
             {!agentBundle ? (
               <button
                 onClick={handleGenerateBundle}
                 disabled={bundleGenerating || !propertyId}
-                className="px-3 py-1.5 text-xs rounded bg-link text-white hover:bg-link/90 disabled:opacity-50"
+                className="press px-4 py-2 text-xs font-medium rounded-full bg-md-sys-primary text-md-sys-on-primary hover:brightness-105 active:scale-[0.98] disabled:opacity-50 transition-all"
               >
                 {bundleGenerating ? vg.agentBundleGenerating : vg.agentBundleButton}
               </button>
             ) : (
               <div className="space-y-3">
                 {Array.isArray(agentBundle.missing_files) && (agentBundle.missing_files as string[]).length > 0 && (
-                  <p className="text-xs text-orange-600">
+                  <p className="text-xs text-md-sys-warning">
                     {vg.agentBundleMissingLabel}: {(agentBundle.missing_files as string[]).join(', ')}
                   </p>
                 )}
@@ -858,8 +864,8 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
                   };
                   return (
                     <div key={key}>
-                      <p className="text-xs font-medium text-foreground mb-1">{labels[key]}</p>
-                      <pre className="text-xs bg-muted rounded p-2 overflow-auto max-h-40 whitespace-pre-wrap">
+                      <p className="text-xs font-medium text-md-sys-on-surface mb-1">{labels[key]}</p>
+                      <pre className="text-xs bg-md-sys-surface-container-lowest rounded-xl border border-md-sys-outline-variant/40 p-3 overflow-auto max-h-40 whitespace-pre-wrap">
                         {String(content)}
                       </pre>
                     </div>

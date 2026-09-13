@@ -26,7 +26,7 @@ export default function ChatShell({ sidebar, children }: ChatShellProps) {
   };
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-[var(--chat-bg)] text-foreground">
+    <div className="flex h-dvh overflow-hidden bg-md-sys-surface text-md-sys-on-surface">
       {sidebar(layout)}
 
       <main className="chat-shell-main min-w-0">

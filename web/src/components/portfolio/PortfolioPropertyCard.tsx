@@ -1,4 +1,3 @@
-
 import {
   AlertTriangle,
   ArrowRight,
@@ -6,10 +5,11 @@ import {
   ExternalLink,
   Gauge,
   Globe,
+  Sparkles,
   Timer,
   Trash2,
 } from 'lucide-react';
-import { Card, LabelWithHint } from '@/components';
+import { LabelWithHint } from '@/components';
 import Sparkline, { type SparklineMode } from '@/components/Sparkline';
 import { DataSourceBadgeRow } from '@/components/DataSourceBadge';
 import { PRIORITY_CONFIG } from '@/lib/issuePriority';
@@ -41,6 +41,11 @@ export interface PortfolioPropertyCardProps {
   onDeleteConfirm: () => void;
 }
 
+function domainMonogram(domain: string): string {
+  const clean = domain.replace(/^(https?:\/\/)?(www\.)?/, '');
+  return clean.slice(0, 2).toUpperCase();
+}
+
 function PortfolioTrendCell({
   label,
   helpKey,
@@ -55,13 +60,13 @@ function PortfolioTrendCell({
   mode: SparklineMode;
 }) {
   return (
-    <div className="min-w-0 flex-1 rounded-md border border-default/60 bg-brand-900/25 px-2 py-1.5">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">
+    <div className="min-w-0 flex-1 rounded-xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container-low/40 p-2.5">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-md-sys-on-surface-variant truncate">
         {helpKey ? <LabelWithHint label={label} helpKey={helpKey} /> : label}
       </p>
-      <div className="flex items-end justify-between gap-1 mt-1 min-h-[22px]">
-        <Sparkline values={values} mode={mode} width={92} height={22} />
-        <span className="text-sm font-semibold tabular-nums text-foreground shrink-0 leading-none pb-0.5">
+      <div className="flex items-end justify-between gap-1.5 mt-1.5 min-h-[22px]">
+        <Sparkline values={values} mode={mode} width={80} height={20} />
+        <span className="text-sm font-bold tabular-nums text-md-sys-on-surface shrink-0 leading-none">
           {displayValue}
         </span>
       </div>
@@ -71,13 +76,13 @@ function PortfolioTrendCell({
 
 function PortfolioCategoryChip({ cat, issueLabel }: { cat: PortfolioCategorySnapshot; issueLabel: string }) {
   return (
-    <div className="rounded-md border border-default/70 bg-brand-900/30 px-1.5 py-1 text-center min-w-0">
-      <p className="text-[9px] uppercase tracking-wide text-muted-foreground truncate" title={cat.name}>
+    <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 p-2 text-center min-w-0">
+      <p className="text-[9px] font-semibold uppercase tracking-wide text-md-sys-on-surface-variant truncate" title={cat.name}>
         {shortCategoryLabel(cat)}
       </p>
-      <p className={`text-sm font-bold tabular-nums leading-tight ${healthScoreClass(cat.score)}`}>{cat.score}</p>
+      <p className={`text-sm font-bold tabular-nums leading-tight mt-0.5 ${healthScoreClass(cat.score)}`}>{cat.score}</p>
       {cat.issueCount > 0 ? (
-        <p className="text-[9px] text-muted-foreground tabular-nums truncate">
+        <p className="text-[9px] text-md-sys-on-surface-variant tabular-nums truncate mt-0.5">
           {format(issueLabel, { count: cat.issueCount })}
         </p>
       ) : null}
@@ -88,9 +93,9 @@ function PortfolioCategoryChip({ cat, issueLabel }: { cat: PortfolioCategorySnap
 function PortfolioSignalPill({ label, value }: { label: string; value: number }) {
   if (value <= 0) return null;
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] tabular-nums text-amber-800 dark:text-amber-300">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold">{value.toLocaleString()}</span>
+    <span className="inline-flex items-center gap-1 rounded-full bg-md-sys-warning-container/30 border border-md-sys-warning/30 px-2.5 py-0.5 text-[10px] tabular-nums text-md-sys-warning">
+      <span className="text-md-sys-on-surface-variant">{label}</span>
+      <span className="font-bold">{value.toLocaleString()}</span>
     </span>
   );
 }
@@ -98,7 +103,7 @@ function PortfolioSignalPill({ label, value }: { label: string; value: number })
 function SparklineSkeleton() {
   return (
     <span
-      className="shimmer inline-block h-5 w-[72px] rounded bg-brand-800/90 dark:bg-white/[0.07]"
+      className="shimmer inline-block h-5 w-[72px] rounded-full bg-md-sys-surface-container-high"
       aria-hidden
     />
   );
@@ -144,95 +149,95 @@ export default function PortfolioPropertyCard({
   const showDataSources = !group.crawlOnly && (group.dataSources?.length ?? 0) > 0;
 
   return (
-    <div ref={ref} className="relative min-w-[520px] max-w-[600px] shrink-0 text-left">
-      <Card
-        shadow
-        padding="none"
-        className="group border-default/90 hover:border-blue-500/45 transition-all duration-200 h-full p-2"
-      >
-        <div className="space-y-1.5">
-          <div className="flex items-start justify-between gap-2">
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={onOpen}
-              className="min-w-0 flex-1 flex items-start justify-between gap-3 text-left rounded-md -m-1 p-1 hover:bg-brand-900/40 transition-colors disabled:opacity-60"
-            >
+    <div ref={ref} className="w-full text-left flex flex-col h-full">
+      <div className="group relative flex flex-col justify-between h-full rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-md-sys-primary/45 hover:shadow-[var(--elevation-2)]">
+        <div className="space-y-4">
+          {/* Header Row */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-md-sys-primary-container/40 font-mono text-sm font-bold text-md-sys-primary shadow-xs">
+                {domainMonogram(group.domainName)}
+              </span>
               <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <Building2 className="h-3 w-3" />
-                  {vh.brandLabel}
-                </p>
-                <h3 className="text-sm sm:text-[15px] font-semibold text-foreground truncate">{group.domainName}</h3>
-                {group.crawlOnly ? (
-                  <span className="mt-0.5 inline-block rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
-                    {vh.crawlOnlyBadge}
-                  </span>
-                ) : null}
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h3 className="text-base font-bold text-md-sys-on-surface truncate group-hover:text-md-sys-primary transition-colors">
+                    {group.domainName}
+                  </h3>
                   {group.crawlOnly ? (
-                    <LabelWithHint label={vh.titleCoverageLabel} helpKey="shared.titleCoverage" />
-                  ) : (
-                    <LabelWithHint label={vh.healthScoreLabel} helpKey="shared.healthScore" />
-                  )}
-                </p>
-                <div className="flex items-center justify-end gap-1.5">
-                  {group.crawlOnly && trends.titleTrend.length >= 1 ? (
-                    <Sparkline values={trends.titleTrend} mode="higher-better" width={72} height={20} />
+                    <span className="rounded-full bg-md-sys-warning-container/40 border border-md-sys-warning/30 px-2 py-0.2 text-[10px] font-semibold text-md-sys-warning">
+                      {vh.crawlOnlyBadge}
+                    </span>
                   ) : null}
-                  {!group.crawlOnly && historyLoading ? (
-                    <SparklineSkeleton />
-                  ) : null}
+                </div>
+                <a
+                  href={group.crawlUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-0.5 inline-flex max-w-full items-center gap-1 text-xs text-md-sys-on-surface-variant hover:text-md-sys-primary transition-colors"
+                  title={group.crawlUrl}
+                >
+                  <span className="truncate font-mono">{group.crawlUrl}</span>
+                  <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
+                </a>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 shrink-0">
+              {/* Health Score Pill */}
+              <div className="text-right">
+                <div className="flex items-center gap-1.5 justify-end">
+                  {!group.crawlOnly && historyLoading ? <SparklineSkeleton /> : null}
                   {!group.crawlOnly && !historyLoading && trends.healthTrend.length >= 1 ? (
-                    <Sparkline values={trends.healthTrend} mode="higher-better" width={72} height={20} />
+                    <Sparkline values={trends.healthTrend} mode="higher-better" width={56} height={18} />
                   ) : null}
-                  <p className={`text-base font-bold tabular-nums ${healthScoreClass(group.healthScore)}`}>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-sm font-bold tabular-nums shadow-xs ${healthScoreClass(
+                      group.healthScore,
+                    )} bg-md-sys-surface-container-high border border-md-sys-outline-variant/30`}
+                  >
                     {group.healthScore}
-                  </p>
+                  </span>
                 </div>
                 {!group.crawlOnly && trends.healthDelta != null && trends.healthDelta !== 0 ? (
                   <p
-                    className={`text-[10px] tabular-nums mt-0.5 ${trends.healthDelta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}
+                    className={`text-[10px] font-semibold tabular-nums mt-0.5 ${
+                      trends.healthDelta > 0 ? 'text-md-sys-success' : 'text-md-sys-error'
+                    }`}
                   >
-                    {trends.healthDelta > 0
-                      ? format(vh.healthDeltaUp, { delta: trends.healthDelta })
-                      : format(vh.healthDeltaDown, { delta: trends.healthDelta })}
-                  </p>
-                ) : null}
-                {!group.crawlOnly && auditHistory.length > 0 ? (
-                  <p className="text-[10px] text-muted-foreground tabular-nums mt-0.5">
-                    {format(vh.auditRunsLabel, { count: auditHistory.length })}
+                    {trends.healthDelta > 0 ? `+${trends.healthDelta}` : trends.healthDelta} vs prior
                   </p>
                 ) : null}
               </div>
-            </button>
-            <button
-              type="button"
-              title={vh.deleteProperty}
-              aria-label={vh.deleteProperty}
-              disabled={isDeleting}
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteToggle();
-              }}
-              className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:text-red-700 hover:bg-red-500/10 dark:hover:text-red-400 transition-colors disabled:opacity-50"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+
+              {/* Delete Button */}
+              <button
+                type="button"
+                title={vh.deleteProperty}
+                aria-label={vh.deleteProperty}
+                disabled={isDeleting}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteToggle();
+                }}
+                className="press rounded-full p-1.5 text-md-sys-on-surface-variant hover:text-md-sys-error hover:bg-md-sys-error-container/20 transition-all disabled:opacity-50 active:scale-95"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
+          {/* Delete Confirmation Alert */}
           {confirmOpen ? (
             <div
-              className="rounded-md border border-red-500/30 bg-red-500/5 px-2 py-2 space-y-2"
+              className="rounded-2xl border border-md-sys-error/40 bg-md-sys-error-container/20 p-3.5 space-y-2.5 animate-in"
               role="alertdialog"
               aria-labelledby={`delete-title-${cardKey}`}
             >
-              <p id={`delete-title-${cardKey}`} className="text-xs font-medium text-foreground">
+              <p id={`delete-title-${cardKey}`} className="text-xs font-bold text-md-sys-on-surface">
                 {vh.deleteConfirmTitle}
               </p>
-              <p className="text-[11px] text-muted-foreground leading-snug">
+              <p className="text-xs text-md-sys-on-surface-variant leading-relaxed">
                 {group.crawlOnly
                   ? format(vh.deleteConfirmCrawlOnly, {
                       name: group.domainName,
@@ -243,7 +248,7 @@ export default function PortfolioPropertyCard({
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"
-                  className="px-2 py-1 text-[11px] rounded-md border border-default text-muted-foreground hover:text-foreground"
+                  className="press px-3.5 py-1 text-xs font-semibold rounded-full border border-md-sys-outline-variant/40 text-md-sys-on-surface hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all"
                   onClick={onDeleteCancel}
                 >
                   {vh.deleteCancel}
@@ -251,7 +256,7 @@ export default function PortfolioPropertyCard({
                 <button
                   type="button"
                   disabled={isDeleting}
-                  className="px-2 py-1 text-[11px] rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                  className="press px-3.5 py-1 text-xs font-semibold rounded-full bg-md-sys-error text-md-sys-on-error hover:brightness-105 active:scale-[0.98] disabled:opacity-60 transition-all shadow-xs"
                   onClick={onDeleteConfirm}
                 >
                   {isDeleting ? vh.deleting : vh.deleteConfirm}
@@ -260,295 +265,118 @@ export default function PortfolioPropertyCard({
             </div>
           ) : null}
 
-          <div className="rounded-md border border-default bg-brand-900/35 px-2 py-1.5">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{vh.crawlUrlLabel}</p>
-            <a
-              href={group.crawlUrl}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex max-w-full items-center gap-1 text-xs sm:text-sm text-link hover:underline"
-              title={group.crawlUrl}
-            >
-              <span className="truncate font-mono">{group.crawlUrl}</span>
-              <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
-            </a>
+          {/* Key Metrics Row */}
+          <div className="grid grid-cols-3 gap-2.5">
+            {/* Pages Metric */}
+            <div className="rounded-xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container-low/50 p-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-md-sys-on-surface-variant flex items-center gap-1">
+                <Globe className="h-3 w-3" aria-hidden />
+                {vh.urlCountLabel}
+              </p>
+              <p className="text-base font-bold text-md-sys-on-surface tabular-nums mt-1">
+                {group.urlCount.toLocaleString()}
+              </p>
+              {group.medianResponseMs != null ? (
+                <p className="text-[10px] text-md-sys-on-surface-variant tabular-nums truncate mt-0.5">
+                  {group.medianResponseMs.toLocaleString()}ms resp
+                </p>
+              ) : (
+                <p className="text-[10px] text-md-sys-on-surface-variant truncate mt-0.5">Pages crawled</p>
+              )}
+            </div>
+
+            {/* Issues Metric */}
+            <div className="rounded-xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container-low/50 p-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-md-sys-on-surface-variant flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" aria-hidden />
+                {vh.totalIssuesLabel}
+              </p>
+              <p className="text-base font-bold text-md-sys-on-surface tabular-nums mt-1">
+                {group.totalIssues.toLocaleString()}
+              </p>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {(['Critical', 'High'] as const).map((priority) => {
+                  const key = priority.toLowerCase() as keyof typeof group.issueCounts;
+                  const count = group.issueCounts[key];
+                  if (!count || count <= 0) return null;
+                  const cfg = PRIORITY_CONFIG[priority];
+                  return (
+                    <span key={priority} className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold tabular-nums ${cfg.bg} ${cfg.text}`}>
+                      {priority[0]}:{count}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Performance / SEO */}
+            <div className="rounded-xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container-low/50 p-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-md-sys-on-surface-variant flex items-center gap-1">
+                <Gauge className="h-3 w-3" aria-hidden />
+                Lighthouse
+              </p>
+              <div className="mt-1 space-y-0.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[10px] text-md-sys-on-surface-variant uppercase">Perf</span>
+                  <span className="font-bold tabular-nums text-md-sys-on-surface">{group.perfScore ?? sj.emDash}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[10px] text-md-sys-on-surface-variant uppercase">SEO</span>
+                  <span className="font-bold tabular-nums text-md-sys-on-surface">{group.seoScore ?? sj.emDash}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {showCrawlConfig || showDataSources ? (
-            <div className="rounded-md border border-default bg-brand-900/35 px-2 py-1.5 space-y-1.5">
-              {showCrawlConfig ? (
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
-                    {vh.crawlConfigLabel}
-                  </p>
-                  <p className="text-xs text-foreground leading-snug">{crawlConfigSegments.join(' · ')}</p>
-                </div>
-              ) : null}
-              {showDataSources ? (
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                    {strings.views.overview.dataSourcesLabel}
-                  </p>
-                  <DataSourceBadgeRow sources={group.dataSources!} />
-                </div>
-              ) : null}
+          {/* Category Scores Chips */}
+          {!group.crawlOnly && group.categorySnapshots.length > 0 ? (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-md-sys-on-surface-variant">
+                {vh.categoryScoresLabel}
+              </p>
+              <div className="grid grid-cols-4 gap-1.5">
+                {group.categorySnapshots.slice(0, 4).map((cat) => (
+                  <PortfolioCategoryChip key={cat.id} cat={cat} issueLabel={vh.categoryIssueCount} />
+                ))}
+              </div>
             </div>
           ) : null}
 
-          {group.crawlOnly ? (
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-md bg-brand-900/35 px-2 py-1.5 border border-default space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      <LabelWithHint label={vh.urlCountLabel} helpKey="views.home.urlCount" />
-                    </p>
-                    <p className="text-lg leading-none font-semibold text-bright tabular-nums mt-1">
-                      {group.urlCount.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="min-w-0 text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      <LabelWithHint label={vh.titleCoverageLabel} helpKey="shared.titleCoverage" />
-                    </p>
-                    <p className="text-lg leading-none font-semibold text-foreground tabular-nums mt-1">
-                      {group.titleCoverage != null ? `${group.titleCoverage}%` : sj.emDash}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-foreground truncate border-t border-default/60 pt-2" title={group.lastCrawl || sj.emDash}>
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.lastCrawlLabel}: </span>
-                  {group.lastCrawl || sj.emDash}
-                </p>
-              </div>
-              <div className="rounded-md bg-brand-900/35 px-2 py-1.5 border border-default space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.avgWordCountLabel}</p>
-                    <p className="text-lg leading-none font-semibold text-bright tabular-nums mt-1">
-                      {group.avgWordCount != null ? group.avgWordCount.toLocaleString() : sj.emDash}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.thinPagesLabel}</p>
-                    <p className="text-lg leading-none font-semibold text-foreground tabular-nums mt-1">
-                      {group.thinPages != null ? group.thinPages.toLocaleString() : sj.emDash}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-snug border-t border-default/60 pt-2">
-                  {vh.crawlOnlyHint}
-                </p>
-              </div>
+          {/* Connected Data Sources & Signals */}
+          {showDataSources || trends.seoSignalItems.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              {showDataSources ? <DataSourceBadgeRow sources={group.dataSources!} /> : null}
+              {trends.seoSignalItems.slice(0, 2).map((row) => (
+                <PortfolioSignalPill key={row.label} label={row.label} value={row.value} />
+              ))}
             </div>
-          ) : (
-            <div className="space-y-2">
-              {group.categorySnapshots.length > 0 ? (
-                <div className="rounded-md border border-default bg-brand-900/30 px-2 py-1.5">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">{vh.categoryScoresLabel}</p>
-                  <div className="grid grid-cols-4 gap-1">
-                    {group.categorySnapshots.map((cat) => (
-                      <PortfolioCategoryChip key={cat.id} cat={cat} issueLabel={vh.categoryIssueCount} />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+          ) : null}
 
-              <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-md bg-brand-900/35 px-2 py-1.5 border border-default">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <LabelWithHint label={vh.urlCountLabel} helpKey="views.home.urlCount" />
-                  </p>
-                  <p className="text-lg font-semibold text-bright tabular-nums mt-1">{group.urlCount.toLocaleString()}</p>
-                  {group.medianWordCount != null ? (
-                    <p className="text-[10px] text-muted-foreground mt-1 tabular-nums">
-                      {vh.medianWordsLabel}: {group.medianWordCount.toLocaleString()}
-                    </p>
-                  ) : null}
-                  {group.medianResponseMs != null ? (
-                    <p className="text-[10px] text-muted-foreground tabular-nums">
-                      {format(vh.responseTimeValue, { ms: group.medianResponseMs.toLocaleString() })}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="rounded-md bg-brand-900/35 px-2 py-1.5 border border-default">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" aria-hidden />
-                    <LabelWithHint label={vh.totalIssuesLabel} helpKey="views.home.totalIssues" />
-                  </p>
-                  <p className="text-lg font-semibold text-bright tabular-nums mt-1">{group.totalIssues.toLocaleString()}</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {(['Critical', 'High', 'Medium', 'Low'] as const).map((priority) => {
-                      const key = priority.toLowerCase() as keyof typeof group.issueCounts;
-                      const count = group.issueCounts[key];
-                      if (count <= 0) return null;
-                      const cfg = PRIORITY_CONFIG[priority];
-                      return (
-                        <span key={priority} className={`px-1.5 py-0.5 rounded text-[9px] tabular-nums ${cfg.bg} ${cfg.text}`}>
-                          {priority[0]}
-                          {count}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="rounded-md bg-brand-900/35 px-2 py-1.5 border border-default">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                    <Gauge className="h-3 w-3" aria-hidden />
-                    Lighthouse
-                  </p>
-                  <div className="mt-1 space-y-0.5">
-                    <p className="text-sm font-semibold tabular-nums">
-                      <span className="text-[10px] text-muted-foreground uppercase mr-1">
-                        <LabelWithHint label={vh.perfScoreLabel} helpKey="views.home.perfScore" />
-                      </span>
-                      {group.perfScore ?? sj.emDash}
-                    </p>
-                    <p className="text-sm font-semibold tabular-nums">
-                      <span className="text-[10px] text-muted-foreground uppercase mr-1">
-                        <LabelWithHint label={vh.seoScoreLabel} helpKey="views.home.seoScore" />
-                      </span>
-                      {group.seoScore ?? sj.emDash}
-                    </p>
-                  </div>
-                  {trends.urgentCount > 0 ? (
-                    <p className="text-[10px] text-rose-600 dark:text-rose-400 mt-1 tabular-nums">
-                      {vh.trendUrgentLabel}: {trends.urgentCount}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-
-              {(trends.seoSignalItems.length > 0 || group.securityFindings > 0 || group.duplicateClusters > 0) ? (
-                <div className="rounded-md border border-default bg-brand-900/30 px-2 py-1.5">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{vh.seoSignalsLabel}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {trends.seoSignalItems.map((row) => (
-                      <PortfolioSignalPill key={row.label} label={row.label} value={row.value} />
-                    ))}
-                    <PortfolioSignalPill label={vh.securityFindingsLabel} value={group.securityFindings} />
-                    <PortfolioSignalPill label={vh.duplicateContentLabel} value={group.duplicateClusters} />
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="rounded-md border border-default bg-brand-900/25 px-2 py-1.5 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.lastCrawlLabel}</p>
-                  <p className="text-foreground truncate mt-0.5" title={group.lastCrawl || sj.emDash}>
-                    {group.lastCrawl || sj.emDash}
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.lastAuditLabel}</p>
-                  <p className="text-foreground truncate mt-0.5" title={group.lastAudit || sj.emDash}>
-                    {group.lastAudit || sj.emDash}
-                  </p>
-                </div>
-                {group.crawlDurationS != null ? (
-                  <div className="min-w-0 flex items-center gap-1.5">
-                    <Timer className="h-3 w-3 text-muted-foreground shrink-0" aria-hidden />
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.crawlDurationLabel}</p>
-                      <p className="text-foreground tabular-nums mt-0.5">
-                        {format(vh.crawlDurationValue, { seconds: group.crawlDurationS.toLocaleString() })}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          )}
-
-          {group.crawlOnly ? (
-            <div className="rounded-md border border-default bg-brand-900/30 px-2 py-1.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">{vh.crawlTrendsLabel}</p>
-              {trends.hasCrawlTrendLines ? (
-                <div className="flex gap-1.5">
-                  <PortfolioTrendCell
-                    label={vh.trendUrlsLabel}
-                    values={trends.pagesTrend}
-                    displayValue={group.urlCount.toLocaleString()}
-                    mode="higher-better"
-                  />
-                  <PortfolioTrendCell
-                    label={vh.trendTitleCoverageLabel}
-                    helpKey="shared.titleCoverage"
-                    values={trends.titleTrend}
-                    displayValue={group.titleCoverage != null ? `${group.titleCoverage}%` : sj.emDash}
-                    mode="higher-better"
-                  />
-                  <PortfolioTrendCell
-                    label={vh.trendAvgWordsLabel}
-                    values={trends.wordsTrend}
-                    displayValue={group.avgWordCount != null ? group.avgWordCount.toLocaleString() : sj.emDash}
-                    mode="higher-better"
-                  />
-                </div>
-              ) : (
-                <p className="text-[11px] text-muted-foreground leading-snug">{vh.crawlTrendsNeedHistory}</p>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-md border border-default bg-brand-900/30 px-2 py-1.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">{vh.trendsLabel}</p>
-              {trends.hasAuditTrendLines ? (
-                <div className="grid grid-cols-2 gap-1.5">
-                  <PortfolioTrendCell
-                    label={vh.trendHealthLabel}
-                    helpKey="views.home.trendHealth"
-                    values={trends.healthTrend}
-                    displayValue={String(group.healthScore)}
-                    mode="higher-better"
-                  />
-                  <PortfolioTrendCell
-                    label={vh.trendIssuesLabel}
-                    helpKey="views.home.trendIssues"
-                    values={trends.issuesTrend}
-                    displayValue={group.totalIssues.toLocaleString()}
-                    mode="lower-better"
-                  />
-                  <PortfolioTrendCell
-                    label={vh.perfScoreLabel}
-                    helpKey="views.home.perfScore"
-                    values={trends.perfTrend}
-                    displayValue={group.perfScore != null ? String(group.perfScore) : sj.emDash}
-                    mode="higher-better"
-                  />
-                  <PortfolioTrendCell
-                    label={vh.seoScoreLabel}
-                    helpKey="views.home.seoScore"
-                    values={trends.seoTrend}
-                    displayValue={group.seoScore != null ? String(group.seoScore) : sj.emDash}
-                    mode="higher-better"
-                  />
-                </div>
-              ) : (
-                <p className="text-[11px] text-muted-foreground leading-snug">{vh.trendsNeedHistory}</p>
-              )}
-            </div>
-          )}
-
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={onOpen}
-            className="w-full rounded-md border border-default px-2 py-1.5 text-left hover:bg-brand-900/40 transition-colors disabled:opacity-60"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                {group.crawlOnly ? format(vh.viewUrlsCta, { count: group.urlCount }) : vh.openBrandCta}
-              </p>
-              <div className="text-xs text-link-soft flex items-center gap-1 font-medium">
-                <Globe className="h-3.5 w-3.5" />
-                {group.crawlOnly ? format(vh.viewUrlsCta, { count: group.urlCount }) : vh.openBrandCta}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </div>
-            </div>
-          </button>
+          {/* Timestamp & Crawl summary */}
+          <div className="flex items-center justify-between border-t border-md-sys-outline-variant/30 pt-2 text-[11px] text-md-sys-on-surface-variant">
+            <span className="truncate" title={group.lastAudit || group.lastCrawl || ''}>
+              {group.lastAudit ? `Audited: ${group.lastAudit}` : group.lastCrawl ? `Crawled: ${group.lastCrawl}` : 'Ready'}
+            </span>
+            {group.crawlDurationS != null ? (
+              <span className="flex items-center gap-1 tabular-nums shrink-0">
+                <Timer className="h-3 w-3" />
+                {group.crawlDurationS}s
+              </span>
+            ) : null}
+          </div>
         </div>
-      </Card>
+
+        {/* Primary CTA Button */}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onOpen}
+          className="press mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-md-sys-primary px-4 py-2.5 text-xs font-semibold text-md-sys-on-primary shadow-xs transition-all duration-200 hover:brightness-105 hover:shadow-[var(--elevation-2)] active:scale-[0.98] disabled:opacity-60"
+        >
+          <span>{group.crawlOnly ? format(vh.viewUrlsCta, { count: group.urlCount }) : vh.openBrandCta}</span>
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      </div>
     </div>
   );
 }

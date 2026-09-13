@@ -6,12 +6,12 @@ import { getBadgeVariant } from '../lib/badges';
  * Single size: text-xs, py-1, px-2. Normalize display value via optional `label` prop.
  */
 const VARIANT_CLASSES: Record<string, string> = {
-  critical: 'bg-red-500 text-white',
-  high: 'bg-red-500/20 text-red-700 dark:text-red-400 border border-red-500/30',
-  medium: 'bg-yellow-500/20 text-yellow-800 dark:text-yellow-400 border border-yellow-500/30',
-  low: 'bg-brand-700/20 text-muted-foreground border border-brand-700/30',
-  info: 'bg-brand-700/20 text-muted-foreground border border-brand-700/30',
-  success: 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30',
+  critical: 'bg-md-sys-error text-md-sys-on-error shadow-xs',
+  high: 'bg-md-sys-error-container text-md-sys-on-error-container border border-md-sys-error/30',
+  medium: 'bg-md-sys-tertiary-container text-md-sys-on-tertiary-container border border-md-sys-tertiary/30',
+  low: 'bg-md-sys-secondary-container text-md-sys-on-secondary-container border border-md-sys-outline-variant/40',
+  info: 'bg-md-sys-primary-container text-md-sys-on-primary-container border border-md-sys-primary/30',
+  success: 'bg-md-sys-success-container text-md-sys-on-success-container border border-md-sys-success/30',
 };
 
 export default function Badge({
@@ -32,7 +32,7 @@ export default function Badge({
   const classes = VARIANT_CLASSES[v] || VARIANT_CLASSES.info;
   return (
     <span
-      className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold uppercase ${classes} ${className}`.trim()}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase ${classes} ${className}`.trim()}
       {...(live ? { role: 'status' as const, 'aria-live': 'polite' as const } : {})}
     >
       {display}

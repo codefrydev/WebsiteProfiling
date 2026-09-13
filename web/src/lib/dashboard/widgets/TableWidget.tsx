@@ -16,24 +16,24 @@ function cell(v: unknown): string {
 export function TableWidget({ result, options }: TableWidgetProps) {
   const rows = result.table.slice(0, options?.tableLimit ?? 50);
   if (!rows.length) {
-    return <div className="flex items-center justify-center h-full text-xs text-muted-foreground">No rows</div>;
+    return <div className="flex items-center justify-center h-full text-xs text-md-sys-on-surface-variant">No rows</div>;
   }
   const cols = Object.keys(rows[0]);
   return (
     <div className="h-full overflow-auto text-xs">
       <table className="w-full border-collapse">
-        <thead className="sticky top-0 bg-brand-900/95 backdrop-blur">
-          <tr className="text-left text-muted-foreground">
+        <thead className="sticky top-0 bg-md-sys-surface-container-low/95 backdrop-blur">
+          <tr className="text-left text-md-sys-on-surface-variant">
             {cols.map((c) => (
-              <th key={c} className="px-2 py-1 font-semibold border-b border-default whitespace-nowrap">{c}</th>
+              <th key={c} className="px-2 py-1 font-semibold border-b border-md-sys-outline-variant/40 whitespace-nowrap">{c}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className="hover:bg-white/5">
+            <tr key={i} className="hover:bg-md-sys-surface-container-high/60 dark:hover:bg-md-sys-surface-container-high/30 transition-colors">
               {cols.map((c) => (
-                <td key={c} className="px-2 py-1 border-b border-default/40 truncate max-w-[260px]" title={cell(r[c])}>
+                <td key={c} className="px-2 py-1 border-b border-md-sys-outline-variant/30 truncate max-w-[260px]" title={cell(r[c])}>
                   {cell(r[c])}
                 </td>
               ))}

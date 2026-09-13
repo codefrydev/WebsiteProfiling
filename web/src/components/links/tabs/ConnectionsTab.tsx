@@ -45,7 +45,7 @@ function ConnectionRow({
       : '';
 
   return (
-    <li className="flex items-center gap-2 rounded-lg border border-default bg-brand-900 px-2.5 py-2 transition-colors hover:border-blue-500/30">
+    <li className="flex items-center gap-2 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 transition-colors hover:border-md-sys-primary/40">
       <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} aria-hidden />
       <div className="min-w-0 flex-1">
         {navigable ? (
@@ -53,35 +53,35 @@ function ConnectionRow({
             type="button"
             onClick={() => onDrill(conn.url)}
             title={`${ct.drillHint}: ${conn.url}`}
-            className="flex w-full items-center gap-1.5 text-left text-link hover:underline"
+            className="flex w-full items-center gap-1.5 text-left text-md-sys-primary hover:underline"
           >
             <Search className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
             <span className="truncate font-mono text-xs">{label}</span>
           </button>
         ) : (
-          <span className="block truncate font-mono text-xs text-muted-foreground" title={conn.url}>
+          <span className="block truncate font-mono text-xs text-md-sys-on-surface-variant" title={conn.url}>
             {label}
           </span>
         )}
         {anchorPreview && (
-          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground" title={conn.anchors.join(' • ')}>
+          <span className="mt-0.5 block truncate text-[11px] text-md-sys-on-surface-variant" title={conn.anchors.join(' • ')}>
             {anchorPreview}
           </span>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         {conn.count > 1 && (
-          <span className="rounded bg-brand-800 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+          <span className="rounded-full bg-md-sys-surface-container px-2 py-0.5 text-[10px] font-semibold tabular-nums text-md-sys-on-surface-variant">
             ×{conn.count}
           </span>
         )}
         {conn.linkType === 'external' && (
-          <span className="rounded bg-brand-800 px-1.5 py-0.5 text-[10px] text-amber-700 dark:text-amber-400/90">
+          <span className="rounded-full bg-md-sys-warning-container px-2 py-0.5 text-[10px] font-medium text-md-sys-on-warning-container">
             {ct.externalBadge}
           </span>
         )}
         {conn.nofollow && (
-          <span className="rounded bg-brand-800 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          <span className="rounded-full bg-md-sys-surface-container px-2 py-0.5 text-[10px] text-md-sys-on-surface-variant">
             {ct.nofollowBadge}
           </span>
         )}
@@ -91,7 +91,7 @@ function ConnectionRow({
           rel="noreferrer"
           title={ct.openLive}
           aria-label={ct.openLive}
-          className="rounded p-1 text-muted-foreground hover:bg-brand-800 hover:text-bright"
+          className="press rounded-full p-1 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container hover:text-md-sys-on-surface active:scale-95 transition-all"
         >
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
@@ -123,14 +123,14 @@ function ConnectionList({
 
   return (
     <section className="min-w-0">
-      <h3 className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-bright">
+      <h3 className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-md-sys-on-surface">
         {icon}
         {title}
-        <span className="ml-1 font-mono text-xs font-normal text-muted-foreground">{conns.length}</span>
+        <span className="ml-1 font-mono text-xs font-normal text-md-sys-on-surface-variant">{conns.length}</span>
       </h3>
-      <p className="mb-2 text-xs text-muted-foreground">{hint}</p>
+      <p className="mb-2 text-xs text-md-sys-on-surface-variant">{hint}</p>
       {conns.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-default px-3 py-4 text-center text-sm text-muted-foreground">
+        <p className="rounded-2xl border border-dashed border-md-sys-outline-variant/40 px-3 py-4 text-center text-sm text-md-sys-on-surface-variant">
           {emptyText}
         </p>
       ) : (
@@ -150,7 +150,7 @@ function ConnectionList({
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
-              className="mt-2 text-xs text-muted-foreground hover:text-bright"
+              className="mt-2 text-xs text-md-sys-on-surface-variant hover:text-md-sys-on-surface"
             >
               {showAll ? ct.showLess : format(ct.showAll, { count: conns.length })}
             </button>
@@ -216,14 +216,14 @@ export default function ConnectionsTab({ link }: ConnectionsTabProps) {
 
   return (
     <div className="flex flex-col gap-5 min-h-0">
-      <p className="shrink-0 text-sm leading-relaxed text-muted-foreground">{ct.intro}</p>
+      <p className="shrink-0 text-sm leading-relaxed text-md-sys-on-surface-variant">{ct.intro}</p>
 
       {loading ? (
-        <p className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+        <p className="flex items-center justify-center gap-2 py-10 text-sm text-md-sys-on-surface-variant">
           <Loader2 className="h-4 w-4 animate-spin" /> {ct.loading}
         </p>
       ) : noData ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">{ct.noData}</p>
+        <p className="py-10 text-center text-sm text-md-sys-on-surface-variant">{ct.noData}</p>
       ) : (
         <>
           <LinkFlow
@@ -246,7 +246,7 @@ export default function ConnectionsTab({ link }: ConnectionsTabProps) {
             <ConnectionList
               title={ct.inboundTitle}
               hint={ct.inboundHint}
-              icon={<ArrowDownLeft className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
+              icon={<ArrowDownLeft className="h-4 w-4 text-md-sys-success" />}
               emptyText={ct.inboundEmpty}
               conns={inbound}
               urlStatus={urlStatus}
@@ -255,7 +255,7 @@ export default function ConnectionsTab({ link }: ConnectionsTabProps) {
             <ConnectionList
               title={ct.outboundTitle}
               hint={ct.outboundHint}
-              icon={<ArrowUpRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+              icon={<ArrowUpRight className="h-4 w-4 text-md-sys-primary" />}
               emptyText={ct.outboundEmpty}
               conns={outbound}
               urlStatus={urlStatus}

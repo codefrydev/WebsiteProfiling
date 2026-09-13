@@ -250,10 +250,10 @@ export function D3GroupedBarChart({
                     width={Math.max((tooltip.seriesLabel.length + tooltip.barLabel.length) * 6 + 30, 100)}
                     height={24}
                     rx={4}
-                    fill="var(--popover, #1e293b)"
+                    fill="var(--md-sys-color-surface-container-highest, #1f2937)"
                     opacity={0.92}
                   />
-                  <text x={4} y={-6} fontSize={11} fill="var(--popover-foreground, #f1f5f9)">
+                  <text x={4} y={-6} fontSize={11} fill="var(--md-sys-color-on-surface, #f1f5f9)">
                     {tooltip.seriesLabel}: {tooltip.barLabel} — {tooltip.value.toLocaleString()}
                   </text>
                 </g>

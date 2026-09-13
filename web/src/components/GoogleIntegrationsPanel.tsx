@@ -39,14 +39,14 @@ const s = strings.pipelineRunner;
 function StatusPill({ connected }: { connected?: boolean }) {
   if (connected) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-700 dark:text-green-400">
-        <CheckCircle2 className="h-3.5 w-3.5" />
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-md-sys-success/30 bg-md-sys-success-container/30 px-2.5 py-1 text-xs font-medium text-md-sys-on-success-container">
+        <CheckCircle2 className="h-3.5 w-3.5 text-md-sys-success" />
         Connected
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-default bg-brand-900/50 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/50 px-2.5 py-1 text-xs font-medium text-md-sys-on-surface-variant">
       <AlertCircle className="h-3.5 w-3.5" />
       Not connected
     </span>
@@ -81,25 +81,25 @@ function SetupStep({
 }) {
   return (
     <section
-      className={`overflow-hidden rounded-xl border transition-colors ${
-        done ? 'border-green-500/25 bg-brand-800/40' : 'border-default bg-brand-800/60'
+      className={`overflow-hidden rounded-2xl border transition-colors ${
+        done ? 'border-md-sys-success/25 bg-md-sys-surface-container/40' : 'border-md-sys-outline-variant/40 bg-md-sys-surface-container/60'
       }`}
     >
-      <div className="flex items-start gap-3 border-b border-muted/60 px-4 py-3.5 sm:px-5">
+      <div className="flex items-start gap-3 border-b border-md-sys-outline-variant/50 px-4 py-3.5 sm:px-5">
         <span
-          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
             done
-              ? 'bg-green-500/15 text-green-700 dark:text-green-400'
-              : 'bg-blue-500/10 text-blue-700 dark:text-blue-300'
+              ? 'bg-md-sys-success-container text-md-sys-on-success-container'
+              : 'bg-md-sys-primary-container text-md-sys-on-primary-container'
           }`}
         >
           {done ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : step}
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-          {description ? <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p> : null}
+          <h3 className="text-sm font-semibold text-md-sys-on-surface">{title}</h3>
+          {description ? <p className="mt-0.5 text-xs leading-relaxed text-md-sys-on-surface-variant">{description}</p> : null}
         </div>
-        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />
       </div>
       <div className="space-y-4 px-4 py-4 sm:px-5">{children}</div>
     </section>
@@ -107,7 +107,7 @@ function SetupStep({
 }
 
 function selectClassName() {
-  return 'w-full rounded-lg border border-default bg-brand-900 px-3 py-2.5 text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
+  return 'w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2.5 text-sm text-md-sys-on-surface focus:border-md-sys-primary/50 focus:outline-none focus:ring-2 focus:ring-md-sys-primary/20';
 }
 
 type PropertiesSaveState =
@@ -126,7 +126,7 @@ function PropertiesSaveFeedback({
   if (state.phase === 'saving') {
     return (
       <p
-        className="flex items-center gap-2 text-sm text-link"
+        className="flex items-center gap-2 text-sm text-md-sys-primary"
         role="status"
         aria-live="polite"
       >
@@ -138,7 +138,7 @@ function PropertiesSaveFeedback({
   if (state.phase === 'error') {
     return (
       <p
-        className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400"
+        className="flex items-center gap-2 text-sm text-md-sys-error"
         role="alert"
         aria-live="assertive"
       >
@@ -155,13 +155,13 @@ function PropertiesSaveFeedback({
     });
     return (
       <p
-        className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-green-700 dark:text-green-400"
+        className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-md-sys-success"
         role="status"
         aria-live="polite"
       >
         <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
         <span>{label}</span>
-        <span className="text-xs text-green-700/80 dark:text-green-400/80">
+        <span className="text-xs text-md-sys-success/80">
           {format(s.googlePropertiesSavedAt, { time })}
         </span>
       </p>
@@ -170,7 +170,7 @@ function PropertiesSaveFeedback({
   if (dirty) {
     return (
       <p
-        className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300"
+        className="flex items-center gap-2 text-sm text-md-sys-warning"
         role="status"
         aria-live="polite"
       >
@@ -203,7 +203,7 @@ function InputField({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-xs font-medium text-muted-foreground mb-1">
+      <label htmlFor={id} className="block text-xs font-medium text-md-sys-on-surface-variant mb-1">
         {label}
       </label>
       <input
@@ -214,9 +214,9 @@ function InputField({
         placeholder={placeholder}
         disabled={disabled}
         autoComplete="off"
-        className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2.5 text-sm text-foreground font-mono focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+        className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2.5 text-sm text-md-sys-on-surface font-mono focus:border-md-sys-primary/50 focus:outline-none focus:ring-2 focus:ring-md-sys-primary/20 disabled:opacity-50"
       />
-      {helper && <p className="mt-1 text-xs text-muted-foreground">{helper}</p>}
+      {helper && <p className="mt-1 text-xs text-md-sys-on-surface-variant">{helper}</p>}
     </div>
   );
 }
@@ -790,7 +790,7 @@ export default function GoogleIntegrationsPanel({
   const isTabbed = layout === 'tabbed';
 
   const readOnlyBanner = readOnly ? (
-    <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-200">
+    <p className="rounded-2xl border border-md-sys-warning/30 bg-md-sys-warning-container/30 px-4 py-2.5 text-xs text-md-sys-on-warning-container">
       {strings.app.readonlyBanner}
     </p>
   ) : null;
@@ -799,27 +799,27 @@ export default function GoogleIntegrationsPanel({
     'Google Client ID/Secret and service account JSON are stored app-wide in the database. Upload a service account for API access without per-site OAuth, or connect each site with OAuth for user-delegated access. Search Console and Analytics property IDs remain per site.';
 
   const infoBanner = (
-    <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
+    <p className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container/50 px-4 py-2.5 text-xs leading-relaxed text-md-sys-on-surface-variant">
       {infoBannerText}
     </p>
   );
 
   const propertySelector = (
-      <div className="rounded-xl border border-default bg-brand-800/60 px-4 py-4 sm:px-5 space-y-3">
-        <label htmlFor="googlePropertySelect" className="block text-xs font-medium text-muted-foreground">
+      <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60 px-4 py-4 sm:px-5 space-y-3">
+        <label htmlFor="googlePropertySelect" className="block text-xs font-medium text-md-sys-on-surface-variant">
           {s.googlePropertySelectorLabel}
         </label>
-        <p className="text-xs text-muted-foreground">{s.googlePropertySelectorHint}</p>
+        <p className="text-xs text-md-sys-on-surface-variant">{s.googlePropertySelectorHint}</p>
         {loadingPropertyRows ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-md-sys-on-surface-variant">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading sites…
           </div>
         ) : propertyRows.length === 0 && effectivePropertyId == null ? (
-          <p className="text-sm text-amber-800 dark:text-amber-200">{s.googlePropertySelectorEmpty}</p>
+          <p className="text-sm text-md-sys-warning">{s.googlePropertySelectorEmpty}</p>
         ) : propertyRows.length === 0 && startUrl.trim() ? (
-          <p className="text-sm text-muted-foreground">
-            Site: <span className="font-mono text-foreground">{startUrl.trim()}</span>
+          <p className="text-sm text-md-sys-on-surface-variant">
+            Site: <span className="font-mono text-md-sys-on-surface">{startUrl.trim()}</span>
             {' — '}
             Connect will register this site automatically.
           </p>
@@ -843,22 +843,22 @@ export default function GoogleIntegrationsPanel({
           </select>
         )}
         {syncingProperty ? (
-          <p className="text-xs text-muted-foreground flex items-center gap-2">
+          <p className="text-xs text-md-sys-on-surface-variant flex items-center gap-2">
             <Loader2 className="h-3 w-3 animate-spin" />
             {s.googlePropertySyncSaving}
           </p>
         ) : null}
         {selectedProperty && status ? (
-          <div className="rounded-lg border border-muted/60 bg-brand-900/40 px-3 py-2.5 text-xs space-y-1">
-            <p className="font-medium text-foreground">
+          <div className="rounded-lg border border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/40 px-3 py-2.5 text-xs space-y-1">
+            <p className="font-medium text-md-sys-on-surface">
               {format(s.googlePropertyContextTitle, { name: selectedProperty.name })}
             </p>
-            <p className="text-muted-foreground">
+            <p className="text-md-sys-on-surface-variant">
               {format(s.googlePropertyContextDomain, { domain: selectedProperty.canonical_domain })}
             </p>
             {status.connected &&
             (status as GoogleStatusResponse & { connectedEmail?: string | null }).connectedEmail ? (
-              <p className="text-green-700 dark:text-green-400">
+              <p className="text-md-sys-success">
                 {format(s.googlePropertyContextEmail, {
                   email: String(
                     (status as GoogleStatusResponse & { connectedEmail?: string | null }).connectedEmail,
@@ -866,15 +866,15 @@ export default function GoogleIntegrationsPanel({
                 })}
               </p>
             ) : status.connected && selectedProperty.google_connected_email ? (
-              <p className="text-green-700 dark:text-green-400">
+              <p className="text-md-sys-success">
                 {format(s.googlePropertyContextEmail, {
                   email: selectedProperty.google_connected_email,
                 })}
               </p>
             ) : (
-              <p className="text-muted-foreground">{s.googlePropertyNotConnected}</p>
+              <p className="text-md-sys-on-surface-variant">{s.googlePropertyNotConnected}</p>
             )}
-            <p className="text-muted-foreground">
+            <p className="text-md-sys-on-surface-variant">
               {format(s.googlePropertyGscGa4, {
                 gsc: status.gscSiteUrl || '—',
                 ga4: status.ga4PropertyId || '—',
@@ -886,21 +886,21 @@ export default function GoogleIntegrationsPanel({
   );
 
   const needsPropertyWarning = needsProperty ? (
-    <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+    <p className="rounded-2xl border border-md-sys-warning/30 bg-md-sys-warning-container/30 px-4 py-3 text-sm text-md-sys-on-warning-container">
       Set a Site URL under Crawl settings so this audit can link Google Search Console and Analytics to the
       correct domain.
     </p>
   ) : null;
 
   const titleBlock = showTitle ? (
-    <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-default bg-brand-800/60 px-4 py-4 sm:px-5">
+    <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60 px-4 py-4 sm:px-5">
       <div className="flex min-w-0 items-start gap-3">
-        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-default bg-brand-900/80">
+        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/80">
           <GoogleMark className="h-5 w-5" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-foreground">Connect Search Console & Analytics</h2>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+          <h2 className="text-base font-semibold text-md-sys-on-surface">Connect Search Console & Analytics</h2>
+          <p className="mt-0.5 text-xs leading-relaxed text-md-sys-on-surface-variant">
             Connect Search Console and Analytics 4, then choose properties to sync with your reports.
           </p>
         </div>
@@ -910,34 +910,34 @@ export default function GoogleIntegrationsPanel({
   ) : null;
 
   const compactContextBar = isTabbed ? (
-    <div className="rounded-xl border border-default bg-brand-800/60 px-4 py-3.5 space-y-3">
+    <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/60 px-4 py-3.5 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-default bg-brand-900/80">
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/80">
             <GoogleMark className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground">Site & connection</p>
-            <p className="text-xs text-muted-foreground">Credentials are shared; OAuth is per site.</p>
+            <p className="text-sm font-medium text-md-sys-on-surface">Site & connection</p>
+            <p className="text-xs text-md-sys-on-surface-variant">Credentials are shared; OAuth is per site.</p>
           </div>
         </div>
         <StatusPill connected={connected} />
       </div>
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start">
         <div className="min-w-0 space-y-1.5">
-          <label htmlFor="googlePropertySelect" className="block text-xs font-medium text-muted-foreground">
+          <label htmlFor="googlePropertySelect" className="block text-xs font-medium text-md-sys-on-surface-variant">
             {s.googlePropertySelectorLabel}
           </label>
           {loadingPropertyRows ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-md-sys-on-surface-variant">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading sites…
             </div>
           ) : propertyRows.length === 0 && effectivePropertyId == null ? (
-            <p className="text-sm text-amber-800 dark:text-amber-200">{s.googlePropertySelectorEmpty}</p>
+            <p className="text-sm text-md-sys-warning font-medium">{s.googlePropertySelectorEmpty}</p>
           ) : propertyRows.length === 0 && startUrl.trim() ? (
-            <p className="text-sm text-muted-foreground">
-              Site: <span className="font-mono text-foreground">{startUrl.trim()}</span>
+            <p className="text-sm text-md-sys-on-surface-variant">
+              Site: <span className="font-mono text-md-sys-on-surface">{startUrl.trim()}</span>
             </p>
           ) : (
             <select
@@ -960,11 +960,11 @@ export default function GoogleIntegrationsPanel({
           )}
         </div>
         {selectedProperty && status ? (
-          <div className="rounded-lg border border-muted/60 bg-brand-900/40 px-3 py-2.5 text-xs space-y-1">
-            <p className="font-medium text-foreground">
+          <div className="rounded-lg border border-md-sys-outline-variant/50 bg-md-sys-surface-container-low/40 px-3 py-2.5 text-xs space-y-1">
+            <p className="font-medium text-md-sys-on-surface">
               {format(s.googlePropertyContextTitle, { name: selectedProperty.name })}
             </p>
-            <p className="text-muted-foreground">
+            <p className="text-md-sys-on-surface-variant">
               {format(s.googlePropertyGscGa4, {
                 gsc: status.gscSiteUrl || '—',
                 ga4: status.ga4PropertyId || '—',
@@ -978,16 +978,16 @@ export default function GoogleIntegrationsPanel({
 
   const toastBlock = toast ? (
     <div
-      className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm ${
+      className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm ${
         toast.type === 'success'
-          ? 'border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400'
-          : 'border border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400'
+          ? 'border border-md-sys-success/30 bg-md-sys-success-container/30 text-md-sys-on-success-container'
+          : 'border border-md-sys-error/30 bg-md-sys-error-container/30 text-md-sys-on-error-container'
       }`}
     >
       {toast.type === 'success' ? (
-        <CheckCircle2 className="h-4 w-4 shrink-0" />
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-md-sys-success" />
       ) : (
-        <AlertCircle className="h-4 w-4 shrink-0" />
+        <AlertCircle className="h-4 w-4 shrink-0 text-md-sys-error" />
       )}
       <span>{toast.message}</span>
     </div>
@@ -1001,22 +1001,22 @@ export default function GoogleIntegrationsPanel({
             done={step1Done}
             icon={KeyRound}
           >
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-md-sys-on-surface-variant">
               Need a project?{' '}
               <Link
                 to={integrationGuideHref('google', { from: 'integrations', sectionId: 'oauthClient' })}
-                className="inline-flex items-center gap-0.5 text-link underline"
+                className="inline-flex items-center gap-0.5 text-md-sys-primary underline"
               >
                 {strings.docs.setupGuideLink}
               </Link>
             </p>
-            <div className="rounded-lg border border-default bg-brand-900/40 px-4 py-3 text-sm">
-              <p className="text-foreground">
+            <div className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40 px-4 py-3 text-sm">
+              <p className="text-md-sys-on-surface">
                 {hasClientId ? strings.secrets.googleConfigured : strings.secrets.googleNotConfigured}
               </p>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs text-md-sys-on-surface-variant">
                 {strings.secrets.googleCredentialsHint}{' '}
-                <Link to="/secrets" className="text-link hover:underline">
+                <Link to="/secrets" className="text-md-sys-primary hover:underline">
                   {strings.secrets.pageTitle}
                 </Link>
               </p>
@@ -1033,20 +1033,20 @@ export default function GoogleIntegrationsPanel({
             icon={Link2}
           >
             {connected ? (
-              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-green-500/25 bg-green-500/10 px-4 py-3">
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-green-700 dark:text-green-400" />
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-md-sys-success/25 bg-md-sys-success-container/30 px-4 py-3">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-md-sys-success" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-green-800 dark:text-green-300">Account connected</p>
-                  <p className="text-xs text-green-700/80 dark:text-green-400/80">You can configure properties in the next step.</p>
+                  <p className="text-sm font-medium text-md-sys-on-success-container">Account connected</p>
+                  <p className="text-xs text-md-sys-on-success-container/80">You can configure properties in the next step.</p>
                 </div>
-                <Button variant="ghost" onClick={() => void handleDisconnect()} className="text-red-700 dark:text-red-400">
+                <Button variant="ghost" onClick={() => void handleDisconnect()} className="text-md-sys-error hover:bg-md-sys-error-container/20">
                   Disconnect
                 </Button>
               </div>
             ) : (
               <div className="flex flex-wrap items-center justify-between gap-3">
                 {!hasClientId ? (
-                  <p className="min-w-0 flex-1 text-xs text-muted-foreground">Complete step 1 to enable sign-in.</p>
+                  <p className="min-w-0 flex-1 text-xs text-md-sys-on-surface-variant">Complete step 1 to enable sign-in.</p>
                 ) : (
                   <span className="flex-1" aria-hidden="true" />
                 )}
@@ -1079,15 +1079,15 @@ export default function GoogleIntegrationsPanel({
   );
 
   const loadingBlock = (
-    <div className="flex items-center justify-center gap-2 rounded-xl border border-default bg-brand-800/40 py-12 text-sm text-muted-foreground">
-      <Loader2 className="h-5 w-5 animate-spin text-link" />
+    <div className="flex items-center justify-center gap-2 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/40 py-12 text-sm text-md-sys-on-surface-variant">
+      <Loader2 className="h-5 w-5 animate-spin text-md-sys-primary" />
       Loading connection status…
     </div>
   );
 
   const connectNotReadyMessage = (
-    <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-6 text-center text-sm text-muted-foreground">
-      Connect your Google account in the <span className="font-medium text-foreground">Connect</span> tab first.
+    <p className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container/50 px-4 py-6 text-center text-sm text-md-sys-on-surface-variant">
+      Connect your Google account in the <span className="font-medium text-md-sys-on-surface">Connect</span> tab first.
     </p>
   );
 
@@ -1099,12 +1099,12 @@ export default function GoogleIntegrationsPanel({
               done={Boolean(gscSiteUrl && ga4PropertyId)}
               icon={BarChart3}
             >
-              <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-950 dark:text-amber-100/90">
+              <p className="rounded-2xl border border-md-sys-warning/30 bg-md-sys-warning-container/30 px-3 py-2 text-xs text-md-sys-on-warning-container">
                 {s.googleSavePropertiesHint}
               </p>
 
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">Load sites from your connected account.</p>
+                <p className="text-xs text-md-sys-on-surface-variant">Load sites from your connected account.</p>
                 <Button variant="secondary" onClick={() => void loadGoogleLists()} disabled={loadingGoogleLists} className="py-2">
                   {loadingGoogleLists ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                   Load properties
@@ -1113,7 +1113,7 @@ export default function GoogleIntegrationsPanel({
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="gscSiteUrl" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  <label htmlFor="gscSiteUrl" className="mb-1.5 block text-xs font-medium text-md-sys-on-surface-variant">
                     Search Console site
                   </label>
                   {googleLists?.gscSites && googleLists.gscSites.length > 0 ? (
@@ -1148,7 +1148,7 @@ export default function GoogleIntegrationsPanel({
                 </div>
 
                 <div>
-                  <label htmlFor="ga4PropertyId" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  <label htmlFor="ga4PropertyId" className="mb-1.5 block text-xs font-medium text-md-sys-on-surface-variant">
                     GA4 property ID
                   </label>
                   {googleLists?.ga4Properties && googleLists.ga4Properties.length > 0 ? (
@@ -1182,14 +1182,14 @@ export default function GoogleIntegrationsPanel({
                     />
                   )}
                   {googleLists?.ga4ListError ? (
-                    <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{googleLists.ga4ListError}</p>
+                    <p className="mt-1 text-xs text-md-sys-warning">{googleLists.ga4ListError}</p>
                   ) : (
-                    <p className="mt-1 text-xs text-muted-foreground">Numeric ID from GA4 Admin → Property settings.</p>
+                    <p className="mt-1 text-xs text-md-sys-on-surface-variant">Numeric ID from GA4 Admin → Property settings.</p>
                   )}
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label htmlFor="dateRange" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  <label htmlFor="dateRange" className="mb-1.5 block text-xs font-medium text-md-sys-on-surface-variant">
                     Date range
                   </label>
                   <select
@@ -1207,12 +1207,12 @@ export default function GoogleIntegrationsPanel({
               </div>
 
               {status?.lastFetchedAt ? (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-md-sys-on-surface-variant">
                   Last fetched: {new Date(status.lastFetchedAt).toLocaleString()}
                 </p>
               ) : null}
 
-              <div className="space-y-3 border-t border-muted/60 pt-4">
+              <div className="space-y-3 border-t border-md-sys-outline-variant/50 pt-4">
                 <PropertiesSaveFeedback state={propertiesSaveState} dirty={propertiesDirty} />
                 <div className="flex flex-wrap items-center gap-2">
                 <Button
@@ -1231,7 +1231,7 @@ export default function GoogleIntegrationsPanel({
                   variant="secondary"
                   onClick={() => void handleFetch()}
                   disabled={readOnly || fetching}
-                  className="border-green-700/40 text-green-800 hover:bg-green-500/10 dark:text-green-300"
+                  className="border-md-sys-success/40 text-md-sys-success hover:bg-md-sys-success-container/40"
                 >
                   {fetching ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                   Fetch data now
@@ -1240,7 +1240,7 @@ export default function GoogleIntegrationsPanel({
               </div>
 
               {testLog ? (
-                <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg border border-default bg-brand-900 p-3 font-mono text-xs leading-relaxed text-muted-foreground">
+                <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low p-3 font-mono text-xs leading-relaxed text-md-sys-on-surface-variant">
                   {testLog}
                 </pre>
               ) : null}
@@ -1248,15 +1248,15 @@ export default function GoogleIntegrationsPanel({
               {fetchLog ? (
                 <div className="space-y-1">
                   {fetchJobStatus ? (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-md-sys-on-surface-variant">
                       Fetch status:{' '}
                       <span
                         className={
                           fetchJobStatus === 'success'
-                            ? 'font-medium text-green-700 dark:text-green-400'
+                            ? 'font-medium text-md-sys-success'
                             : fetchJobStatus === 'error'
-                              ? 'font-medium text-red-700 dark:text-red-400'
-                              : 'font-medium text-link'
+                              ? 'font-medium text-md-sys-error'
+                              : 'font-medium text-md-sys-primary'
                         }
                       >
                         {fetchJobStatus}
@@ -1266,7 +1266,7 @@ export default function GoogleIntegrationsPanel({
                       ) : null}
                     </p>
                   ) : null}
-                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg border border-default bg-brand-900 p-3 font-mono text-xs leading-relaxed text-muted-foreground">
+                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low p-3 font-mono text-xs leading-relaxed text-md-sys-on-surface-variant">
                     {fetchLog}
                   </pre>
                 </div>
@@ -1282,26 +1282,26 @@ export default function GoogleIntegrationsPanel({
               done={Boolean(linksStatus?.hasData)}
               icon={Link2}
             >
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-md-sys-on-surface-variant">
                 <a
                   href={s.gscLinksHelpUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-link hover:underline"
+                  className="inline-flex items-center gap-1 text-md-sys-primary hover:underline"
                 >
                   {s.gscLinksHelpLabel}
                   <ExternalLink className="h-3 w-3" aria-hidden />
                 </a>
               </p>
-              <p className="text-xs text-muted-foreground">{s.gscLinksUploadHint}</p>
+              <p className="text-xs text-md-sys-on-surface-variant">{s.gscLinksUploadHint}</p>
 
               {loadingLinksStatus ? (
-                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                <p className="text-xs text-md-sys-on-surface-variant flex items-center gap-2">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                   Loading import status…
                 </p>
               ) : linksStatus?.hasData && linksStatus.lastImportedAt ? (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-md-sys-on-surface-variant">
                   {format(s.gscLinksLastImport, {
                     date: new Date(String(linksStatus.lastImportedAt)).toLocaleString(),
                   })}
@@ -1314,7 +1314,7 @@ export default function GoogleIntegrationsPanel({
                   })}
                 </p>
               ) : (
-                <p className="text-xs text-muted-foreground">{s.gscLinksNoData}</p>
+                <p className="text-xs text-md-sys-on-surface-variant">{s.gscLinksNoData}</p>
               )}
 
               <div className="flex flex-wrap items-center gap-2">
@@ -1343,8 +1343,8 @@ export default function GoogleIntegrationsPanel({
                 <p
                   className={`text-xs ${
                     linksUploadMessage === s.gscLinksUploadSuccess
-                      ? 'text-green-700 dark:text-green-400'
-                      : 'text-red-700 dark:text-red-400'
+                      ? 'text-md-sys-success font-medium'
+                      : 'text-md-sys-error font-medium'
                   }`}
                 >
                   {linksUploadMessage}
@@ -1354,18 +1354,18 @@ export default function GoogleIntegrationsPanel({
   ) : null;
 
   const advancedSection = effectivePropertyId != null ? (
-            <div className="overflow-hidden rounded-xl border border-default bg-brand-800/40">
+            <div className="overflow-hidden rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/40">
               <button
                 type="button"
                 onClick={() => setShowAdvanced((v) => !v)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-brand-900/30 hover:text-foreground sm:px-5"
+                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-md-sys-on-surface-variant transition-colors hover:bg-md-sys-surface-container-low/30 hover:text-md-sys-on-surface sm:px-5"
                 aria-expanded={showAdvanced}
               >
                 <span>Advanced: paste connection token for this site</span>
                 {showAdvanced ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
               </button>
               {showAdvanced ? (
-                <div className="space-y-3 border-t border-muted/60 px-4 py-4 sm:px-5">
+                <div className="space-y-3 border-t border-md-sys-outline-variant/50 px-4 py-4 sm:px-5">
                   <InputField
                     id="refreshToken"
                     label="Refresh token"
@@ -1398,7 +1398,7 @@ export default function GoogleIntegrationsPanel({
   if (isTabbed) {
     return (
       <div className="flex h-full min-h-0 flex-col">
-        <div className="shrink-0 space-y-3 border-b border-muted pb-4">
+        <div className="shrink-0 space-y-3 border-b border-md-sys-outline-variant/40 pb-4">
           {readOnlyBanner}
           {compactContextBar}
           {needsPropertyWarning}
@@ -1409,7 +1409,7 @@ export default function GoogleIntegrationsPanel({
             onChange={(tabId) => setActiveTab(tabId as IntegrationsTabId)}
             ariaLabel="Integration sections"
             idPrefix="integrations"
-            className="border-t border-muted/60 pt-3"
+            className="border-t border-md-sys-outline-variant/50 pt-3"
           />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto pt-4">
@@ -1420,12 +1420,12 @@ export default function GoogleIntegrationsPanel({
               {activeTab === 'connect' ? (
                 <ViewTabPanel idPrefix="integrations" tabId="connect" className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground flex-1 min-w-0">
+                    <p className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container/50 px-4 py-2.5 text-xs leading-relaxed text-md-sys-on-surface-variant flex-1 min-w-0">
                       {infoBannerText}
                     </p>
                     <Link
                       to={integrationGuideHref('google', { from: 'integrations' })}
-                      className="shrink-0 text-xs font-medium text-link hover:underline sm:text-sm"
+                      className="shrink-0 text-xs font-medium text-md-sys-primary hover:underline sm:text-sm"
                     >
                       {strings.docs.setupGuideLink}
                     </Link>
@@ -1452,7 +1452,7 @@ export default function GoogleIntegrationsPanel({
                   {effectivePropertyId != null ? (
                     <PropertyOpsSection propertyId={effectivePropertyId} />
                   ) : (
-                    <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-6 text-center text-sm text-muted-foreground">
+                    <p className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container/50 px-4 py-6 text-center text-sm text-md-sys-on-surface-variant">
                       Select a site above to configure schedules and alerts.
                     </p>
                   )}

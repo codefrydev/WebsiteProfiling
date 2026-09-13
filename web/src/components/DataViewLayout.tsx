@@ -37,7 +37,7 @@ export default function DataViewLayout({
     <div className={rootClass}>
       {header ? <div className="shrink-0">{header}</div> : null}
       {toolbar ? (
-        <div className="shrink-0 sticky top-0 z-10 -mx-1 px-1 py-1 bg-brand-900/95 backdrop-blur-sm">
+        <div className="shrink-0 sticky top-0 z-10 -mx-1 px-1 py-1 bg-md-sys-surface-container-low/95 backdrop-blur-sm">
           {toolbar}
         </div>
       ) : null}

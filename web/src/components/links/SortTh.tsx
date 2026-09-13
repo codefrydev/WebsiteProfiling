@@ -17,7 +17,7 @@ export default function SortTh({ label, field, sortBy, sortDesc, onSort, classNa
   const alignEnd = className.includes('text-right');
   return (
     <th
-      className={`px-3 sm:px-4 py-3.5 cursor-pointer select-none hover:text-bright transition-colors whitespace-nowrap ${active ? 'text-bright' : 'text-muted-foreground'} ${className}`}
+      className={`px-3 sm:px-4 py-3.5 cursor-pointer select-none hover:text-md-sys-on-surface transition-colors whitespace-nowrap ${active ? 'text-md-sys-on-surface' : 'text-md-sys-on-surface-variant'} ${className}`}
       onClick={() => onSort(field)}
     >
       <div className={`inline-flex items-center gap-1 uppercase text-xs tracking-wide ${alignEnd ? 'justify-end w-full' : ''}`}>

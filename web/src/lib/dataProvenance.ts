@@ -26,7 +26,7 @@ export function dataSourceMeta(id: DataSourceId): DataSourceMeta {
     id,
     label: row?.label ?? id,
     shortLabel: row?.shortLabel ?? id,
-    className: row?.className ?? 'bg-brand-900/50 text-muted-foreground',
+    className: row?.className ?? 'bg-md-sys-surface-container-low/50 text-md-sys-on-surface-variant',
   };
 }
 

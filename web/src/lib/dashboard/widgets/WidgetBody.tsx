@@ -32,7 +32,7 @@ export function WidgetBody({ widget, result, status, onSelect, onChartReady }: W
   }
   if (status === 'error') {
     return (
-      <div className="flex items-center gap-1.5 text-amber-500 text-xs p-2">
+      <div className="flex items-center gap-1.5 text-md-sys-warning text-xs p-2">
         <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
         This dataset isn’t available for the current report.
       </div>
@@ -49,7 +49,7 @@ export function WidgetBody({ widget, result, status, onSelect, onChartReady }: W
   const empty = result.categories.length === 0 && result.series.every((s) => s.values.length === 0);
   if (empty || !isEChartsViz(widget.viz)) {
     return (
-      <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+      <div className="flex items-center justify-center h-full text-xs text-md-sys-on-surface-variant">
         No data for this configuration
       </div>
     );

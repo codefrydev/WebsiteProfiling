@@ -86,7 +86,7 @@ export default function IntegrationGuidePanel({
 
   if (!content || !guide) {
     return (
-      <p className="px-4 py-10 text-sm text-muted-foreground">Guide not found.</p>
+      <p className="px-4 py-10 text-sm text-md-sys-on-surface-variant">Guide not found.</p>
     );
   }
 
@@ -113,11 +113,11 @@ export default function IntegrationGuidePanel({
                 id={sectionIdToAnchor(id)}
                 className={`w-full rounded-lg px-2.5 py-2 text-left text-xs leading-snug transition-colors sm:text-sm ${
                   selected
-                    ? 'bg-brand-700/60 text-foreground'
-                    : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+                    ? 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface'
+                    : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
                 }`}
               >
-                <span className="font-medium text-link">{index + 1}.</span> {section.title}
+                <span className="font-medium text-md-sys-primary">{index + 1}.</span> {section.title}
               </button>
             );
           })}
@@ -125,19 +125,19 @@ export default function IntegrationGuidePanel({
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto">
           {active ? (
-            <div className="flex min-h-0 flex-1 flex-col space-y-4 rounded-2xl border border-muted/30 bg-[var(--chat-surface)] p-5 sm:p-6">
+            <div className="flex min-h-0 flex-1 flex-col space-y-4 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container p-5 sm:p-6">
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-md-sys-on-surface-variant">
                   {format(d.stepOf, {
                     current: activeIndex + 1,
                     total: sectionOrder.length,
                   })}
                 </p>
-                <h2 className="mt-1 text-base font-semibold text-bright sm:text-lg">
+                <h2 className="mt-1 text-base font-semibold text-md-sys-on-surface sm:text-lg">
                   {active.title}
                 </h2>
               </div>
-              <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-muted-foreground">
+              <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-md-sys-on-surface-variant">
                 {active.items.map((item) => (
                   <li key={item} className="pl-1">
                     {item}
@@ -149,7 +149,7 @@ export default function IntegrationGuidePanel({
                   href={active.linkUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm font-medium text-link hover:underline"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-md-sys-primary hover:underline"
                 >
                   {active.linkLabel}
                   <ExternalLink className="h-3.5 w-3.5" aria-hidden />
@@ -158,18 +158,18 @@ export default function IntegrationGuidePanel({
             </div>
           ) : null}
 
-          <p className="shrink-0 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-xs text-amber-950 dark:text-amber-100/90">
+          <p className="shrink-0 rounded-2xl border border-md-sys-warning/30 bg-md-sys-warning-container/15 px-4 py-3 text-xs text-md-sys-warning">
             {content.note}
           </p>
 
-          <div className="shrink-0 rounded-2xl border border-muted/30 bg-[var(--chat-surface)] px-4 py-3 text-sm">
-            <span className="font-medium text-bright">{d.doneWhenLabel}: </span>
-            <span className="text-muted-foreground">{content.doneWhen}</span>
+          <div className="shrink-0 rounded-2xl border border-md-sys-outline-variant/30 bg-md-sys-surface-container px-4 py-3 text-sm">
+            <span className="font-medium text-md-sys-on-surface">{d.doneWhenLabel}: </span>
+            <span className="text-md-sys-on-surface-variant">{content.doneWhen}</span>
           </div>
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-wrap gap-2 border-t border-muted/30 bg-[var(--chat-bg)] px-4 py-3 sm:px-6">
+      <div className="flex shrink-0 flex-wrap gap-2 border-t border-md-sys-outline-variant/30 bg-md-sys-surface px-4 py-3 sm:px-6">
         <Link to={primaryCta.href}>
           <Button variant="primary" className="px-4 py-2 text-sm">
             {primaryCta.label}

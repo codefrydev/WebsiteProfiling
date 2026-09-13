@@ -63,7 +63,7 @@ export default function ChatAssistantMessage({
   );
 
   const cardClass = fatalError
-    ? 'chat-assistant-card border-red-500/30 bg-red-500/10'
+    ? 'chat-assistant-card border-md-sys-error/30 bg-md-sys-error-container/20'
     : showPartialNote
       ? 'chat-assistant-card chat-assistant-card-partial'
       : 'chat-assistant-card';
@@ -78,7 +78,7 @@ export default function ChatAssistantMessage({
 
   if (!hasBody && fatalError) {
     return (
-      <div className={`${cardClass} rounded-xl border px-4 py-2.5 text-sm text-red-200`}>
+      <div className={`${cardClass} rounded-2xl border px-4 py-2.5 text-sm text-md-sys-on-error-container`}>
         {content || agentError || c.responseFailed}
       </div>
     );
@@ -93,12 +93,12 @@ export default function ChatAssistantMessage({
     Boolean(statusText || (toolActivity?.length ?? 0) > 0);
 
   return (
-    <div className={`${cardClass} space-y-3 rounded-xl border p-4 text-sm leading-relaxed`}>
+    <div className={`${cardClass} space-y-3 rounded-2xl border p-4 text-sm leading-relaxed`}>
       {showStreamingPanel ? (
         <ChatStreamingStatus statusText={statusText} toolActivity={toolActivity} />
       ) : (streaming || (!content && !blocks.length && !showNarrative)) && !fatalError ? (
         <Sparkles
-          className={`h-4 w-4 text-muted-foreground ${streaming ? 'animate-pulse' : ''}`}
+          className={`h-4 w-4 text-md-sys-on-surface-variant ${streaming ? 'animate-pulse' : ''}`}
           aria-hidden
         />
       ) : null}
@@ -110,11 +110,11 @@ export default function ChatAssistantMessage({
       {blocks.length > 0 ? <ChatBlocks blocks={blocks} /> : null}
 
       {processed.proseHidden && blocks.length > 0 ? (
-        <p className="text-xs text-muted-foreground">{c.proseStrippedNote}</p>
+        <p className="text-xs text-md-sys-on-surface-variant">{c.proseStrippedNote}</p>
       ) : null}
 
       {showPartialNote ? (
-        <p className="text-xs text-amber-200/90">{c.partialResponseNote}</p>
+        <p className="text-xs text-md-sys-warning">{c.partialResponseNote}</p>
       ) : null}
 
       {showNarrative && narrative ? (
@@ -123,7 +123,7 @@ export default function ChatAssistantMessage({
 
       {showProse ? (
         streaming && !prose.includes('###') ? (
-          <p className="whitespace-pre-wrap text-muted-foreground">{prose}</p>
+          <p className="whitespace-pre-wrap text-md-sys-on-surface-variant">{prose}</p>
         ) : (
           <ChatInsightSections content={prose} streaming={streaming} />
         )

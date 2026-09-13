@@ -148,7 +148,7 @@ export default function InspectorTabs({
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="shrink-0 px-4 pt-3 pb-2 border-b border-muted bg-brand-800">
+      <div className="shrink-0 px-4 pt-3 pb-2 border-b border-md-sys-outline-variant/40 bg-md-sys-surface-container">
         <ViewTabs
           tabs={tabs}
           activeTab={activeTab}

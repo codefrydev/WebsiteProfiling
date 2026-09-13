@@ -189,10 +189,10 @@ export function D3HorizontalBarChart({
                     width={Math.max(tooltip.label.length * 6 + tooltip.value.toLocaleString().length * 7 + 20, 80)}
                     height={24}
                     rx={4}
-                    fill="var(--popover, #1e293b)"
+                    fill="var(--md-sys-color-surface-container-highest, #1f2937)"
                     opacity={0.92}
                   />
-                  <text x={4} y={-6} fontSize={11} fill="var(--popover-foreground, #f1f5f9)">
+                  <text x={4} y={-6} fontSize={11} fill="var(--md-sys-color-on-surface, #f1f5f9)">
                     {truncateChartLabel(tooltip.label, 20)}: {tooltip.value.toLocaleString()}
                   </text>
                 </g>

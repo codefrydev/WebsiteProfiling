@@ -17,12 +17,12 @@ import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
 import { buildOverviewRecommendationContext } from '@/lib/fixSuggestionContext';
 
 const REC_COLORS = [
-  { border: 'border-l-blue-500', bg: 'bg-blue-500/10', text: 'text-link', dot: 'bg-blue-500' },
-  { border: 'border-l-amber-500', bg: 'bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', dot: 'bg-amber-500' },
-  { border: 'border-l-purple-500', bg: 'bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', dot: 'bg-purple-500' },
-  { border: 'border-l-green-500', bg: 'bg-green-500/10', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500' },
-  { border: 'border-l-rose-500', bg: 'bg-rose-500/10', text: 'text-rose-700 dark:text-rose-400', dot: 'bg-rose-500' },
-  { border: 'border-l-cyan-500', bg: 'bg-cyan-500/10', text: 'text-cyan-700 dark:text-cyan-400', dot: 'bg-cyan-500' },
+  { border: 'border-l-[color:var(--md-sys-color-primary)]', bg: 'bg-md-sys-primary-container/20', text: 'text-md-sys-primary', dot: 'bg-md-sys-primary' },
+  { border: 'border-l-[color:var(--md-sys-color-warning)]', bg: 'bg-md-sys-warning-container/20', text: 'text-md-sys-warning', dot: 'bg-md-sys-warning' },
+  { border: 'border-l-[color:var(--md-sys-color-tertiary)]', bg: 'bg-md-sys-tertiary-container/20', text: 'text-md-sys-tertiary', dot: 'bg-md-sys-tertiary' },
+  { border: 'border-l-[color:var(--md-sys-color-success)]', bg: 'bg-md-sys-success-container/20', text: 'text-md-sys-success', dot: 'bg-md-sys-success' },
+  { border: 'border-l-[color:var(--md-sys-color-error)]', bg: 'bg-md-sys-error-container/20', text: 'text-md-sys-error', dot: 'bg-md-sys-error' },
+  { border: 'border-l-[color:var(--md-sys-color-secondary)]', bg: 'bg-md-sys-secondary-container/20', text: 'text-md-sys-secondary', dot: 'bg-md-sys-secondary' },
 ];
 
 export interface OverviewHealthTabProps {
@@ -113,7 +113,7 @@ export function OverviewHealthTab({
       />
       <div id="overview-health-categories" className="relative group/dev-card">
         <DevCopyJsonButton data={categoriesDevData} />
-        <h2 className="text-xl font-bold text-bright mb-4">{vo.healthByCategory}</h2>
+        <h2 className="text-xl font-bold text-md-sys-on-surface mb-4">{vo.healthByCategory}</h2>
         {data.categories && data.categories.length > 0 ? (
           categoriesFiltered.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -138,25 +138,25 @@ export function OverviewHealthTab({
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground mb-8">{vo.noCategorySearch}</p>
+            <p className="text-md-sys-on-surface-variant mb-8">{vo.noCategorySearch}</p>
           )
         ) : (
-          <p className="text-muted-foreground">{vo.noCategoryData}</p>
+          <p className="text-md-sys-on-surface-variant">{vo.noCategoryData}</p>
         )}
       </div>
 
       {data.site_level && (data.site_level.robots_present != null || data.site_level.sitemap_present != null) && (
         <div className="relative group/dev-card mb-8">
           {siteConfigurationDevData ? <DevCopyJsonButton data={siteConfigurationDevData} /> : null}
-          <h2 className="text-xl font-bold text-bright mb-3">{vo.siteConfiguration}</h2>
+          <h2 className="text-xl font-bold text-md-sys-on-surface mb-3">{vo.siteConfiguration}</h2>
           <Card padding="tight" className="flex gap-6 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">{vo.robotsTxt}</span>
-              <span className="font-semibold text-foreground">{data.site_level.robots_present ? sj.yes : sj.no}</span>
+              <span className="text-md-sys-on-surface-variant">{vo.robotsTxt}</span>
+              <span className="font-semibold text-md-sys-on-surface">{data.site_level.robots_present ? sj.yes : sj.no}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">{vo.sitemapXml}</span>
-              <span className="font-semibold text-foreground">
+              <span className="text-md-sys-on-surface-variant">{vo.sitemapXml}</span>
+              <span className="font-semibold text-md-sys-on-surface">
                 {data.site_level.sitemap_present ? sj.yes : sj.no}
                 {data.site_level.sitemap_valid === true
                   ? vo.sitemapValid
@@ -167,8 +167,8 @@ export function OverviewHealthTab({
             </div>
             {data.site_level.ads_txt_present != null && (
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">{vo.adsTxt}</span>
-                <span className="font-semibold text-foreground">
+                <span className="text-md-sys-on-surface-variant">{vo.adsTxt}</span>
+                <span className="font-semibold text-md-sys-on-surface">
                   {data.site_level.ads_txt_present ? sj.yes : sj.no}
                   {data.site_level.ads_txt_present
                     ? data.site_level.ads_txt_valid
@@ -180,8 +180,8 @@ export function OverviewHealthTab({
             )}
             {data.site_level.security_txt_present != null && (
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">{vo.securityTxt}</span>
-                <span className="font-semibold text-foreground">
+                <span className="text-md-sys-on-surface-variant">{vo.securityTxt}</span>
+                <span className="font-semibold text-md-sys-on-surface">
                   {data.site_level.security_txt_present ? sj.yes : sj.no}
                   {data.site_level.security_txt_present &&
                   (data.site_level.security_txt_contact?.length ?? 0) > 0
@@ -197,13 +197,13 @@ export function OverviewHealthTab({
             {(hasSubdomains || hasContacts) ? (
               <div className="flex flex-wrap gap-4 mt-3 text-sm">
                 {hasSubdomains ? (
-                  <Link to={`/subdomains${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
+                  <Link to={`/subdomains${querySuffix}`} className="text-md-sys-primary hover:underline inline-flex items-center gap-1">
                     {vo.viewSubdomains}
                     <ChevronRight className="h-4 w-4" aria-hidden />
                   </Link>
                 ) : null}
                 {hasContacts ? (
-                  <Link to={`/contacts${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
+                  <Link to={`/contacts${querySuffix}`} className="text-md-sys-primary hover:underline inline-flex items-center gap-1">
                     {vo.viewContacts}
                     <ChevronRight className="h-4 w-4" aria-hidden />
                   </Link>
@@ -217,8 +217,8 @@ export function OverviewHealthTab({
       {(data.recommendations || []).length > 0 && (
         <div className="relative group/dev-card mb-8">
           <DevCopyJsonButton data={recommendationsDevData} />
-          <h2 className="text-xl font-bold text-bright mb-4 flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-amber-700 dark:text-amber-400" /> {vo.recommendations}
+          <h2 className="text-xl font-bold text-md-sys-on-surface mb-4 flex items-center gap-2">
+            <Lightbulb className="h-5 w-5 text-md-sys-warning" /> {vo.recommendations}
           </h2>
           {recommendationsFiltered.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -231,7 +231,7 @@ export function OverviewHealthTab({
                   >
                     <div className="flex items-start gap-3">
                       <ChevronRight className={`h-4 w-4 shrink-0 mt-0.5 ${c.text}`} />
-                      <span className="text-sm text-foreground leading-relaxed flex-1">{r}</span>
+                      <span className="text-sm text-md-sys-on-surface leading-relaxed flex-1">{r}</span>
                     </div>
                     <AiSuggestionButton request={buildOverviewRecommendationContext(r)} className="pl-7" />
                   </div>
@@ -239,7 +239,7 @@ export function OverviewHealthTab({
               })}
             </div>
           ) : (
-            <p className="text-muted-foreground text-sm">{vo.noRecSearch}</p>
+            <p className="text-md-sys-on-surface-variant text-sm">{vo.noRecSearch}</p>
           )}
         </div>
       )}

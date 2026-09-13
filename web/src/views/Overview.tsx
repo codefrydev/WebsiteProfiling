@@ -130,7 +130,7 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
         title={vo.dashboard}
         subtitle={
           <>
-            {vo.subtitleSiteHealth} <span className="text-link">{siteName}</span>.{' '}
+            {vo.subtitleSiteHealth} <span className="text-md-sys-primary">{siteName}</span>.{' '}
             {s.crawl_time_s != null ? format(vo.crawlDoneSeconds, { seconds: s.crawl_time_s }) : vo.crawlDone}
           </>
         }

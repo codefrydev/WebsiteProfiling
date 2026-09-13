@@ -5,6 +5,7 @@ import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import type { KeywordRow } from '@/types/components';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { Card, Button } from '@/components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 
@@ -92,59 +93,71 @@ export default function ContentTemplatesPanel({
     }
   }, [readOnly, activeTemplate, keyword, clusterRows, s.failed]);
 
+  const closeModal = useCallback(() => setActiveTemplate(null), []);
+  useModalDismiss({
+    onDismiss: closeModal,
+    enabled: Boolean(activeTemplate),
+  });
+
   return (
     <>
-      <div className="relative group/dev-card grid gap-4 sm:grid-cols-3">
+      <div className="relative group/dev-card">
         {devData != null ? <DevCopyJsonButton data={devData} /> : null}
-        {TEMPLATES.map((t) => (
-          <Card key={t.id} className="p-4 flex flex-col">
-            <h3 className="text-sm font-semibold">{t.title}</h3>
-            <ul className="mt-2 text-xs text-muted-foreground space-y-1 flex-1 list-disc pl-4">
-              {t.outline.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-            <Button
-              type="button"
-              variant="secondary"
-              className="mt-3 !py-1.5 !text-xs"
-              onClick={() => openTemplate(t)}
-              disabled={readOnly}
-            >
-              Use template
-            </Button>
-          </Card>
-        ))}
+        <div className="grid gap-4 sm:grid-cols-3">
+          {TEMPLATES.map((t) => (
+            <Card key={t.id} className="p-4 flex flex-col">
+              <h3 className="text-sm font-semibold">{t.title}</h3>
+              <ul className="mt-2 text-xs text-md-sys-on-surface-variant space-y-1 flex-1 list-disc pl-4">
+                {t.outline.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+              <Button
+                type="button"
+                variant="secondary"
+                className="mt-3 !py-1.5 !text-xs"
+                onClick={() => openTemplate(t)}
+                disabled={readOnly}
+              >
+                Use template
+              </Button>
+            </Card>
+          ))}
+        </div>
       </div>
       {activeTemplate ? (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-[color:var(--app-overlay)] backdrop-blur-xs p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="content-template-title"
+          onClick={closeModal}
         >
-          <div className="w-full max-w-lg rounded-xl border border-default bg-brand-800 shadow-xl">
-            <div className="flex items-center justify-between border-b border-default px-4 py-3">
-              <h3 id="content-template-title" className="text-sm font-semibold text-bright">
+          <div
+            className="w-full max-w-lg rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-md-sys-outline-variant/40 px-4 py-3">
+              <h3 id="content-template-title" className="text-sm font-semibold text-md-sys-on-surface">
                 {activeTemplate.title}
               </h3>
               <button
                 type="button"
                 onClick={() => setActiveTemplate(null)}
-                className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+                className="press rounded-full p-1.5 text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all"
                 aria-label={s.close}
               >
                 <X className="h-4 w-4" aria-hidden />
               </button>
             </div>
             <div className="px-4 py-4 space-y-3 text-sm">
-              <label className="block text-xs text-muted-foreground">
+              <label className="block text-xs text-md-sys-on-surface-variant">
                 Target keyword
                 <input
                   type="text"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-default bg-brand-900 px-3 py-2 text-sm text-foreground"
+                  className="mt-1 w-full rounded-md border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface"
                   placeholder="primary keyword"
                 />
               </label>
@@ -152,14 +165,14 @@ export default function ContentTemplatesPanel({
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <FileText className="h-3.5 w-3.5" aria-hidden />}
                 {loading ? s.loading : s.buttonLabel}
               </Button>
-              {error ? <p className="text-red-700 dark:text-red-400 text-xs">{error}</p> : null}
+              {error ? <p className="text-md-sys-error font-medium text-xs">{error}</p> : null}
               {brief?.summary ? (
                 <>
-                  <pre className="whitespace-pre-wrap text-xs text-muted-foreground leading-relaxed font-sans">
+                  <pre className="whitespace-pre-wrap text-xs text-md-sys-on-surface-variant leading-relaxed font-sans">
                     {brief.summary}
                   </pre>
                   {brief.provenance ? (
-                    <p className="text-[10px] text-muted-foreground">{s.provenance}: {brief.provenance}</p>
+                    <p className="text-[10px] text-md-sys-on-surface-variant">{s.provenance}: {brief.provenance}</p>
                   ) : null}
                 </>
               ) : null}

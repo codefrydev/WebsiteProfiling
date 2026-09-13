@@ -173,7 +173,7 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
             ? buildLinksInspectHref(String(row?.crawl_url || url), searchParams)
             : null;
           return inspectHref ? (
-            <a href={inspectHref} className="font-mono text-xs text-link hover:underline break-all">
+            <a href={inspectHref} className="font-mono text-xs text-md-sys-primary hover:underline break-all">
               {url}
             </a>
           ) : (
@@ -228,7 +228,7 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
             href={String(v ?? '')}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-mono text-xs text-link hover:underline break-all"
+            className="font-mono text-xs text-md-sys-primary hover:underline break-all"
           >
             {String(v ?? '')}
           </a>
@@ -246,7 +246,7 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
               : null;
           if (inspectHref) {
             return (
-              <a href={inspectHref} className="font-mono text-xs text-link hover:underline break-all">
+              <a href={inspectHref} className="font-mono text-xs text-md-sys-primary hover:underline break-all">
                 {url}
               </a>
             );
@@ -263,7 +263,7 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
       {
         key: 'discovered_at',
         label: vb.table.discovered,
-        render: (v) => <span className="text-xs text-muted-foreground">{String(v ?? '—')}</span>,
+        render: (v) => <span className="text-xs text-md-sys-on-surface-variant">{String(v ?? '—')}</span>,
       },
     ],
     [vb.table, searchParams],
@@ -413,7 +413,7 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
   return (
     <PageLayout className="space-y-6">
       <PageHeader
-        icon={<Link2 className="h-7 w-7 text-link shrink-0" />}
+        icon={<Link2 className="h-7 w-7 text-md-sys-primary shrink-0" />}
         title={vb.title}
         subtitle={
           <>
@@ -425,7 +425,7 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
 
       <div className="relative group/dev-card">
         <DevCopyJsonButton data={kpiDevData} />
-        <p className="text-xs text-muted-foreground mb-3">
+        <p className="text-xs text-md-sys-on-surface-variant mb-3">
           <HelpHint title="Data scope">{vb.disclaimerHint}</HelpHint>
         </p>
         <GscLinksSummaryCards data={gscLinks} labels={vb.kpi} />
@@ -440,20 +440,20 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
       />
 
       {q ? (
-        <p className="text-xs text-muted-foreground -mt-4">{vb.searchFilterHint}</p>
+        <p className="text-xs text-md-sys-on-surface-variant -mt-4">{vb.searchFilterHint}</p>
       ) : null}
 
       {activeTab === 'overview' && bingBacklinks?.ok ? (
         <Card className="mb-6" devData={bingDevData}>
-          <h3 className="text-sm font-bold text-foreground mb-2">{vb.bingTitle}</h3>
-          <p className="text-xs text-muted-foreground mb-3">{vb.bingHint}</p>
+          <h3 className="text-sm font-bold text-md-sys-on-surface mb-2">{vb.bingTitle}</h3>
+          <p className="text-xs text-md-sys-on-surface-variant mb-3">{vb.bingHint}</p>
           <div className="flex flex-wrap gap-4 text-sm">
             <span>
-              <span className="text-muted-foreground">{vb.bingLinkedPages}: </span>
+              <span className="text-md-sys-on-surface-variant">{vb.bingLinkedPages}: </span>
               <span className="font-semibold tabular-nums">{bingBacklinks.linked_page_count ?? 0}</span>
             </span>
             <span>
-              <span className="text-muted-foreground">{vb.bingInboundLinks}: </span>
+              <span className="text-md-sys-on-surface-variant">{vb.bingInboundLinks}: </span>
               <span className="font-semibold tabular-nums">{bingBacklinks.total_inbound_links ?? 0}</span>
             </span>
           </div>
@@ -461,7 +461,7 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
             <ul className="mt-3 space-y-1 text-xs font-mono max-h-32 overflow-y-auto">
               {(bingBacklinks.linked_pages || []).slice(0, 8).map((row) => (
                 <li key={row.url} className="flex justify-between gap-2">
-                  <span className="truncate text-muted-foreground">{row.url}</span>
+                  <span className="truncate text-md-sys-on-surface-variant">{row.url}</span>
                   <span className="tabular-nums shrink-0">{row.inbound_links ?? 0}</span>
                 </li>
               ))}
@@ -487,8 +487,8 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'overview' && competitorGap?.competitors?.length ? (
         <Card className="mb-6" devData={competitorGapDevData}>
-          <h3 className="text-sm font-bold text-foreground mb-2">{vb.competitorGapTitle}</h3>
-          <p className="text-xs text-muted-foreground mb-3">
+          <h3 className="text-sm font-bold text-md-sys-on-surface mb-2">{vb.competitorGapTitle}</h3>
+          <p className="text-xs text-md-sys-on-surface-variant mb-3">
             {format(vb.competitorGapProvenance, {
               provenance: competitorGap.provenance || 'Search Console',
             })}
@@ -497,7 +497,7 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
             {(competitorGap.competitors as Array<{ competitor?: string; links_to_us?: boolean }>).map((row) => (
               <li key={row.competitor} className="flex items-center gap-2">
                 <span className="font-mono text-xs">{row.competitor}</span>
-                <span className={row.links_to_us ? 'text-emerald-600 text-xs' : 'text-amber-600 text-xs'}>
+                <span className={row.links_to_us ? 'text-md-sys-success text-xs font-medium' : 'text-md-sys-warning text-xs font-medium'}>
                   {row.links_to_us ? vb.linksToYou : vb.notInSample}
                 </span>
               </li>
@@ -513,7 +513,7 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
       {activeTab === 'overview' && (
         <div className="grid gap-6 lg:grid-cols-2">
           <Card devData={overviewTopDomainsDevData}>
-            <h3 className="text-sm font-bold text-foreground mb-3">{vb.overview.topDomainsTitle}</h3>
+            <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vb.overview.topDomainsTitle}</h3>
             <SortablePaginatedTable
               rows={(gscLinks.top_linking_sites ?? []).slice(0, 10) as Record<string, unknown>[]}
               columns={domainColumns}
@@ -523,13 +523,13 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
             <button
               type="button"
               onClick={() => setActiveTab('domains')}
-              className="mt-3 text-xs text-link hover:underline"
+              className="mt-3 text-xs text-md-sys-primary hover:underline"
             >
               {vb.overview.viewAllDomains}
             </button>
           </Card>
           <Card devData={overviewTopPagesDevData}>
-            <h3 className="text-sm font-bold text-foreground mb-3">{vb.overview.topPagesTitle}</h3>
+            <h3 className="text-sm font-bold text-md-sys-on-surface mb-3">{vb.overview.topPagesTitle}</h3>
             <SortablePaginatedTable
               rows={(gscLinks.top_linked_pages ?? []).slice(0, 10) as Record<string, unknown>[]}
               columns={pageColumns}
@@ -539,7 +539,7 @@ export default function Backlinks({ searchQuery = '' }: ViewProps) {
             <button
               type="button"
               onClick={() => setActiveTab('pages')}
-              className="mt-3 text-xs text-link hover:underline"
+              className="mt-3 text-xs text-md-sys-primary hover:underline"
             >
               {vb.overview.viewAllPages}
             </button>

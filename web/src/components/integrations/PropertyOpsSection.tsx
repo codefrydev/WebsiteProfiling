@@ -104,26 +104,26 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
   if (propertyId == null) return null;
 
   return (
-    <div className="rounded-xl border border-default bg-brand-800/40 p-4 sm:p-5 space-y-4">
+    <div className="rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container/40 p-4 sm:p-5 space-y-4">
       <div>
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-md-sys-on-surface flex items-center gap-2">
           <CalendarClock className="h-4 w-4 text-accent shrink-0" aria-hidden />
           {s.title}
         </h3>
-        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{s.hint}</p>
+        <p className="text-xs text-md-sys-on-surface-variant mt-1 leading-relaxed">{s.hint}</p>
         {gscLinksStale ? (
-          <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">{gscLinksStale}</p>
+          <p className="text-xs text-md-sys-warning font-medium mt-2">{gscLinksStale}</p>
         ) : null}
       </div>
       {loading ? (
-        <p className="text-xs text-muted-foreground flex items-center gap-2">
+        <p className="text-xs text-md-sys-on-surface-variant flex items-center gap-2">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
           {s.loading}
         </p>
       ) : (
         <>
           <label className="block space-y-1">
-            <span className="text-xs font-medium text-foreground">{s.scheduleCronLabel}</span>
+            <span className="text-xs font-medium text-md-sys-on-surface">{s.scheduleCronLabel}</span>
             <input
               id="scheduleCron"
               type="text"
@@ -131,12 +131,12 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
               onChange={(e) => setScheduleCron(e.target.value)}
               placeholder={s.scheduleCronPlaceholder}
               disabled={saving || readOnly}
-              className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 text-sm text-foreground"
+              className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface"
             />
-            <span className="text-[10px] text-muted-foreground">{s.scheduleCronHelp}</span>
+            <span className="text-[10px] text-md-sys-on-surface-variant">{s.scheduleCronHelp}</span>
           </label>
           <label className="block space-y-1">
-            <span className="text-xs font-medium text-foreground">{s.alertWebhookLabel}</span>
+            <span className="text-xs font-medium text-md-sys-on-surface">{s.alertWebhookLabel}</span>
             <input
               id="alertWebhookUrl"
               type="url"
@@ -144,12 +144,12 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
               onChange={(e) => setAlertWebhookUrl(e.target.value)}
               placeholder="https://hooks.example.com/..."
               disabled={saving || readOnly}
-              className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 text-sm text-foreground"
+              className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface"
             />
-            <span className="text-[10px] text-muted-foreground">{s.alertWebhookHelp}</span>
+            <span className="text-[10px] text-md-sys-on-surface-variant">{s.alertWebhookHelp}</span>
           </label>
           <label className="block space-y-1">
-            <span className="text-xs font-medium text-foreground">{s.alertEmailLabel}</span>
+            <span className="text-xs font-medium text-md-sys-on-surface">{s.alertEmailLabel}</span>
             <input
               id="alertEmail"
               type="email"
@@ -157,9 +157,9 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
               onChange={(e) => setAlertEmail(e.target.value)}
               placeholder="team@example.com"
               disabled={saving || readOnly}
-              className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 text-sm text-foreground"
+              className="w-full rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low px-3 py-2 text-sm text-md-sys-on-surface"
             />
-            <span className="text-[10px] text-muted-foreground">{s.alertEmailHelp}</span>
+            <span className="text-[10px] text-md-sys-on-surface-variant">{s.alertEmailHelp}</span>
           </label>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="secondary" onClick={() => void handleSave()} disabled={saving || readOnly}>
@@ -167,12 +167,12 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
               {saving ? s.saving : s.saveLabel}
             </Button>
             {message ? (
-              <span className={`text-xs ${message === s.saved ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+              <span className={`text-xs font-medium ${message === s.saved ? 'text-md-sys-success' : 'text-md-sys-error'}`}>
                 {message}
               </span>
             ) : null}
           </div>
-          <p className="text-[10px] text-muted-foreground">{s.cronEndpointsHint}</p>
+          <p className="text-[10px] text-md-sys-on-surface-variant">{s.cronEndpointsHint}</p>
         </>
       )}
     </div>

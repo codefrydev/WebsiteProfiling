@@ -354,38 +354,38 @@ export default function Network({ searchQuery = '' }: ViewProps) {
                 />
               )}
               {searchEmpty && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#05080f]/90 text-muted-foreground text-sm px-6 text-center">
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#05080f]/90 text-md-sys-on-surface-variant text-sm px-6 text-center">
                   {vn.searchEmpty}
                 </div>
               )}
-              <div className="absolute top-4 left-4 bg-brand-900 border border-default p-3 rounded-xl text-xs space-y-2 z-10">
-                <div className="flex items-center gap-2 text-bright">
-                  <div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-400" />
+              <div className="absolute top-4 left-4 bg-md-sys-surface-container-low border border-md-sys-outline-variant/40 p-3 rounded-2xl text-xs space-y-2 z-10 shadow-sm">
+                <div className="flex items-center gap-2 text-md-sys-on-surface">
+                  <div className="w-3 h-3 rounded-full bg-md-sys-primary border border-md-sys-primary/40" />
                   <LabelWithHint label={vn.legendOk} helpKey="views.network.legendOk" />
                 </div>
-                <div className="flex items-center gap-2 text-bright">
-                  <div className="w-3 h-3 rounded-full bg-red-500 border border-red-400" />
+                <div className="flex items-center gap-2 text-md-sys-on-surface">
+                  <div className="w-3 h-3 rounded-full bg-md-sys-error border border-md-sys-error/40" />
                   <LabelWithHint label={vn.legendBroken} helpKey="views.network.legendBroken" />
                 </div>
-                <div className="flex items-center gap-2 text-bright">
-                  <div className="w-4 h-0.5 bg-brand-700" />
+                <div className="flex items-center gap-2 text-md-sys-on-surface">
+                  <div className="w-4 h-0.5 bg-md-sys-surface-container-high" />
                   <LabelWithHint label={vn.legendLink} helpKey="views.network.legendLink" />
                 </div>
-                <p className="pt-1 text-[11px] text-muted-foreground border-t border-default">{clickHint}</p>
+                <p className="pt-1 text-[11px] text-md-sys-on-surface-variant border-t border-md-sys-outline-variant/40">{clickHint}</p>
               </div>
               <div className="absolute top-4 right-4 z-10 flex items-center gap-2 print:hidden">
                 <div
-                  className="flex rounded-lg border border-default overflow-hidden bg-brand-900"
+                  className="flex rounded-full border border-md-sys-outline-variant/40 p-0.5 gap-0.5 bg-md-sys-surface-container-low"
                   role="group"
                   aria-label="Graph view mode"
                 >
                   <button
                     type="button"
                     onClick={() => setViewModePersisted('2d')}
-                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`press rounded-full px-3 py-1.5 text-xs font-medium transition-all active:scale-[0.98] ${
                       viewMode === '2d'
-                        ? 'bg-brand-700 text-bright'
-                        : 'text-muted-foreground hover:text-bright'
+                        ? 'bg-md-sys-surface-container-high text-md-sys-on-surface shadow-sm'
+                        : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                     }`}
                     aria-pressed={viewMode === '2d'}
                   >
@@ -394,10 +394,10 @@ export default function Network({ searchQuery = '' }: ViewProps) {
                   <button
                     type="button"
                     onClick={() => setViewModePersisted('3d')}
-                    className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-default ${
+                    className={`press rounded-full px-3 py-1.5 text-xs font-medium transition-all active:scale-[0.98] ${
                       viewMode === '3d'
-                        ? 'bg-brand-700 text-bright'
-                        : 'text-muted-foreground hover:text-bright'
+                        ? 'bg-md-sys-surface-container-high text-md-sys-on-surface shadow-sm'
+                        : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                     }`}
                     aria-pressed={viewMode === '3d'}
                   >
@@ -414,29 +414,29 @@ export default function Network({ searchQuery = '' }: ViewProps) {
                 </Button>
               </div>
               {selected && (
-                <div className="absolute bottom-4 left-4 z-10 max-w-[min(28rem,80vw)] rounded-xl border border-default bg-brand-900/95 p-3 shadow-lg fade-in">
+                <div className="absolute bottom-4 left-4 z-10 max-w-[min(28rem,80vw)] rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/95 p-3 shadow-xl fade-in">
                   <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-md-sys-on-surface-variant">
                       {vn.selectedLabel}
                     </span>
                     <button
                       type="button"
                       onClick={clearSelection}
-                      className="inline-flex items-center gap-1 rounded p-0.5 text-muted-foreground hover:text-bright"
+                      className="press inline-flex items-center gap-1 rounded-full p-1 text-md-sys-on-surface-variant hover:text-md-sys-on-surface hover:bg-md-sys-surface-container-high active:scale-95 transition-all"
                       aria-label={vn.clearSelection}
                       title={vn.clearSelection}
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <p className="mb-2 break-all font-mono text-xs text-bright" title={selected}>
+                  <p className="mb-2 break-all font-mono text-xs text-md-sys-on-surface" title={selected}>
                     {shortPath(selected) || selected}
                   </p>
                   <a
                     href={selected}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-link hover:underline"
+                    className="inline-flex items-center gap-1.5 text-xs text-md-sys-primary hover:underline"
                   >
                     <ExternalLink className="h-3.5 w-3.5" /> {vn.openLive}
                   </a>
@@ -444,7 +444,7 @@ export default function Network({ searchQuery = '' }: ViewProps) {
               )}
             </>
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center p-5 text-muted-foreground">
+            <div className="absolute inset-0 flex items-center justify-center p-5 text-md-sys-on-surface-variant">
               {vn.noEdges}
             </div>
           )}

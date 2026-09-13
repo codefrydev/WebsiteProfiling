@@ -18,8 +18,8 @@ export function RatioBar({
   secondaryLabel,
   primaryPct,
   ariaSummary,
-  primaryClassName = 'bg-green-500',
-  secondaryClassName = 'bg-slate-600',
+  primaryClassName = 'bg-md-sys-success',
+  secondaryClassName = 'bg-md-sys-surface-container-highest',
 }: RatioBarProps) {
   const safePrimary = Math.min(100, Math.max(0, primaryPct));
   const safeSecondary = 100 - safePrimary;
@@ -29,15 +29,15 @@ export function RatioBar({
 
   return (
     <div className="space-y-2" role="img" aria-label={summary}>
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">{label}</span>
-        <span className="font-bold text-bright tabular-nums">{safePrimary.toFixed(1)}% {primaryLabel}</span>
+      <div className="flex justify-between text-xs text-md-sys-on-surface-variant">
+        <span className="font-medium text-md-sys-on-surface">{label}</span>
+        <span className="font-bold text-md-sys-on-surface tabular-nums">{safePrimary.toFixed(1)}% {primaryLabel}</span>
       </div>
-      <div className="flex h-3 rounded-full overflow-hidden bg-track" aria-hidden>
+      <div className="flex h-3 rounded-full overflow-hidden bg-md-sys-surface-container-highest/40" aria-hidden>
         <div className={`h-full ${primaryClassName}`} style={{ width: `${safePrimary}%` }} title={primaryLabel} />
         <div className={`h-full ${secondaryClassName}`} style={{ width: `${safeSecondary}%` }} title={secondaryLabel} />
       </div>
-      <div className="flex justify-between text-[10px] text-muted-foreground" aria-hidden>
+      <div className="flex justify-between text-[10px] text-md-sys-on-surface-variant" aria-hidden>
         <span>{primaryLabel}</span>
         <span>{secondaryLabel}</span>
       </div>
@@ -53,17 +53,17 @@ export interface CoverageBarProps {
 }
 
 /** Single-metric coverage progress bar (replaces 2-slice doughnuts). */
-export function CoverageBar({ label, pct, color = 'text-link-soft' }: CoverageBarProps) {
+export function CoverageBar({ label, pct, color = 'text-md-sys-primary-soft' }: CoverageBarProps) {
   const safeP = Math.min(100, Math.max(0, pct ?? 0));
   return (
     <div className="space-y-1.5" role="img" aria-label={`${String(label)}: ${safeP}%`}>
-      <div className="flex justify-between text-xs text-muted-foreground">
+      <div className="flex justify-between text-xs text-md-sys-on-surface-variant">
         <span className="font-medium">{label}</span>
         <span className={`font-bold ${color}`}>{safeP}%</span>
       </div>
-      <div className="h-2 bg-track rounded-full overflow-hidden" aria-hidden>
+      <div className="h-2 bg-md-sys-surface-container-highest/40 rounded-full overflow-hidden" aria-hidden>
         <div
-          className={`h-full rounded-full transition-all duration-500 ${safeP >= 80 ? 'bg-green-500' : safeP >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
+          className={`h-full rounded-full transition-all duration-500 ${safeP >= 80 ? 'bg-md-sys-success' : safeP >= 50 ? 'bg-md-sys-warning' : 'bg-md-sys-error'}`}
           style={{ width: `${safeP}%` }}
         />
       </div>

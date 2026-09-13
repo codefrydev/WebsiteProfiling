@@ -73,16 +73,16 @@ function IssueCard({ item, vi, emDash }: IssueCardProps) {
   };
   return (
     <div
-      className={`relative group/dev-card bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.border} flex flex-col md:flex-row gap-4 p-5 hover:border-brand-700/80 transition-colors min-w-0 max-w-full overflow-hidden`}
+      className={`relative group/dev-card bg-md-sys-surface-container border border-md-sys-outline-variant/40 rounded-2xl border-l-4 ${cfg.border} flex flex-col md:flex-row gap-4 p-5 hover:shadow-elevation-2 transition-all duration-200 min-w-0 max-w-full overflow-hidden`}
     >
       <DevCopyJsonButton data={devData} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-2">
           <Icon className={`h-4 w-4 flex-shrink-0 ${cfg.text}`} />
           <Badge value={p} />
-          <span className="text-xs text-muted-foreground font-medium">{categoryDisplayName(item.category)}</span>
+          <span className="text-xs text-md-sys-on-surface-variant font-medium">{categoryDisplayName(item.category)}</span>
         </div>
-        <h3 className="text-foreground font-medium text-sm leading-snug">
+        <h3 className="text-md-sys-on-surface font-medium text-sm leading-snug">
           {issueDisplayMessage(iss.message) || emDash}
         </h3>
         {iss.url && (
@@ -91,7 +91,7 @@ function IssueCard({ item, vi, emDash }: IssueCardProps) {
               href={iss.url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 font-mono text-link text-xs hover:underline break-all"
+              className="inline-flex items-center gap-1 font-mono text-md-sys-primary text-xs hover:underline break-all"
             >
               {iss.url}
               <ExternalLink className="h-3 w-3 flex-shrink-0" />
@@ -100,19 +100,19 @@ function IssueCard({ item, vi, emDash }: IssueCardProps) {
           </div>
         )}
         {iss.impact_score != null && Number(iss.impact_score) > 0 ? (
-          <p className="mt-2 text-xs text-muted-foreground tabular-nums">
+          <p className="mt-2 text-xs text-md-sys-on-surface-variant tabular-nums">
             <LabelWithHint label="Impact score" helpKey="shared.impactScore" />:{' '}
-            <span className="font-semibold text-foreground">{Number(iss.impact_score).toLocaleString()}</span>
+            <span className="font-semibold text-md-sys-on-surface">{Number(iss.impact_score).toLocaleString()}</span>
           </p>
         ) : null}
       </div>
-      <div className="flex-1 min-w-0 bg-brand-900 rounded-lg p-3 border border-muted space-y-2">
-        <div className="text-xs text-link font-bold uppercase mb-1 tracking-wide">{vi.fixRecommendation}</div>
-        <p className="text-muted-foreground text-sm leading-relaxed break-words">
+      <div className="flex-1 min-w-0 bg-md-sys-surface-container-low rounded-xl p-4 border border-md-sys-outline-variant/30 space-y-2">
+        <div className="text-xs text-md-sys-primary font-bold uppercase mb-1 tracking-wide">{vi.fixRecommendation}</div>
+        <p className="text-md-sys-on-surface-variant text-sm leading-relaxed break-words">
           {iss.llm_recommendation || iss.recommendation || emDash}
         </p>
         {iss.llm_recommendation && iss.recommendation && iss.llm_recommendation !== iss.recommendation ? (
-          <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+          <p className="text-[11px] text-md-sys-on-surface-variant/80 leading-relaxed">
             <span className="font-semibold">{vi.ruleRecommendation}: </span>
             {iss.recommendation}
           </p>
@@ -459,10 +459,10 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
           <Card padding="tight" shadow overflowHidden devData={categoryChartDevData} className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <BarChart2 className="h-4 w-4 text-link" />
-              <h2 className="text-sm font-bold text-foreground">{vi.issuesByCategory}</h2>
+              <BarChart2 className="h-4 w-4 text-md-sys-primary" />
+              <h2 className="text-sm font-bold text-md-sys-on-surface">{vi.issuesByCategory}</h2>
             </div>
-            <p className="text-xs text-muted-foreground mb-2">{vi.issuesByCategoryHint}</p>
+            <p className="text-xs text-md-sys-on-surface-variant mb-2">{vi.issuesByCategoryHint}</p>
             <div className="relative h-64 min-w-0 w-full overflow-hidden">
               <Bar
                 data={{
@@ -475,10 +475,10 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
           </Card>
           <Card padding="tight" shadow overflowHidden devData={priorityChartDevData} className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <BarChart2 className="h-4 w-4 text-link" />
-              <h2 className="text-sm font-bold text-foreground">{vi.issuesByPriority}</h2>
+              <BarChart2 className="h-4 w-4 text-md-sys-primary" />
+              <h2 className="text-sm font-bold text-md-sys-on-surface">{vi.issuesByPriority}</h2>
             </div>
-            <p className="text-xs text-muted-foreground mb-2">{vi.issuesByPriorityHint}</p>
+            <p className="text-xs text-md-sys-on-surface-variant mb-2">{vi.issuesByPriorityHint}</p>
             <div className="h-64 flex items-center justify-center min-w-0 overflow-hidden">
               <div className="w-full max-w-[280px] h-52 min-w-0">
                 <ChartAccessibleFallback summary={priorityChart.aria} rows={priorityChart.rows}>
@@ -515,34 +515,36 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
       )}
 
       {issuesTab === 'audit' && (
-      <div className="relative group/dev-card grid grid-cols-2 lg:grid-cols-4 gap-4 min-w-0">
+      <div className="relative group/dev-card min-w-0">
         <DevCopyJsonButton data={priorityStatsDevData} />
-        {priorityOrder.map((p) => {
-          const cfg = PRIORITY_CONFIG[p];
-          const Icon = PRIORITY_ICONS[p];
-          const count = priorityCounts[p] || 0;
-          return (
-            <Card
-              key={p}
-              shadow
-              devData={{
-                widget: 'issues.priorityStat',
-                priority: p,
-                count,
-                active: priorityFilter === p,
-              }}
-              className={`cursor-pointer transition-all ${
-                priorityFilter === p ? `${cfg.ring || 'ring-1 ring-brand-700/30'} border-brand-700` : 'hover:border-brand-700'
-              }`}
-              onClick={() => setPriorityFilter((prev) => (prev === p ? sj.all : p))}
-            >
-              <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
-                <Icon className="h-4 w-4" /> {p}
-              </div>
-              <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-muted-foreground'}`}>{count}</div>
-            </Card>
-          );
-        })}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {priorityOrder.map((p) => {
+            const cfg = PRIORITY_CONFIG[p];
+            const Icon = PRIORITY_ICONS[p];
+            const count = priorityCounts[p] || 0;
+            return (
+              <Card
+                key={p}
+                interactive
+                devData={{
+                  widget: 'issues.priorityStat',
+                  priority: p,
+                  count,
+                  active: priorityFilter === p,
+                }}
+                className={`transition-all cursor-pointer ${
+                  priorityFilter === p ? `${cfg.ring || 'ring-2 ring-md-sys-primary'} bg-md-sys-surface-container-high` : 'border-md-sys-outline-variant/40 hover:border-md-sys-outline'
+                }`}
+                onClick={() => setPriorityFilter((prev) => (prev === p ? sj.all : p))}
+              >
+                <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
+                  <Icon className="h-4 w-4" /> {p}
+                </div>
+                <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-md-sys-on-surface-variant'}`}>{count}</div>
+              </Card>
+            );
+          })}
+        </div>
       </div>
       )}
 
@@ -551,10 +553,10 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
         <button
           type="button"
           onClick={() => setPriorityFilter(sj.all)}
-          className={`px-4 py-1.5 rounded-full text-sm font-bold border transition-colors ${
+          className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all active:scale-[0.98] ${
             priorityFilter === sj.all
-              ? 'bg-blue-500/20 text-link border-blue-500/30'
-              : 'border-default bg-brand-800 text-muted-foreground hover:border-brand-700/80'
+              ? 'bg-md-sys-primary text-md-sys-on-primary border-md-sys-primary shadow-elevation-1'
+              : 'border-md-sys-outline-variant/50 bg-md-sys-surface-container text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high'
           }`}
         >
           {vi.allPriorities}
@@ -567,10 +569,10 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
               key={p}
               type="button"
               onClick={() => setPriorityFilter((prev) => (prev === p ? sj.all : p))}
-              className={`px-4 py-1.5 rounded-full text-sm font-bold border transition-colors ${
+              className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all active:scale-[0.98] ${
                 active
-                  ? `${cfg.bg} ${cfg.text} border-current/30`
-                  : 'border-default bg-brand-800 text-muted-foreground hover:border-brand-700/80'
+                  ? `${cfg.bg} ${cfg.text} border-current/40 shadow-elevation-1`
+                  : 'border-md-sys-outline-variant/50 bg-md-sys-surface-container text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high'
               }`}
             >
               {p}
@@ -582,8 +584,8 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
 
       {issuesTab === 'audit' && (filtered.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-16 gap-3">
-          <Info className="h-10 w-10 text-muted-foreground" />
-          <p className="text-muted-foreground text-sm">{vi.noMatches}</p>
+          <Info className="h-10 w-10 text-md-sys-on-surface-variant" />
+          <p className="text-md-sys-on-surface-variant text-sm">{vi.noMatches}</p>
         </Card>
       ) : (
         <div className="relative group/dev-card space-y-4 min-w-0 max-w-full">
@@ -604,13 +606,13 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
           </ViewTabPanel>
           {activeTotal > 0 ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center pt-1">
-              <div className="text-sm text-muted-foreground space-y-0.5">
+              <div className="text-sm text-md-sys-on-surface-variant space-y-0.5">
                 <div>{format(vlp.showingSlice, { from, to, total: activeTotal })}</div>
                 <div className="text-xs">
                   {vlp.pageOf}{' '}
-                  <span className="font-bold text-bright tabular-nums">{safePage}</span> {vlp.of}{' '}
-                  <span className="font-bold text-bright tabular-nums">{totalPages}</span>
-                  <span className="text-muted-foreground ml-2">
+                  <span className="font-bold text-md-sys-on-surface tabular-nums">{safePage}</span> {vlp.of}{' '}
+                  <span className="font-bold text-md-sys-on-surface tabular-nums">{totalPages}</span>
+                  <span className="text-md-sys-on-surface-variant ml-2">
                     ({format(vlp.rowsPerPage, { n: PAGE_SIZE })})
                   </span>
                 </div>
@@ -621,7 +623,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
                     variant="secondary"
                     onClick={() => setIssuePage((p) => Math.max(1, p - 1))}
                     disabled={safePage <= 1}
-                    className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                    className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
                   >
                     {vlp.previous}
                   </Button>
@@ -629,7 +631,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
                     variant="secondary"
                     onClick={() => setIssuePage((p) => Math.min(totalPages, p + 1))}
                     disabled={safePage >= totalPages}
-                    className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                    className="px-3 py-1 text-md-sys-on-surface touch-manipulation min-h-11 sm:min-h-0"
                   >
                     {vlp.next}
                   </Button>

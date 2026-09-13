@@ -182,7 +182,7 @@ export function D3DualLineChart({
                     cy={d.y}
                     r={3}
                     fill={baseColor}
-                    stroke="var(--background, #fff)"
+                    stroke="var(--md-sys-color-surface, #0b0f19)"
                     strokeWidth={1.5}
                     style={{ cursor: 'default' }}
                     onMouseEnter={(e) => {
@@ -210,7 +210,7 @@ export function D3DualLineChart({
                     cy={d.y}
                     r={3}
                     fill={curColor}
-                    stroke="var(--background, #fff)"
+                    stroke="var(--md-sys-color-surface, #0b0f19)"
                     strokeWidth={1.5}
                     style={{ cursor: 'default' }}
                     onMouseEnter={(e) => {
@@ -255,10 +255,10 @@ export function D3DualLineChart({
                     width={160}
                     height={48}
                     rx={4}
-                    fill="var(--popover, #1e293b)"
+                    fill="var(--md-sys-color-surface-container-highest, #1f2937)"
                     opacity={0.92}
                   />
-                  <text x={4} y={-28} fontSize={10} fill="var(--popover-foreground, #f1f5f9)">
+                  <text x={4} y={-28} fontSize={10} fill="var(--md-sys-color-on-surface, #f1f5f9)">
                     {tooltip.label}
                   </text>
                   <text x={4} y={-14} fontSize={10} fill={baseColor}>

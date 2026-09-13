@@ -33,10 +33,10 @@ function RailButton({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+      className={`press flex h-10 w-10 items-center justify-center rounded-full transition-colors active:scale-95 ${
         active
-          ? 'bg-brand-700/80 text-foreground'
-          : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+          ? 'bg-md-sys-surface-container-high/80 text-md-sys-on-surface'
+          : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
       }`}
     >
       {children}
@@ -46,15 +46,15 @@ function RailButton({
 
 function SettingsMenu({ onClose }: { onClose: () => void }) {
   return (
-    <div className="w-56 rounded-2xl border border-default bg-[var(--chat-surface)] p-3 shadow-xl">
-      <p className="mb-2 text-xs font-medium text-bright">{c.settingsTitle}</p>
+    <div className="w-56 rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-3 shadow-xl">
+      <p className="mb-2 text-xs font-medium text-md-sys-on-surface">{c.settingsTitle}</p>
       <div className="flex items-center justify-between gap-2 py-1.5">
-        <span className="text-xs text-muted-foreground">Theme</span>
+        <span className="text-xs text-md-sys-on-surface-variant">Theme</span>
         <ThemeToggle />
       </div>
       <Link
         to="/secrets"
-        className="mt-1 block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
+        className="press mt-1 block rounded-full px-3 py-1.5 text-xs font-medium text-md-sys-primary hover:bg-md-sys-surface-container-high active:scale-[0.98] transition-all"
         onClick={onClose}
       >
         {c.aiSettingsLink}
@@ -128,19 +128,19 @@ export default function PageMarkdownSidebar({ expanded, toggle, setExpanded }: C
         <div className="flex items-center justify-between gap-2 px-3 py-3">
           <Link to="/home" className="flex min-w-0 items-center gap-2">
             <AppLogo size={20} />
-            <span className="truncate text-sm font-medium text-bright">Page Markdown</span>
+            <span className="truncate text-sm font-medium text-md-sys-on-surface">Page Markdown</span>
           </Link>
           <button
             type="button"
             onClick={toggle}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground"
+            className="press rounded-full p-1.5 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98] transition-all"
             aria-label={c.sidebarCollapse}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
         </div>
 
-        <nav className="border-b border-muted/30 px-2 py-2">
+        <nav className="border-b border-md-sys-outline-variant/30 px-2 py-2">
           <ul className="space-y-0.5">
             {NAV_LINKS.map(({ href, label, icon: Icon }) => {
               const isActive = isMiniNavLinkActive(href, pathname);
@@ -148,10 +148,10 @@ export default function PageMarkdownSidebar({ expanded, toggle, setExpanded }: C
                 <li key={href}>
                   <Link
                     to={href}
-                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
+                    className={`press flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors active:scale-[0.98] ${
                       isActive
-                        ? 'bg-brand-700/60 text-foreground'
-                        : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+                        ? 'bg-md-sys-surface-container-high/60 text-md-sys-on-surface'
+                        : 'text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface'
                     }`}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
@@ -165,11 +165,11 @@ export default function PageMarkdownSidebar({ expanded, toggle, setExpanded }: C
 
         <div className="flex-1" />
 
-        <div className="relative border-t border-muted/30 p-2" ref={settingsRef}>
+        <div className="relative border-t border-md-sys-outline-variant/30 p-2" ref={settingsRef}>
           <button
             type="button"
             onClick={() => setSettingsOpen((v) => !v)}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground"
+            className="press flex w-full items-center gap-2 rounded-full px-3 py-2 text-xs text-md-sys-on-surface-variant transition-colors hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98]"
             aria-expanded={settingsOpen}
           >
             <Settings className="h-4 w-4" />

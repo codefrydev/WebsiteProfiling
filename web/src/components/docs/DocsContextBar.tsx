@@ -21,24 +21,24 @@ export default function DocsContextBar({ title, subtitle }: DocsContextBarProps)
   const displaySubtitle = subtitle ?? d.pageSubtitle;
 
   return (
-    <header className="chat-context-bar flex items-center gap-3 border-b border-muted/30 bg-[var(--chat-bg)] px-4 py-2.5">
+    <header className="chat-context-bar flex items-center gap-3 border-b border-md-sys-outline-variant/30 bg-md-sys-surface px-4 py-2.5">
       {back ? (
         <Link
           to={back.href}
-          className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-link transition-colors hover:bg-[var(--chat-surface-hover)] sm:text-sm"
+          className="press inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-md-sys-primary transition-all hover:bg-md-sys-surface-container-high active:scale-[0.98] sm:text-sm"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           <span className="hidden sm:inline">{back.label}</span>
         </Link>
       ) : null}
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <BookOpen className="h-4 w-4 shrink-0 text-md-sys-on-surface-variant" aria-hidden />
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-bright" title={displayTitle}>
+          <p className="truncate text-sm font-medium text-md-sys-on-surface" title={displayTitle}>
             {displayTitle}
           </p>
           {displaySubtitle ? (
-            <p className="truncate text-xs text-muted-foreground" title={displaySubtitle}>
+            <p className="truncate text-xs text-md-sys-on-surface-variant" title={displaySubtitle}>
               {displaySubtitle}
             </p>
           ) : null}

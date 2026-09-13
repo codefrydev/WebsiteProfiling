@@ -5,6 +5,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { ChatBlock } from '@/components/chat/deriveChatBlocks';
 import { resolveHref } from './ChatFileDownloadBlock';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 type Block = Extract<ChatBlock, { type: 'code_artifact' }>;
 
@@ -26,6 +27,11 @@ export default function ChatArtifactDrawer({ block, onClose }: { block: Block; o
     setTimeout(() => setCopied(false), 1500);
   };
 
+  useModalDismiss({
+    onDismiss: onClose,
+    lockScroll: true,
+  });
+
   return (
     <div
       className="fixed inset-0 z-50 flex justify-end"
@@ -33,14 +39,19 @@ export default function ChatArtifactDrawer({ block, onClose }: { block: Block; o
       aria-modal="true"
       aria-label={block.filename}
     >
-      <button type="button" className="flex-1 bg-black/40" onClick={onClose} aria-label="Close preview" />
-      <div className="flex h-full w-full max-w-3xl flex-col border-l border-default bg-brand-800 shadow-xl fade-in">
-        <div className="flex shrink-0 items-center gap-2 border-b border-default px-3 py-2.5">
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-bright" title={block.filename}>
+      <button
+        type="button"
+        className="flex-1 bg-[color:var(--app-overlay)] backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+        aria-label="Close preview"
+      />
+      <div className="flex h-full w-full max-w-3xl flex-col border-l border-md-sys-outline-variant/40 bg-md-sys-surface-container shadow-xl fade-in">
+        <div className="flex shrink-0 items-center gap-2 border-b border-md-sys-outline-variant/40 px-3 py-2.5">
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-md-sys-on-surface" title={block.filename}>
             {block.filename}
           </span>
           {block.previewable ? (
-            <div className="flex shrink-0 gap-1" role="tablist" aria-label="Artifact view">
+            <div className="flex shrink-0 gap-1 rounded-full bg-md-sys-surface-container-high/40 p-0.5" role="tablist" aria-label="Artifact view">
               {(['preview', 'code'] as const).map((t) => (
                 <button
                   key={t}
@@ -48,10 +59,10 @@ export default function ChatArtifactDrawer({ block, onClose }: { block: Block; o
                   role="tab"
                   aria-selected={tab === t}
                   onClick={() => setTab(t)}
-                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  className={`press rounded-full px-3 py-1 text-xs font-medium transition-all active:scale-[0.98] ${
                     tab === t
-                      ? 'bg-brand-700 text-bright shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-md-sys-surface-container-high text-md-sys-on-surface shadow-sm'
+                      : 'text-md-sys-on-surface-variant hover:text-md-sys-on-surface'
                   }`}
                 >
                   {t === 'preview' ? 'Preview' : 'Code'}
@@ -62,21 +73,21 @@ export default function ChatArtifactDrawer({ block, onClose }: { block: Block; o
           <button
             type="button"
             onClick={copy}
-            className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-brand-700 hover:text-bright"
+            className="press shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98] transition-all"
           >
             {copied ? 'Copied' : 'Copy'}
           </button>
           <a
             href={href}
             download={block.filename}
-            className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-brand-700 hover:text-bright"
+            className="press shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98] transition-all"
           >
             Download
           </a>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded p-1 hover:bg-brand-700"
+            className="press shrink-0 rounded-full p-1 hover:bg-md-sys-surface-container-high text-md-sys-on-surface-variant hover:text-md-sys-on-surface active:scale-95 transition-all"
             aria-label="Close"
           >
             <X className="h-5 w-5" />

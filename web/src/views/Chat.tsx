@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import Button from '@/components/Button';
+import AlertBanner from '@/components/AlertBanner';
 import ChatContextBar from '@/components/chat/ChatContextBar';
 import ChatShell from '@/components/chat/ChatShell';
 import ChatSidebar from '@/components/chat/ChatSidebar';
@@ -762,8 +763,8 @@ export default function ChatPage() {
 
   const domainConfirmStrip = pendingDomainConfirm ? (
     <div className="mx-auto w-full max-w-3xl px-4 pb-2">
-      <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-3 text-sm">
-        <p className="text-foreground">
+      <div className="rounded-2xl border border-md-sys-primary/30 bg-md-sys-primary-container/10 p-3 text-sm">
+        <p className="text-md-sys-on-surface">
           {format(c.domainConfirmPrompt, { domain: pendingDomainConfirm.domain })}
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -796,12 +797,8 @@ export default function ChatPage() {
   ) : null;
 
   const errorStrip = error ? (
-    <div
-      className="mx-auto flex w-full max-w-3xl items-start gap-2 px-4 pb-2 text-xs text-red-300"
-      role="alert"
-    >
-      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-      <p>{error}</p>
+    <div className="mx-auto w-full max-w-3xl px-4 pb-2">
+      <AlertBanner variant="error">{error}</AlertBanner>
     </div>
   ) : null;
 
@@ -838,12 +835,12 @@ export default function ChatPage() {
           />
           {!llmEnabled ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8">
-              <div className="flex max-w-md items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm">
-                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+              <div className="flex max-w-md items-start gap-3 rounded-2xl border border-md-sys-warning/30 bg-md-sys-warning-container/20 p-5 text-sm">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-md-sys-warning" />
                 <div>
-                  <p className="font-medium text-amber-100">{c.aiDisabledTitle}</p>
-                  <p className="mt-1 text-muted-foreground">{c.aiDisabledHint}</p>
-                  <Link to="/pipeline?group=content-ai" className="mt-2 inline-block text-link text-xs">
+                  <p className="font-medium text-md-sys-on-warning-container">{c.aiDisabledTitle}</p>
+                  <p className="mt-1 text-md-sys-on-surface-variant">{c.aiDisabledHint}</p>
+                  <Link to="/pipeline?group=content-ai" className="press mt-2 inline-block text-md-sys-primary text-xs hover:underline active:scale-[0.98]">
                     {c.openAiSettings}
                   </Link>
                 </div>
@@ -852,10 +849,10 @@ export default function ChatPage() {
           ) : isHero ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-[10vh] pt-4">
               <div className="flex w-full max-w-3xl flex-col items-center">
-                <h1 className="text-center text-[2rem] font-normal tracking-tight text-bright sm:text-5xl sm:font-light">
+                <h1 className="text-center text-[2rem] font-normal tracking-tight text-md-sys-on-surface sm:text-5xl sm:font-light">
                   {c.emptyHeadline}
                 </h1>
-                <p className="mt-3 max-w-md text-center text-sm text-muted-foreground">
+                <p className="mt-3 max-w-md text-center text-sm text-md-sys-on-surface-variant">
                   {c.emptySubline}
                 </p>
                 <div className="mt-10 w-full space-y-3">
@@ -874,7 +871,7 @@ export default function ChatPage() {
           ) : (
             <div className="chat-conversation">
               {loadingMessages && messages.length === 0 ? (
-                <div className="chat-messages-scroll flex items-center justify-center px-4 text-sm text-muted-foreground">
+                <div className="chat-messages-scroll flex items-center justify-center px-4 text-sm text-md-sys-on-surface-variant">
                   {c.loadingMessages}
                 </div>
               ) : (

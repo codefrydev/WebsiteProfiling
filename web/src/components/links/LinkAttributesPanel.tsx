@@ -65,11 +65,11 @@ export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAt
   if (!summary && !(anchors?.length)) return null;
 
   const POSITION_COLORS: Record<string, string> = {
-    nav:     'bg-blue-500/15 text-blue-400',
-    header:  'bg-purple-500/15 text-purple-400',
-    content: 'bg-emerald-500/15 text-emerald-400',
-    footer:  'bg-slate-500/15 text-slate-400',
-    sidebar: 'bg-amber-500/15 text-amber-400',
+    nav:     'bg-md-sys-primary-container/30 text-md-sys-primary border border-md-sys-primary/30',
+    header:  'bg-md-sys-tertiary-container/30 text-md-sys-tertiary border border-md-sys-tertiary/30',
+    content: 'bg-md-sys-success-container/30 text-md-sys-success border border-md-sys-success/30',
+    footer:  'bg-md-sys-surface-container-high/60 text-md-sys-on-surface-variant border border-md-sys-outline-variant/40',
+    sidebar: 'bg-md-sys-warning-container/30 text-md-sys-warning border border-md-sys-warning/30',
   };
 
   const columns: TableColumn[] = [
@@ -86,9 +86,9 @@ export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAt
       render: (v) => {
         const pos = String(v ?? '').toLowerCase();
         if (!pos) return null;
-        const cls = POSITION_COLORS[pos] ?? 'bg-brand-700/30 text-muted-foreground';
+        const cls = POSITION_COLORS[pos] ?? 'bg-md-sys-surface-container-high/30 text-md-sys-on-surface-variant';
         return (
-          <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${cls}`}>
             {pos}
           </span>
         );
@@ -113,11 +113,11 @@ export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAt
       />
       {summary ? (
         <Card devData={summaryDevData ?? undefined} className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
-          <div><span className="text-muted-foreground">{labels.total}</span><div className="font-semibold">{(summary.total_edges ?? 0).toLocaleString()}</div></div>
-          <div><span className="text-muted-foreground">{labels.internal}</span><div className="font-semibold">{(summary.internal_edges ?? 0).toLocaleString()}</div></div>
-          <div><span className="text-muted-foreground">{labels.nofollow}</span><div className="font-semibold">{(summary.nofollow_internal ?? 0).toLocaleString()}</div></div>
-          <div><span className="text-muted-foreground">{labels.sponsored}</span><div className="font-semibold">{(summary.sponsored_internal ?? 0).toLocaleString()}</div></div>
-          <div><span className="text-muted-foreground">{labels.external}</span><div className="font-semibold">{(summary.external_edges ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-md-sys-on-surface-variant">{labels.total}</span><div className="font-semibold">{(summary.total_edges ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-md-sys-on-surface-variant">{labels.internal}</span><div className="font-semibold">{(summary.internal_edges ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-md-sys-on-surface-variant">{labels.nofollow}</span><div className="font-semibold">{(summary.nofollow_internal ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-md-sys-on-surface-variant">{labels.sponsored}</span><div className="font-semibold">{(summary.sponsored_internal ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-md-sys-on-surface-variant">{labels.external}</span><div className="font-semibold">{(summary.external_edges ?? 0).toLocaleString()}</div></div>
         </Card>
       ) : null}
       {anchors?.length ? (

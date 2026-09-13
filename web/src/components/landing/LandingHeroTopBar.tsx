@@ -22,21 +22,21 @@ export default function LandingHeroTopBar() {
   const app = strings.app;
 
   return (
-    <header className="shrink-0 border-b border-muted/40">
+    <header className="shrink-0 border-b border-md-sys-outline-variant/40">
       <div className={`flex h-14 w-full items-center justify-between gap-3 ${headerGutter}`}>
         <Link to="/" className="flex min-w-0 items-center gap-2.5">
           <AppLogo size={22} />
-          <span className="truncate font-semibold text-foreground">{app.productName}</span>
+          <span className="truncate font-semibold text-md-sys-on-surface">{app.productName}</span>
         </Link>
         <nav
-          className="hidden items-center gap-1 rounded-lg border border-default/80 bg-brand-800/40 p-1 md:flex"
+          className="hidden items-center gap-1 rounded-lg border border-md-sys-outline-variant/50 bg-md-sys-surface-container/40 p-1 md:flex"
           aria-label="Landing"
         >
           {NAV_ITEMS.map(({ href, label }) => (
             <Link
               key={href}
               to={href}
-              className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-brand-700/60 hover:text-foreground lg:px-3 lg:text-sm"
+              className="press rounded-full px-3 py-1 text-xs font-medium text-md-sys-on-surface-variant transition-all hover:bg-md-sys-surface-container-high/60 hover:text-md-sys-on-surface active:scale-[0.98] lg:px-3.5 lg:text-sm"
             >
               {label}
             </Link>
@@ -45,7 +45,7 @@ export default function LandingHeroTopBar() {
             href={vl.githubRepoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-brand-700/60 hover:text-foreground lg:px-3 lg:text-sm"
+            className="press rounded-full px-3 py-1 text-xs font-medium text-md-sys-on-surface-variant transition-all hover:bg-md-sys-surface-container-high/60 hover:text-md-sys-on-surface active:scale-[0.98] lg:px-3.5 lg:text-sm"
           >
             {vl.navGithub}
           </a>
@@ -54,27 +54,27 @@ export default function LandingHeroTopBar() {
           <ThemeToggle />
           <Link
             to="/home"
-            className="hidden rounded-lg border border-default px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-brand-800 sm:inline sm:text-sm"
+            className="press hidden rounded-full border border-md-sys-outline-variant/50 bg-md-sys-surface-container-high/40 px-3.5 py-1.5 text-xs font-medium text-md-sys-on-surface transition-all duration-200 hover:bg-md-sys-surface-container-highest active:scale-[0.98] sm:inline sm:text-sm"
           >
             {vl.navOpenApp}
           </Link>
           <Link
             to="/pipeline"
-            className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-500 sm:px-3 sm:text-sm"
+            className="press rounded-full bg-md-sys-primary px-3.5 py-1.5 text-xs font-medium text-md-sys-on-primary transition-all duration-200 hover:brightness-105 active:scale-[0.98] sm:px-4 sm:text-sm shadow-sm"
           >
             {vl.navRunAudit}
           </Link>
         </div>
       </div>
       <nav
-        className={`flex gap-2 overflow-x-auto border-t border-muted/50 py-2 md:hidden ${headerGutter}`}
+        className={`flex gap-2 overflow-x-auto border-t border-md-sys-outline-variant/40 py-2 md:hidden ${headerGutter}`}
         aria-label="Landing mobile"
       >
         {NAV_ITEMS.map(({ href, label }) => (
           <Link
             key={href}
             to={href}
-            className="shrink-0 rounded-full border border-default bg-brand-800/50 px-3 py-1 text-xs font-medium text-muted-foreground"
+            className="shrink-0 rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container/50 px-3 py-1 text-xs font-medium text-md-sys-on-surface-variant"
           >
             {label}
           </Link>
@@ -83,7 +83,7 @@ export default function LandingHeroTopBar() {
           href={vl.githubRepoUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 rounded-full border border-default bg-brand-800/50 px-3 py-1 text-xs font-medium text-muted-foreground"
+          className="shrink-0 rounded-full border border-md-sys-outline-variant/40 bg-md-sys-surface-container/50 px-3 py-1 text-xs font-medium text-md-sys-on-surface-variant"
         >
           {vl.navGithub}
         </a>

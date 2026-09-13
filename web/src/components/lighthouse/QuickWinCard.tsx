@@ -21,46 +21,46 @@ export default function QuickWinCard({ win, passed }: QuickWinCardProps) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className={`border rounded-xl overflow-hidden transition-all duration-200 ${
-      passed ? 'border-green-700/40 bg-green-500/5' : 'border-amber-700/40 bg-amber-500/5'
+    <div className={`border rounded-2xl overflow-hidden transition-all duration-200 ${
+      passed ? 'border-md-sys-success/30 bg-md-sys-success-container/10' : 'border-md-sys-warning/30 bg-md-sys-warning-container/10'
     }`}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 p-4 text-left hover:opacity-90 transition-opacity"
+        className="w-full flex items-center gap-3 p-4 text-left hover:bg-md-sys-surface-container-high/40 transition-colors active:scale-[0.99]"
       >
-        <div className={`shrink-0 p-2 rounded-lg ${passed ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-amber-500/20 text-amber-700 dark:text-amber-400'}`}>
+        <div className={`shrink-0 p-2 rounded-full ${passed ? 'bg-md-sys-success-container/30 text-md-sys-success' : 'bg-md-sys-warning-container/30 text-md-sys-warning'}`}>
           <WinIcon iconKey={win.iconKey} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-foreground">{win.title}</div>
-          <div className={`text-xs mt-0.5 ${passed ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
+          <div className="text-sm font-semibold text-md-sys-on-surface">{win.title}</div>
+          <div className={`text-xs mt-0.5 ${passed ? 'text-md-sys-success' : 'text-md-sys-warning'}`}>
             {passed ? 'Passing' : 'Needs attention'}
           </div>
         </div>
         <div className="shrink-0 flex items-center gap-2">
           {passed
-            ? <CheckCircle className="h-5 w-5 text-green-700 dark:text-green-400" />
-            : <XCircle className="h-5 w-5 text-amber-700 dark:text-amber-400" />}
+            ? <CheckCircle className="h-5 w-5 text-md-sys-success" />
+            : <XCircle className="h-5 w-5 text-md-sys-warning" />}
           {open
-            ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-            : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+            ? <ChevronUp className="h-4 w-4 text-md-sys-on-surface-variant" />
+            : <ChevronDown className="h-4 w-4 text-md-sys-on-surface-variant" />}
         </div>
       </button>
 
       {open && (
-        <div className="border-t border-muted px-4 py-4 space-y-3 bg-brand-900">
+        <div className="border-t border-md-sys-outline-variant/30 px-4 py-4 space-y-3 bg-md-sys-surface-container-high/50">
           <div>
-            <div className="text-xs text-muted-foreground font-semibold mb-1">Why it matters</div>
-            <p className="text-sm text-foreground">{win.why}</p>
+            <div className="text-xs text-md-sys-on-surface-variant font-semibold mb-1">Why it matters</div>
+            <p className="text-sm text-md-sys-on-surface">{win.why}</p>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground font-semibold mb-1">How to fix</div>
-            <p className="text-sm text-foreground">{win.how}</p>
+            <div className="text-xs text-md-sys-on-surface-variant font-semibold mb-1">How to fix</div>
+            <p className="text-sm text-md-sys-on-surface">{win.how}</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Estimated impact:</span>
-            <span className="text-xs text-link font-semibold">{win.impact}</span>
+            <span className="text-xs text-md-sys-on-surface-variant">Estimated impact:</span>
+            <span className="text-xs text-md-sys-primary font-semibold">{win.impact}</span>
           </div>
           <AiSuggestionButton request={buildLighthouseQuickWinContext(win, passed)} />
         </div>

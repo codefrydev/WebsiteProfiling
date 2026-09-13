@@ -16,38 +16,38 @@ export default function ChatImagePagesTableBlock({ block }: { block: Block }) {
   const remaining = (block.total ?? block.pages.length) - shown.length;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-default bg-[var(--chat-bg)]/60">
-      <p className="border-b border-muted/30 px-3 py-2 text-xs font-medium text-bright">
+    <div className="overflow-hidden rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface/60">
+      <p className="border-b border-md-sys-outline-variant/30 px-3 py-2 text-xs font-medium text-md-sys-on-surface">
         {block.title}
         {block.total != null ? (
-          <span className="ml-2 font-normal text-muted-foreground">({block.total})</span>
+          <span className="ml-2 font-normal text-md-sys-on-surface-variant">({block.total})</span>
         ) : null}
       </p>
-      <ul className="divide-y divide-muted/30">
+      <ul className="divide-y divide-md-sys-outline-variant/30">
         {shown.map((page) => (
           <li key={page.url} className="px-3 py-2.5 text-xs">
             <a
               href={page.url}
               target="_blank"
               rel="noreferrer"
-              className="font-mono text-link hover:underline break-all"
+              className="font-mono text-md-sys-primary hover:underline break-all"
               title={page.url}
             >
               {formatChatUrlDisplay(page.url)}
             </a>
             {page.title ? (
-              <p className="mt-0.5 truncate text-muted-foreground">{page.title}</p>
+              <p className="mt-0.5 truncate text-md-sys-on-surface-variant">{page.title}</p>
             ) : null}
-            {page.detail ? <p className="mt-0.5 text-muted-foreground">{page.detail}</p> : null}
+            {page.detail ? <p className="mt-0.5 text-md-sys-on-surface-variant">{page.detail}</p> : null}
           </li>
         ))}
       </ul>
       {remaining > 0 || block.truncated ? (
-        <div className="flex items-center justify-between gap-2 border-t border-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 border-t border-md-sys-outline-variant/30 px-3 py-2 text-xs text-md-sys-on-surface-variant">
           <span>{remaining > 0 ? format(ib.morePages, { count: remaining }) : cb.showAll}</span>
           <button
             type="button"
-            className="shrink-0 text-link hover:underline"
+            className="shrink-0 text-md-sys-primary hover:underline"
             onClick={() => suggestFollowUp(format(ib.exportList, { topic: block.title }))}
           >
             {cb.showAll}

@@ -67,7 +67,7 @@ export default function UrlCoverageDoughnut({
         heightClass="h-48"
         devData={devData}
       >
-        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        <div className="flex items-center justify-center h-full text-sm text-md-sys-on-surface-variant">
           {strings.common.notEnoughData}
         </div>
       </GoogleChartCard>

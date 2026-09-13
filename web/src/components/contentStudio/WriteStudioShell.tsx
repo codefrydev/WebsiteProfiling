@@ -28,7 +28,7 @@ export default function WriteStudioShell({ sidebar, seoPanel, children }: WriteS
   };
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-[var(--chat-bg)] text-foreground">
+    <div className="flex h-dvh overflow-hidden bg-md-sys-surface text-md-sys-on-surface">
       {sidebar(layout)}
 
       <main className="chat-shell-main min-w-0 flex flex-1">
@@ -38,7 +38,7 @@ export default function WriteStudioShell({ sidebar, seoPanel, children }: WriteS
             {typeof children === 'function' ? children(layout) : children}
           </div>
           {seoPanel ? (
-            <aside className="hidden w-[300px] shrink-0 overflow-y-auto border-l border-muted/30 bg-[var(--chat-surface)] xl:block">
+            <aside className="hidden w-[300px] shrink-0 overflow-y-auto border-l border-md-sys-outline-variant/30 bg-md-sys-surface-container xl:block">
               <div className="p-4">{seoPanel}</div>
             </aside>
           ) : null}

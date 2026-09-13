@@ -51,17 +51,17 @@ export default function AdvancedLinkFilters({
   };
 
   return (
-    <div className="rounded-lg border border-default bg-brand-900/40">
+    <div className="rounded-lg border border-md-sys-outline-variant/40 bg-md-sys-surface-container-low/40">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold text-foreground"
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold text-md-sys-on-surface"
       >
         <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Advanced filters
         {activeCount > 0 ? (
-          <span className="rounded-full bg-amber-600 px-1.5 text-[10px] font-bold text-white">
+          <span className="rounded-full bg-md-sys-warning px-1.5 text-[10px] font-bold text-md-sys-on-warning">
             {activeCount}
           </span>
         ) : null}
@@ -72,9 +72,9 @@ export default function AdvancedLinkFilters({
       </button>
 
       {open ? (
-        <div className="flex flex-col gap-2 border-t border-default px-3 py-3">
+        <div className="flex flex-col gap-2 border-t border-md-sys-outline-variant/40 px-3 py-3">
           {conditions.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-md-sys-on-surface-variant">
               Add conditions to narrow the table. All conditions are combined with AND.
             </p>
           ) : null}
@@ -121,7 +121,7 @@ export default function AdvancedLinkFilters({
                   type="button"
                   onClick={() => onRemove(c.id)}
                   aria-label="Remove condition"
-                  className="rounded p-1 text-muted-foreground hover:bg-brand-700 hover:text-foreground"
+                  className="rounded p-1 text-md-sys-on-surface-variant hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -140,7 +140,7 @@ export default function AdvancedLinkFilters({
               Add condition
             </Button>
             {conditions.length > 0 ? (
-              <button type="button" onClick={onClear} className="text-xs text-link hover:underline">
+              <button type="button" onClick={onClear} className="text-xs text-md-sys-primary hover:underline">
                 Clear conditions
               </button>
             ) : null}

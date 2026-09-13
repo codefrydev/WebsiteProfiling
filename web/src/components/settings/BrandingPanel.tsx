@@ -32,28 +32,28 @@ function SettingRow({
     <div className="flex items-start gap-4 py-4">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 mb-0.5">
-          <label className="text-sm font-medium text-bright">{label}</label>
+          <label className="text-sm font-medium text-md-sys-on-surface">{label}</label>
           {isCustom && (
-            <span className="rounded-full bg-[var(--accent-bg)] px-1.5 py-px text-[10px] font-medium text-[var(--accent)]">
+            <span className="rounded-full bg-md-sys-primary/10 px-2 py-0.5 text-[10px] font-semibold text-md-sys-primary">
               Custom
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mb-2">{description}</p>
+        <p className="text-xs text-md-sys-on-surface-variant mb-2">{description}</p>
         <div className="flex items-center gap-2">
           <DraftInput
             type="text"
             value={value}
             placeholder={placeholder}
             onCommit={onSave}
-            className="flex-1 rounded-lg border border-default bg-[var(--app-bg-muted)] px-3 py-1.5 text-sm text-foreground transition-colors focus:border-[var(--accent)] focus:outline-none"
+            className="flex-1 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high px-3 py-1.5 text-sm text-md-sys-on-surface transition-all focus:border-md-sys-primary focus:ring-2 focus:ring-md-sys-primary/20 focus:outline-none"
           />
           {isCustom && (
             <button
               type="button"
               title="Reset to default"
               onClick={handleReset}
-              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-[var(--app-bg-muted)] hover:text-foreground"
+              className="press rounded-full p-1.5 text-md-sys-on-surface-variant transition-all hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98]"
             >
               <RotateCcw className="h-4 w-4" />
             </button>
@@ -133,14 +133,14 @@ function LogoUploadSection() {
   return (
     <div className="py-4">
       <div className="flex items-center gap-2 mb-0.5">
-        <p className="text-sm font-medium text-bright">Logo</p>
+        <p className="text-sm font-medium text-md-sys-on-surface">Logo</p>
         {hasCustomLogo && (
-          <span className="rounded-full bg-[var(--accent-bg)] px-1.5 py-px text-[10px] font-medium text-[var(--accent)]">
+          <span className="rounded-full bg-md-sys-primary/10 px-2 py-0.5 text-[10px] font-semibold text-md-sys-primary">
             Custom
           </span>
         )}
       </div>
-      <p className="text-xs text-muted-foreground mb-4">
+      <p className="text-xs text-md-sys-on-surface-variant mb-4">
         Shown in the sidebar and as the chat assistant avatar. PNG, SVG, JPG or WebP · max 500 KB.
       </p>
 
@@ -152,10 +152,10 @@ function LogoUploadSection() {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleFileDrop}
           onClick={() => fileRef.current?.click()}
-          className={`relative flex min-h-[100px] w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-all sm:w-48 ${
+          className={`relative flex min-h-[100px] w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed transition-all sm:w-48 ${
             dragOver
-              ? 'border-[var(--accent)] bg-[var(--accent-bg)]'
-              : 'border-default hover:border-[var(--accent)] hover:bg-[var(--app-bg-muted)]'
+              ? 'border-md-sys-primary bg-md-sys-primary/10'
+              : 'border-md-sys-outline-variant/40 hover:border-md-sys-primary/50 hover:bg-md-sys-surface-container-high'
           }`}
         >
           {hasCustomLogo ? (
@@ -165,14 +165,14 @@ function LogoUploadSection() {
                 alt="Custom logo"
                 className="h-10 w-10 object-contain"
               />
-              <span className="text-[11px] text-muted-foreground">Click to replace</span>
+              <span className="text-[11px] text-md-sys-on-surface-variant">Click to replace</span>
             </>
           ) : (
             <>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--app-bg-muted)]">
-                <ImageIcon className="h-5 w-5 text-muted-foreground" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-md-sys-surface-container-high">
+                <ImageIcon className="h-5 w-5 text-md-sys-on-surface-variant" />
               </div>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-[11px] text-md-sys-on-surface-variant">
                 {dragOver ? 'Drop to upload' : 'Click or drag & drop'}
               </span>
             </>
@@ -189,7 +189,7 @@ function LogoUploadSection() {
         {/* Right side — URL + actions */}
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div>
-            <p className="mb-1.5 text-xs text-muted-foreground">Or paste an image URL</p>
+            <p className="mb-1.5 text-xs text-md-sys-on-surface-variant">Or paste an image URL</p>
             <div className="flex items-center gap-2">
               <input
                 type="url"
@@ -197,13 +197,13 @@ function LogoUploadSection() {
                 placeholder="https://example.com/logo.png"
                 onChange={(e) => setUrlDraft(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleUrlSave(); }}
-                className="flex-1 rounded-lg border border-default bg-[var(--app-bg-muted)] px-3 py-1.5 text-sm text-foreground transition-colors focus:border-[var(--accent)] focus:outline-none"
+                className="flex-1 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high px-3 py-1.5 text-sm text-md-sys-on-surface transition-all focus:border-md-sys-primary focus:ring-2 focus:ring-md-sys-primary/20 focus:outline-none"
               />
               <button
                 type="button"
                 disabled={!urlDraft.trim()}
                 onClick={handleUrlSave}
-                className="flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-40"
+                className="press flex items-center gap-1.5 rounded-full bg-md-sys-primary px-4 py-2 text-xs font-medium text-md-sys-on-primary transition-all hover:brightness-105 active:scale-[0.98] disabled:opacity-40 shadow-sm"
               >
                 <Upload className="h-3.5 w-3.5" />
                 Use URL
@@ -212,21 +212,21 @@ function LogoUploadSection() {
           </div>
 
           {error && (
-            <p className="flex items-center gap-1.5 rounded-lg bg-[var(--color-danger-bg)] px-3 py-2 text-xs text-[var(--color-danger)]">
+            <p className="flex items-center gap-1.5 rounded-xl border border-md-sys-error/30 bg-md-sys-error-container/30 px-3 py-2 text-xs text-md-sys-on-error-container">
               <X className="h-3.5 w-3.5 shrink-0" />
               {error}
             </p>
           )}
 
           {saving && (
-            <p className="text-xs text-muted-foreground">Saving…</p>
+            <p className="text-xs text-md-sys-on-surface-variant">Saving…</p>
           )}
 
           {hasCustomLogo && (
             <button
               type="button"
               onClick={handleReset}
-              className="flex w-fit items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-[var(--app-bg-muted)] hover:text-foreground"
+              className="press flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-md-sys-on-surface-variant transition-all hover:bg-md-sys-surface-container-high hover:text-md-sys-on-surface active:scale-[0.98]"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Reset to default logo
@@ -246,15 +246,15 @@ export default function BrandingPanel() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-bright">Branding</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="text-xl font-semibold text-md-sys-on-surface">Branding</h1>
+        <p className="mt-1 text-sm text-md-sys-on-surface-variant">
           Customise the logo, product name and subtitle shown in the sidebar. Changes are saved to the database and
           apply for all users on this instance.
         </p>
       </div>
 
-      <section className="rounded-2xl border border-default bg-[var(--app-bg-elevated)] p-5">
-        <div className="divide-y divide-[var(--app-border-muted)]">
+      <section className="rounded-2xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container p-5">
+        <div className="divide-y divide-md-sys-outline-variant/40">
           <LogoUploadSection />
           <SettingRow
             label="Product name"
@@ -275,8 +275,8 @@ export default function BrandingPanel() {
         </div>
 
         {/* Live preview */}
-        <div className="mt-4 rounded-xl border border-default bg-[var(--app-bg-muted)] px-4 py-3">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="mt-4 rounded-xl border border-md-sys-outline-variant/40 bg-md-sys-surface-container-high px-4 py-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-md-sys-on-surface-variant">
             Sidebar preview
           </p>
           <div className="flex items-center gap-2.5">
@@ -288,11 +288,11 @@ export default function BrandingPanel() {
                 aria-hidden
               />
             ) : (
-              <div className="h-7 w-7 shrink-0 rounded-lg bg-[var(--accent)] opacity-80" />
+              <div className="h-7 w-7 shrink-0 rounded-full bg-md-sys-primary opacity-80" />
             )}
             <div>
-              <div className="text-sm font-bold text-bright leading-tight">{productName}</div>
-              <div className="text-[11px] text-muted-foreground">{productSubtitle}</div>
+              <div className="text-sm font-bold text-md-sys-on-surface leading-tight">{productName}</div>
+              <div className="text-[11px] text-md-sys-on-surface-variant">{productSubtitle}</div>
             </div>
           </div>
         </div>

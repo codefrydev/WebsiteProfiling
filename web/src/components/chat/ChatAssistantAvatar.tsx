@@ -44,7 +44,7 @@ export default function ChatAssistantAvatar({
 
   return (
     <div
-      className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--accent)] ${dims.shell} ${className}`.trim()}
+      className={`flex shrink-0 items-center justify-center rounded-full bg-md-sys-primary text-md-sys-on-primary ${dims.shell} ${className}`.trim()}
     >
       {failed ? (
         <Bot className={`${dims.icon} text-white`} aria-hidden />

@@ -50,7 +50,7 @@ export function CompactDonut({
                 key={d.data.label}
                 d={arcGen(d) ?? ''}
                 fill={d.data.color}
-                stroke="var(--background, #0f172a)"
+                stroke="var(--md-sys-color-surface, #0b0f19)"
                 strokeWidth={1}
               />
             ))}
@@ -59,15 +59,15 @@ export function CompactDonut({
         {centerLabel || centerValue ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center leading-tight">
             {centerValue ? (
-              <span className="text-xs font-bold tabular-nums text-foreground">{centerValue}</span>
+              <span className="text-xs font-bold tabular-nums text-md-sys-on-surface">{centerValue}</span>
             ) : null}
             {centerLabel ? (
-              <span className="text-[8px] text-muted-foreground">{centerLabel}</span>
+              <span className="text-[8px] text-md-sys-on-surface-variant">{centerLabel}</span>
             ) : null}
           </div>
         ) : null}
       </div>
-      <ul className="min-w-0 space-y-0.5 text-[10px] text-muted-foreground">
+      <ul className="min-w-0 space-y-0.5 text-[10px] text-md-sys-on-surface-variant">
         {segments.map((s) => (
           <li key={s.label} className="flex items-center gap-1.5">
             <span className="h-2 w-2 shrink-0 rounded-sm" style={{ background: s.color }} />

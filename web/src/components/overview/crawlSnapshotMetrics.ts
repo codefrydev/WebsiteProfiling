@@ -44,9 +44,9 @@ export function ogCoverageBand(pct: number | null | undefined): MetricBand {
 }
 
 export function bandClassName(band: MetricBand): string {
-  if (band === 'good') return 'text-green-700 dark:text-green-400';
-  if (band === 'fair') return 'text-yellow-700 dark:text-yellow-400';
-  return 'text-red-600 dark:text-red-400';
+  if (band === 'good') return 'text-md-sys-success';
+  if (band === 'fair') return 'text-md-sys-warning';
+  return 'text-md-sys-error';
 }
 
 export function metricBandLabel(

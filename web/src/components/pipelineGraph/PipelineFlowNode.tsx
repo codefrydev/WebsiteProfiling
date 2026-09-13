@@ -8,13 +8,13 @@ export type PipelineFlowNodeData = { kind: PipelineNodeKind };
 export type PipelineFlowNodeType = Node<PipelineFlowNodeData, 'pipelineNode'>;
 
 const CATEGORY_ACCENT: Record<PipelineNodeCategory, string> = {
-  trigger: 'border-amber-500/50 bg-amber-500/10',
-  fetch: 'border-sky-500/50 bg-sky-500/10',
-  parse: 'border-violet-500/50 bg-violet-500/10',
-  filter: 'border-rose-500/50 bg-rose-500/10',
-  transform: 'border-teal-500/50 bg-teal-500/10',
-  extract: 'border-emerald-500/50 bg-emerald-500/10',
-  output: 'border-blue-500/50 bg-blue-500/10',
+  trigger: 'border-md-sys-warning/40 bg-md-sys-warning-container/20',
+  fetch: 'border-md-sys-info/40 bg-md-sys-info-container/20',
+  parse: 'border-md-sys-tertiary/40 bg-md-sys-tertiary-container/20',
+  filter: 'border-md-sys-error/40 bg-md-sys-error-container/20',
+  transform: 'border-md-sys-secondary/40 bg-md-sys-secondary-container/20',
+  extract: 'border-md-sys-success/40 bg-md-sys-success-container/20',
+  output: 'border-md-sys-primary/40 bg-md-sys-primary-container/20',
 };
 
 /**
@@ -34,18 +34,18 @@ function PipelineFlowNode({ id, data, selected }: NodeProps<PipelineFlowNodeType
 
   return (
     <div
-      className={`w-56 rounded-xl border-2 px-3 py-2.5 shadow-sm transition-shadow ${CATEGORY_ACCENT[def.category]} ${
-        isSelected ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-brand-950' : ''
+      className={`w-56 rounded-2xl border-2 px-3 py-2.5 shadow-sm transition-shadow ${CATEGORY_ACCENT[def.category]} ${
+        isSelected ? 'ring-2 ring-md-sys-primary ring-offset-2 ring-offset-md-sys-surface-container-lowest' : ''
       } ${enabled ? '' : 'opacity-50'}`}
     >
-      <Handle type="target" position={Position.Left} isConnectable={false} className="!bg-muted-foreground" />
+      <Handle type="target" position={Position.Left} isConnectable={false} className="!bg-md-sys-on-surface-variant" />
       <div className="flex items-center gap-2">
-        <Icon className="h-4 w-4 shrink-0 text-foreground" aria-hidden />
-        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{def.label}</span>
+        <Icon className="h-4 w-4 shrink-0 text-md-sys-on-surface" aria-hidden />
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-md-sys-on-surface">{def.label}</span>
         {def.optional ? (
           <button
             type="button"
-            className="nodrag shrink-0 rounded-full border border-default px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+            className="nodrag shrink-0 rounded-full border border-md-sys-outline-variant/40 px-2 py-0.5 text-[10px] font-medium text-md-sys-on-surface-variant hover:text-md-sys-on-surface press active:scale-95 transition-all"
             onClick={(e) => {
               e.stopPropagation();
               setNodeEnabled(id, !enabled);
@@ -55,8 +55,8 @@ function PipelineFlowNode({ id, data, selected }: NodeProps<PipelineFlowNodeType
           </button>
         ) : null}
       </div>
-      <p className="mt-1 truncate text-[11px] text-muted-foreground">{def.description}</p>
-      <Handle type="source" position={Position.Right} isConnectable={false} className="!bg-muted-foreground" />
+      <p className="mt-1 truncate text-[11px] text-md-sys-on-surface-variant">{def.description}</p>
+      <Handle type="source" position={Position.Right} isConnectable={false} className="!bg-md-sys-on-surface-variant" />
     </div>
   );
 }

@@ -4,7 +4,15 @@ import { formatTooltipRaw } from '@/types/chart';
 
 function cssVar(name: string, fallback: string): string {
   if (typeof document === 'undefined') return fallback;
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  let v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  if (!v) return fallback;
+  // If the variable points to another CSS variable, resolve it so Canvas can parse it
+  while (v.startsWith('var(')) {
+    const innerName = v.slice(4, -1).split(',')[0].trim();
+    const resolved = getComputedStyle(document.documentElement).getPropertyValue(innerName).trim();
+    if (!resolved || resolved === v) break;
+    v = resolved;
+  }
   return v || fallback;
 }
 
