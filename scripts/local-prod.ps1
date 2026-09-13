@@ -1,15 +1,8 @@
-# Local dev: PostgreSQL in Docker (wp-pg), Python venv + Vite/React SPA + .NET backend on host.
-# Usage: .\local-run.ps1 [command]
-#   (default) start   — ensure DB, migrations, full .NET stack, FastAPI bridge, npm run dev
-#   setup           — DB + venv + deps + migrations (no dev server)
-#   db              — start Postgres container only
-#   migrate         — EF Core: dotnet run --project services\Schema\src\Schema.Migrator
-#   stop            — stop wp-pg container
-#   docker          — run entire full stack in Docker (docker compose up --build)
-#   docker:prod     — run production stack in Docker (docker compose -f docker-compose.prod.yml up --build)
-#   docker:down     — stop all Docker compose services
-#   help            — show commands
-# Requires: PowerShell 5.1+ (PowerShell 7+ recommended for reliable exit codes)
+# Local prod: same Postgres as .\local-run.ps1, full stack + Vite build + preview (NODE_ENV=production).
+# Usage: .\local-prod.ps1 [command]
+#   (default) start   — DB, migrations, .NET stack, FastAPI, vite preview
+#   build             — npm run build only
+#   help              — show commands
 
 $ErrorActionPreference = "Stop"
 
@@ -17,7 +10,6 @@ $ROOT = Split-Path -Parent $PSScriptRoot
 Set-Location $ROOT
 
 $PG_CONTAINER = if ($env:WP_PG_CONTAINER) { $env:WP_PG_CONTAINER } else { "wp-pg" }
-$PG_IMAGE = if ($env:WP_PG_IMAGE) { $env:WP_PG_IMAGE } else { "postgres:16-alpine" }
 $PG_PORT = if ($env:WP_PG_PORT) { $env:WP_PG_PORT } else { "5432" }
 $PG_USER = if ($env:WP_PG_USER) { $env:WP_PG_USER } else { "postgres" }
 $PG_PASSWORD = if ($env:WP_PG_PASSWORD) { $env:WP_PG_PASSWORD } else { "dev" }
@@ -32,9 +24,8 @@ if (-not $env:DATA_DIR) {
 
 $VENV = Join-Path $ROOT ".venv"
 $VENV_PYTHON = Join-Path $VENV "Scripts\python.exe"
-$VENV_PIP = Join-Path $VENV "Scripts\pip.exe"
 $WEB = Join-Path $ROOT "web"
-$SCHEMA_MIGRATOR = Join-Path $ROOT "services\Schema\src\Schema.Migrator"
+$LOCAL_RUN = Join-Path $PSScriptRoot "local-run.ps1"
 
 $env:WEBSITE_PROFILING_ROOT = $ROOT
 if ($env:PYTHONPATH) {
@@ -42,9 +33,12 @@ if ($env:PYTHONPATH) {
 } else {
     $env:PYTHONPATH = Join-Path $ROOT "src"
 }
-if (-not $env:PYTHON) {
-    $env:PYTHON = $VENV_PYTHON
+$env:NODE_ENV = "production"
+if (-not $env:VITE_BFF_BASE_URL) {
+    $env:VITE_BFF_BASE_URL = "http://localhost:8090"
 }
+$env:DEPRECATE_PYTHON_INTEGRATIONS = "1"
+$env:USE_FASTAPI_PYTHON_BRIDGE = "1"
 
 . (Join-Path $PSScriptRoot "ensure-deps.ps1")
 
@@ -61,24 +55,6 @@ function Write-Warn([string]$Message) {
 function Write-Die([string]$Message) {
     Write-Host "X $Message" -ForegroundColor Red
     exit 1
-}
-
-function Assert-LastExitCode([string]$Message) {
-    $failed = $false
-    if ($PSVersionTable.PSVersion.Major -ge 7) {
-        $failed = ($LASTEXITCODE -ne 0)
-    } else {
-        $failed = (-not $?)
-    }
-    if ($failed) {
-        Write-Die $Message
-    }
-}
-
-function Test-Command([string]$Name) {
-    if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
-        Write-Die "Missing required command: $Name"
-    }
 }
 
 function Stop-PortListener([int]$Port) {
@@ -100,7 +76,6 @@ function Stop-PortListener([int]$Port) {
             if ($line.Matches[0].Groups[1].Value -match '^\d+$') {
                 $pidToKill = [int]$line.Matches[0].Groups[1].Value
                 if ($pidToKill -gt 0 -and $pidToKill -ne $PID) {
-                    Write-Warn "Stopping stale listener on port $Port (PID: $pidToKill)"
                     cmd /c "taskkill /PID $pidToKill /T /F >nul 2>&1"
                 }
             }
@@ -108,7 +83,7 @@ function Stop-PortListener([int]$Port) {
     }
 }
 
-function Wait-ForHttp([string]$Url, [string]$Name, [int]$TimeoutSeconds = 60) {
+function Wait-ForHttp([string]$Url, [string]$Name, [int]$TimeoutSeconds = 90) {
     Write-Log "Waiting for $Name ($Url)"
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     while ($stopwatch.Elapsed.TotalSeconds -lt $TimeoutSeconds) {
@@ -155,7 +130,7 @@ function Start-ManagedProcess {
 }
 
 function Stop-AllManagedProcesses {
-    Write-Log "Shutting down local background services..."
+    Write-Log "Shutting down local prod stack..."
     foreach ($proc in $global:ManagedProcesses) {
         if ($proc -and -not $proc.HasExited) {
             try {
@@ -168,106 +143,53 @@ function Stop-AllManagedProcesses {
     $global:ManagedProcesses.Clear()
 }
 
-function Get-DockerContainerNames {
-    param([switch]$All)
-
-    $dockerArgs = if ($All) { @("ps", "-a", "--format", "{{.Names}}") } else { @("ps", "--format", "{{.Names}}") }
-    $output = & docker @dockerArgs 2>$null
-    if (-not $output) {
-        return @()
+function Stop-Postgres {
+    if (Get-Command docker -ErrorAction SilentlyContinue) {
+        $running = & docker ps --format "{{.Names}}" 2>$null
+        if ($running -contains $PG_CONTAINER) {
+            Write-Log "Stopping $PG_CONTAINER"
+            & docker stop $PG_CONTAINER *> $null
+            Write-Log "Postgres stopped."
+        }
     }
-    return @($output | ForEach-Object { "$_".Trim() } | Where-Object { $_ })
 }
 
-function Test-DockerRunning {
-    Test-Command docker
-    $prevErrorAction = $ErrorActionPreference
-    $ErrorActionPreference = "Continue"
+function Invoke-Build {
+    Ensure-SystemTools
+    Ensure-WebDeps
+    Write-Log "Building Vite SPA (production, VITE_BFF_BASE_URL=$($env:VITE_BFF_BASE_URL))"
+    Push-Location $WEB
     try {
-        cmd /c "docker info >nul 2>&1"
+        & npm run build
     } finally {
-        $ErrorActionPreference = $prevErrorAction
+        Pop-Location
     }
-    Assert-LastExitCode "Docker is not running. Start Docker Desktop, then retry."
-}
-
-function Test-ContainerExists([string]$Name) {
-    return (Get-DockerContainerNames -All) -contains $Name
-}
-
-function Test-ContainerRunning([string]$Name) {
-    return (Get-DockerContainerNames) -contains $Name
-}
-
-function Wait-ForPostgres {
-    for ($i = 1; $i -le 30; $i++) {
-        & docker exec $PG_CONTAINER pg_isready -U $PG_USER -d $PG_DB *> $null
-        if ($PSVersionTable.PSVersion.Major -ge 7) {
-            if ($LASTEXITCODE -eq 0) { return }
-        } elseif ($?) {
-            return
-        }
-        Start-Sleep -Seconds 1
-    }
-    Write-Die "Postgres did not become ready in time (container: $PG_CONTAINER)"
-}
-
-function Invoke-Db {
-    Test-DockerRunning
-    if (Test-ContainerExists $PG_CONTAINER) {
-        if (Test-ContainerRunning $PG_CONTAINER) {
-            Write-Log "Postgres already running ($PG_CONTAINER)"
-        } else {
-            Write-Log "Starting existing container $PG_CONTAINER"
-            & docker start $PG_CONTAINER *> $null
-            Assert-LastExitCode "Failed to start container $PG_CONTAINER"
-        }
-    } else {
-        Write-Log "Creating Postgres container $PG_CONTAINER on port $PG_PORT"
-        & docker run -d --name $PG_CONTAINER `
-            -e "POSTGRES_PASSWORD=$PG_PASSWORD" `
-            -e "POSTGRES_DB=$PG_DB" `
-            -p "${PG_PORT}:5432" `
-            $PG_IMAGE *> $null
-        Assert-LastExitCode "Failed to create Postgres container $PG_CONTAINER"
-    }
-    Wait-ForPostgres
-    Write-Log "DATABASE_URL=$($env:DATABASE_URL)"
-}
-
-function Invoke-Migrate {
-    Ensure-SystemTools
-    Ensure-DotnetDeps
-    Invoke-Db
-    Write-Log "Applying database migrations (EF Core: Schema.Migrator)"
-    & dotnet run --project $SCHEMA_MIGRATOR --no-launch-profile
-    Assert-LastExitCode "Database migration failed (Schema.Migrator)"
-}
-
-function Invoke-Setup {
-    New-Item -ItemType Directory -Force -Path $env:DATA_DIR | Out-Null
-    Ensure-SystemTools
-    Ensure-AllProjectDeps
-    Invoke-Migrate
-    Write-Log "Setup complete."
-    Write-Log "Start the UI: .\local-run.ps1 start"
-    Write-Log "Open http://localhost:3000/home (use localhost, not 127.0.0.1 for pipeline APIs)"
 }
 
 function Invoke-Start {
-    New-Item -ItemType Directory -Force -Path $env:DATA_DIR | Out-Null
+    param([switch]$SkipBuild)
+
     Ensure-SystemTools
     Ensure-AllProjectDeps
-    Invoke-Migrate
 
-    $bffBase = if ($env:VITE_BFF_BASE_URL) { $env:VITE_BFF_BASE_URL } else { "http://localhost:8090" }
+    New-Item -ItemType Directory -Force -Path $env:DATA_DIR | Out-Null
+    Write-Log "Ensuring Postgres and migrations (via .\local-run.ps1 migrate)"
+    & $LOCAL_RUN migrate
+
+    if (-not $SkipBuild) {
+        Invoke-Build
+    } else {
+        Ensure-WebDeps
+        Write-Log "Skipping build (--SkipBuild)"
+    }
+
     $coreUrl = if ($env:CORE_SERVICE_URL) { $env:CORE_SERVICE_URL } else { "http://127.0.0.1:8094" }
     $aiUrl = if ($env:AI_SERVICE_URL) { $env:AI_SERVICE_URL } else { "http://127.0.0.1:8092" }
     $fastApiUrl = if ($env:FASTAPI_URL) { $env:FASTAPI_URL } else { "http://127.0.0.1:8096" }
 
     try {
         Stop-PortListener 8094
-        Write-Log "Starting CoreService on port 8094"
+        Write-Log "Starting CoreService on port 8094 (Production)"
         Start-ManagedProcess -Name "CoreService" `
             -FilePath "dotnet" `
             -ArgumentList @("run", "--project", "src/CoreService.Api", "--no-launch-profile") `
@@ -284,11 +206,11 @@ function Invoke-Start {
                 "REPORT_SERVICE_WORKER_ENABLED" = "1"
                 "USE_FASTAPI_PYTHON_BRIDGE" = "1"
                 "ASPNETCORE_URLS" = "http://127.0.0.1:8094"
-                "ASPNETCORE_ENVIRONMENT" = "Development"
+                "ASPNETCORE_ENVIRONMENT" = "Production"
             } | Out-Null
 
         Stop-PortListener 8092
-        Write-Log "Starting AiService on port 8092"
+        Write-Log "Starting AiService on port 8092 (Production)"
         Start-ManagedProcess -Name "AiService" `
             -FilePath "dotnet" `
             -ArgumentList @("run", "--project", "src/AiService.Api", "--no-launch-profile") `
@@ -297,7 +219,7 @@ function Invoke-Start {
                 "DATABASE_URL" = $env:DATABASE_URL
                 "FASTAPI_URL" = $fastApiUrl
                 "ASPNETCORE_URLS" = "http://127.0.0.1:8092"
-                "ASPNETCORE_ENVIRONMENT" = "Development"
+                "ASPNETCORE_ENVIRONMENT" = "Production"
                 "WP_MCP_HTTP" = "1"
             } | Out-Null
 
@@ -325,7 +247,7 @@ function Invoke-Start {
         Wait-ForHttp "http://127.0.0.1:8096/api/health" "FastAPI"
 
         Stop-PortListener 8090
-        Write-Log "Starting BFF on port 8090"
+        Write-Log "Starting BFF on port 8090 (Production)"
         Start-ManagedProcess -Name "BFF" `
             -FilePath "dotnet" `
             -ArgumentList @("run", "--project", "src/Bff.Api", "--no-launch-profile") `
@@ -347,108 +269,49 @@ function Invoke-Start {
                 "AUTH_PASSWORD" = ""
                 "AUTH_USER" = ""
                 "ASPNETCORE_URLS" = "http://127.0.0.1:8090"
-                "ASPNETCORE_ENVIRONMENT" = "Development"
+                "ASPNETCORE_ENVIRONMENT" = "Production"
             } | Out-Null
 
         Wait-ForHttp "http://127.0.0.1:8090/health" "BFF"
 
-        $env:VITE_BFF_BASE_URL = $bffBase
-
-        Write-Log "Starting Vite dev server (Ctrl+C stops all services including Postgres)"
-        Write-Log "DATABASE_URL=$($env:DATABASE_URL)"
-        Write-Log "DATA_DIR=$($env:DATA_DIR)"
-        Write-Log "VITE_BFF_BASE_URL=$bffBase"
-        Write-Log "CORE_SERVICE_URL=$coreUrl"
-        Write-Log "AI_SERVICE_URL=$aiUrl"
-        Write-Log "FASTAPI_URL=$fastApiUrl"
+        Write-Log "Starting Vite preview on port 3000 (Ctrl+C stops all services including Postgres)"
         Write-Log "Open http://localhost:3000/home in your browser"
 
         Push-Location $WEB
         try {
-            & npm run dev
+            & npm run preview -- --host 0.0.0.0 --port 3000
         } finally {
             Pop-Location
         }
     } finally {
         Stop-AllManagedProcesses
-        Invoke-Stop
+        Stop-Postgres
         Write-Log "All services stopped."
-    }
-}
-
-function Invoke-Stop {
-    Test-DockerRunning
-    if (Test-ContainerRunning $PG_CONTAINER) {
-        Write-Log "Stopping $PG_CONTAINER"
-        & docker stop $PG_CONTAINER *> $null
-        Assert-LastExitCode "Failed to stop container $PG_CONTAINER"
-        Write-Log "Postgres stopped."
-    } else {
-        Write-Warn "Container $PG_CONTAINER is not running"
-    }
-}
-
-function Invoke-DockerCompose([string]$Mode = "dev") {
-    Test-DockerRunning
-    switch ($Mode) {
-        "dev" {
-            Write-Log "Starting full stack via Docker Compose (docker compose up --build)..."
-            & docker compose up --build
-        }
-        "prod" {
-            Write-Log "Starting production layout via Docker Compose..."
-            & docker compose -f docker-compose.prod.yml up --build
-        }
-        "down" {
-            Write-Log "Stopping Docker Compose containers..."
-            & docker compose down
-        }
     }
 }
 
 function Show-Help {
     Write-Host @"
-Local dev runner - Postgres in Docker, app on your machine
+Local prod runner — same Postgres as .\local-run.ps1, production Vite build + full .NET stack.
 
-  .\local-run.ps1              Same as: start
-  .\local-run.ps1 start        DB + migrations + full stack + npm run dev (Ctrl+C stops all)
-  .\local-run.ps1 setup        One-time setup (no dev server)
-  .\local-run.ps1 db           Start Postgres only
-  .\local-run.ps1 migrate      Apply EF Core migrations (Schema.Migrator)
-  .\local-run.ps1 stop         Stop Postgres container
-
-Docker Compose commands:
-  .\local-run.ps1 docker       Build & run full stack in Docker (docker compose up --build)
-  .\local-run.ps1 docker:prod  Run production stack in Docker (docker compose -f docker-compose.prod.yml)
-  .\local-run.ps1 docker:down  Tear down Docker containers (docker compose down)
-
-Environment overrides (optional):
-  DATABASE_URL  (default: postgres://postgres:dev@127.0.0.1:5432/website_profiling)
-  DATA_DIR      (default: <repo>/data)
-  PYTHON        (default: <repo>/.venv/Scripts/python.exe)
-  WP_PG_CONTAINER, WP_PG_PORT, WP_PG_PASSWORD, WP_PG_DB
-  WP_SKIP_SYSTEM_INSTALL, WP_SKIP_DEPS_SYNC
+  .\local-prod.ps1              Same as: start
+  .\local-prod.ps1 start        DB + migrations + build + full stack + vite preview
+  .\local-prod.ps1 start --skip-build   Start without rebuilding (reuse dist/)
+  .\local-prod.ps1 build        npm run build only
+  .\local-prod.ps1 help         Show this help
 
 After start, open: http://localhost:3000/home
-Run audits via sidebar "Run audit" (bottom-right FAB).
-
-Run CI-style tests: .\local-test.ps1 or ./local-test (bash/Git Bash/WSL).
 "@
 }
 
 $cmd = if ($args.Count -gt 0) { $args[0] } else { "start" }
+$skipBuild = ($args -contains "--skip-build")
 
 switch ($cmd) {
-    "start" { Invoke-Start }
-    "setup" { Invoke-Setup }
-    "db" { Invoke-Db }
-    "migrate" { Invoke-Migrate }
-    "stop" { Invoke-Stop }
-    "docker" { Invoke-DockerCompose "dev" }
-    "docker:prod" { Invoke-DockerCompose "prod" }
-    "docker:down" { Invoke-DockerCompose "down" }
+    "start" { Invoke-Start -SkipBuild:$skipBuild }
+    "build" { Invoke-Build }
     "help" { Show-Help }
     "-h" { Show-Help }
     "--help" { Show-Help }
-    default { Write-Die "Unknown command: $cmd (try: .\local-run.ps1 help)" }
+    default { Write-Die "Unknown command: $cmd (try: .\local-prod.ps1 help)" }
 }

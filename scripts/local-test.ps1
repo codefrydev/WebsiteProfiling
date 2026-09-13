@@ -112,8 +112,8 @@ function Invoke-PythonLauncher {
 function Get-DockerContainerNames {
     param([switch]$All)
 
-    $dockerArgs = if ($All) { @("ps", "-a") } else { @("ps") }
-    $output = & docker @dockerArgs --format "{{.Names}}" 2>$null
+    $dockerArgs = if ($All) { @("ps", "-a", "--format", "{{.Names}}") } else { @("ps", "--format", "{{.Names}}") }
+    $output = & docker @dockerArgs 2>$null
     if (-not $output) {
         return @()
     }
@@ -264,6 +264,20 @@ function Invoke-WebChecks {
     Write-Ok "Web checks passed"
 }
 
+function Invoke-DotnetChecks {
+    Ensure-SystemTools
+    Ensure-DotnetDeps
+    Write-Log "dotnet test (services/WebsiteProfiling.slnx)"
+    Push-Location (Join-Path $ROOT "services")
+    try {
+        & dotnet test WebsiteProfiling.slnx -m:1
+        Assert-LastExitCode ".NET tests failed (WebsiteProfiling.slnx)"
+    } finally {
+        Pop-Location
+    }
+    Write-Ok ".NET tests passed"
+}
+
 function Invoke-Quick {
     if (-not $env:DATABASE_URL) {
         Write-Die "DATABASE_URL is not set. Export it or run .\scripts\local-test.ps1 all"
@@ -277,20 +291,22 @@ function Invoke-Quick {
     & $VENV_PYTHON -m src --help *> $null
     Assert-LastExitCode "CLI smoke failed"
     Invoke-WebChecks
+    Invoke-DotnetChecks
     Write-Ok "Quick test run passed"
 }
 
 function Show-Help {
     Write-Host @"
-Local test runner — mirrors CI (python + web jobs)
+Local test runner — mirrors CI (python + web + .NET jobs)
 
   .\scripts\local-test.ps1              Same as: all
-  .\scripts\local-test.ps1 all          Postgres + migrations + full pytest + web
+  .\scripts\local-test.ps1 all          Postgres + migrations + full pytest + web + .NET
   .\scripts\local-test.ps1 python       DB + pytest (core + reporting + tools) + CLI
+  .\scripts\local-test.ps1 dotnet       dotnet test services/WebsiteProfiling.slnx
   .\scripts\local-test.ps1 reporting    Reporting module 100% coverage gate only
   .\scripts\local-test.ps1 tools        Tools module coverage gate only
   .\scripts\local-test.ps1 web          typecheck, lint, vitest (no Docker)
-  .\scripts\local-test.ps1 quick        pytest -NoCov + web (DB must be ready)
+  .\scripts\local-test.ps1 quick        pytest -NoCov + web + dotnet (DB must be ready)
 
   .\scripts\local-test.ps1 all -NoCov   skip pytest coverage gates (faster)
 
@@ -322,9 +338,11 @@ switch ($cmd) {
     "all" {
         Invoke-PythonChecks
         Invoke-WebChecks
-        Write-Ok "All local tests passed (CI python + web jobs)"
+        Invoke-DotnetChecks
+        Write-Ok "All local tests passed (CI python + web + .NET jobs)"
     }
     "python" { Invoke-PythonChecks }
+    "dotnet" { Invoke-DotnetChecks }
     "reporting" {
         Invoke-Venv
         Invoke-PytestReporting
